@@ -1,3 +1,7 @@
 canbrain
 *.out
 .sconsign.dblite
+
+# Added by cargo
+
+/target
