@@ -8,12 +8,6 @@ pub struct CANValueType {
     pub signed: bool,
 }
 
-impl CANValueType {
-    pub fn human_description(&self) -> String {
-        format!("{}{}", (if self.signed { "s" } else { "u" }), self.length)
-    }
-}
-
 #[derive(Clone)]
 pub struct CANSignal {
     pub offset: i32,
@@ -22,15 +16,21 @@ pub struct CANSignal {
     pub value_type: CANValueType,
 }
 
+impl CANValueType {
+    pub fn _human_description(&self) -> String {
+        format!("{}{}", (if self.signed { "s" } else { "u" }), self.length)
+    }
+}
+
 impl CANSignal {
-    pub fn human_description(&self) -> String {
+    pub fn _human_description(&self) -> String {
         format!(
             "Signal `{}`:\
                \n -> offset: {},\
                \n -> type: {}",
             self.name,
             self.offset,
-            self.value_type.human_description()
+            self.value_type._human_description()
         )
     }
 
