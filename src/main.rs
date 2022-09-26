@@ -9,7 +9,7 @@ fn main() {
         name: "VCFRONT_driverIsLeaving".to_string(),
         value_type: can::CANValueType {
             length: 5,
-            signed: false,
+            signed: true,
         },
     };
 
@@ -24,8 +24,6 @@ fn main() {
     println!("Have message with name: `{}`", m.name);
 
     for sig in m.signals {
-        println!("Have signal.\n{}", sig.human_description());
-
-        println!("CANTOOLS:\n{}", sig.cantools_description());
+        println!("{}", sig.cantools_description());
     }
 }
