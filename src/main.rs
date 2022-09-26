@@ -21,9 +21,16 @@ fn main() {
     m.signals.push(s.clone());
     m.signals.push(s);
 
-    println!("Have message with name: `{}`", m.name);
+    let mut net = can::CANNetwork {
+        messages: Vec::new(),
+    };
 
-    for sig in m.signals {
-        println!("{}", sig.cantools_description());
+    net.add_msg(m.clone());
+    net.add_msg(m);
+
+    for msg in net.messages {
+        for sig in msg.signals {
+            println!("{}", sig.cantools_description());
+        }
     }
 }
