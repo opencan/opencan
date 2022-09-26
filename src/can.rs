@@ -16,6 +16,17 @@ pub struct CANSignal {
     pub value_type: CANValueType,
 }
 
+#[derive(Clone)]
+pub struct CANMessage {
+    pub name: String,
+
+    pub signals: Vec<CANSignal>,
+}
+
+pub struct CANNetwork {
+    pub messages: Vec<CANMessage>,
+}
+
 impl CANValueType {
     pub fn _human_description(&self) -> String {
         format!("{}{}", (if self.signed { "s" } else { "u" }), self.length)
@@ -48,8 +59,8 @@ impl CANSignal {
     }
 }
 
-pub struct CANMessage {
-    pub name: String,
-
-    pub signals: Vec<CANSignal>,
+impl CANNetwork {
+    pub fn add_msg(&mut self, msg: CANMessage) {
+        self.messages.push(msg);
+    }
 }
