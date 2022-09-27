@@ -30,6 +30,7 @@ fn main() {
 
     for msg in net.messages {
         for sig in msg.signals {
+            println!("{}", sig._human_description());
             println!("{}", sig.cantools_description());
         }
     }
