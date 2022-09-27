@@ -1,3 +1,5 @@
+use indoc::formatdoc;
+
 fn python_capital_bool(b: bool) -> String {
     (if b { "True" } else { "False" }).to_string()
 }
@@ -35,10 +37,10 @@ impl CANValueType {
 
 impl CANSignal {
     pub fn _human_description(&self) -> String {
-        format!(
-            "Signal `{}`:\
-               \n -> offset: {},\
-               \n -> type: {}",
+        formatdoc!("
+            Signal `{}`:
+              -> offset: {},
+              -> type: {}",
             self.name,
             self.offset,
             self.value_type._human_description()
@@ -46,11 +48,11 @@ impl CANSignal {
     }
 
     pub fn cantools_description(&self) -> String {
-        format!(
-            "cantools.database.can.Signal(name = '{name}',
-                             start = {offset},
-                             length = {length},
-                             is_signed = {signed})",
+        formatdoc!("
+            cantools.database.can.Signal(name = '{name}',
+                start = {offset},
+                length = {length},
+                is_signed = {signed})",
             name = self.name,
             offset = self.offset,
             length = self.value_type.length,
