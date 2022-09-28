@@ -97,6 +97,12 @@ impl CANMessage {
     }
 }
 
+impl Default for CANNetwork {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CANNetwork {
     pub fn new() -> CANNetwork {
         CANNetwork {
@@ -117,22 +123,8 @@ impl CANNetwork {
         self.messages.get(msg.idx).expect("Invalid message handle.")
     }
 
-    pub fn print_msg_human(&self, handle: &CANMessageHandle) {
-        let msg = self.demand_msg(handle);
-
-        println!("{}\n", msg.human_description());
-        println!("**** Signals: ****\n");
-        self.print_signals_human(handle);
-        println!("******************");
-    }
-    pub fn print_signals_human(&self, msg: &CANMessageHandle) {
-        let msg = self.demand_msg(msg);
-
-        for sig in &msg.signals {
-            let sig = self.demand_sig(sig);
-
-            println!("{}\n", sig.human_description());
-        }
+    pub fn message_by_name(&self, name: &str) -> Option<CANMessageHandle> {
+        self.messages_by_name.get(name).map(|i| CANMessageHandle { idx: *i })
     }
 
     pub fn add_msg(&mut self, msg: CANMessageDesc) -> Option<CANMessageHandle> {
@@ -203,5 +195,24 @@ impl CANNetwork {
         });
 
         Some(CANMessageHandle { idx: msg_idx })
+    }
+
+    pub fn print_msg_human(&self, handle: &CANMessageHandle) {
+        let msg = self.demand_msg(handle);
+
+        println!("{}\n", msg.human_description());
+        println!("**** Signals: ****\n");
+        self.print_signals_human(handle);
+        println!("******************");
+    }
+
+    pub fn print_signals_human(&self, msg: &CANMessageHandle) {
+        let msg = self.demand_msg(msg);
+
+        for sig in &msg.signals {
+            let sig = self.demand_sig(sig);
+
+            println!("{}\n", sig.human_description());
+        }
     }
 }
