@@ -9,29 +9,26 @@ fn main() {
         name: "VCFRONT_driverIsLeaving".to_string(),
         value_type: can::CANValueType {
             length: 5,
-            signed: true,
+            signed: false,
         },
     };
 
-    let mut m = can::CANMessage {
+    let ss = can::CANSignal {
+        offset: 6,
+        name: "VCFRONT_drive2rIsLeaving".to_string(),
+        value_type: can::CANValueType {
+            length: 5,
+            signed: false,
+        },
+    };
+
+    let new_msg = can::CANMessageDesc {
         name: "VCFRONT_Occupancy".to_string(),
-        signals: Vec::new(),
+        id: 0x20,
+        signals: vec![s, ss],
     };
 
-    m.signals.push(s.clone());
-    m.signals.push(s);
-
-    let mut net = can::CANNetwork {
-        messages: Vec::new(),
-    };
-
-    net.add_msg(m.clone());
-    net.add_msg(m);
-
-    for msg in net.messages {
-        for sig in msg.signals {
-            println!("{}", sig._human_description());
-            println!("{}", sig.cantools_description());
-        }
-    }
+    let mut net = can::CANNetwork::new();
+    let msg = net.add_msg(new_msg).unwrap();
+    net.print_msg_human(&msg);
 }
