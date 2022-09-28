@@ -29,6 +29,9 @@ fn main() {
     };
 
     let mut net = can::CANNetwork::new();
+
     let msg = net.add_msg(new_msg).unwrap();
     net.print_msg_human(&msg);
+
+    net.print_msg_human(&net.message_by_name("VCFRONT_Occupancy").unwrap());
 }
