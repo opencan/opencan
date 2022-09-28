@@ -129,7 +129,7 @@ impl CANNetwork {
         let msg = self.demand_msg(msg);
 
         for sig in &msg.signals {
-            let sig = self.demand_sig(&sig);
+            let sig = self.demand_sig(sig);
 
             println!("{}\n", sig.human_description());
         }
@@ -202,6 +202,6 @@ impl CANNetwork {
             signals: sigs,
         });
 
-        return Some(CANMessageHandle { idx: msg_idx });
+        Some(CANMessageHandle { idx: msg_idx })
     }
 }
