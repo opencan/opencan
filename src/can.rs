@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, ops::Index};
 
 use indoc::formatdoc;
 
@@ -19,14 +19,6 @@ pub struct CANSignal {
     pub value_type: CANValueType,
 }
 
-pub struct CANSignalHandle {
-    idx: usize,
-}
-
-pub struct CANMessageHandle {
-    idx: usize,
-}
-
 pub struct CANMessageDesc {
     pub name: String,
     pub id: u32,
@@ -34,21 +26,19 @@ pub struct CANMessageDesc {
     pub signals: Vec<CANSignal>,
 }
 
-struct CANMessage {
+pub struct CANMessage {
     name: String,
     id: u32,
 
-    signals: Vec<CANSignalHandle>,
+    signals: Vec<CANSignal>,
+    sig_map: HashMap<String, usize>,
 }
 
 pub struct CANNetwork {
     messages: Vec<CANMessage>,
-    signals: Vec<CANSignal>,
 
     messages_by_name: HashMap<String, usize>,
     messages_by_id: HashMap<u32, usize>,
-
-    signals_by_name: HashMap<String, usize>,
 }
 
 impl CANValueType {
@@ -95,6 +85,34 @@ impl CANMessage {
             self.id
         )
     }
+
+    pub fn print_human(&self) {
+        println!("{}\n", self.human_description());
+        println!("**** Signals: ****\n");
+        self.print_signals_human();
+        println!("******************");
+    }
+
+    pub fn print_signals_human(&self) {
+        for sig in &self.signals {
+            println!("{}\n", sig.human_description());
+        }
+    }
+
+    pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
+        let idx = self.sig_map.get(name)?;
+
+        self.signals.get(*idx)
+    }
+}
+
+// Easy indexing of msg["signal"]. Panics if signal absent.
+impl Index<&str> for CANMessage {
+    type Output = CANSignal;
+
+    fn index(&self, index: &str) -> &Self::Output {
+        return self.get_sig(index).unwrap();
+    }
 }
 
 impl Default for CANNetwork {
@@ -107,59 +125,37 @@ impl CANNetwork {
     pub fn new() -> CANNetwork {
         CANNetwork {
             messages: Vec::new(),
-            signals: Vec::new(),
 
             messages_by_name: HashMap::new(),
             messages_by_id: HashMap::new(),
-            signals_by_name: HashMap::new(),
         }
     }
 
-    fn demand_sig(&self, sig: &CANSignalHandle) -> &CANSignal {
-        self.signals.get(sig.idx).expect("Invalid signal handle.")
+    pub fn message_by_name(&self, name: &str) -> Option<&CANMessage> {
+        let idx = self.messages_by_name.get(name)?;
+        self.messages.get(*idx)
     }
 
-    fn demand_msg(&self, msg: &CANMessageHandle) -> &CANMessage {
-        self.messages.get(msg.idx).expect("Invalid message handle.")
-    }
-
-    pub fn message_by_name(&self, name: &str) -> Option<CANMessageHandle> {
-        self.messages_by_name.get(name).map(|i| CANMessageHandle { idx: *i })
-    }
-
-    pub fn add_msg(&mut self, msg: CANMessageDesc) -> Option<CANMessageHandle> {
+    pub fn add_msg(&mut self, msg: CANMessageDesc) -> Option<&CANMessage> {
         // do signals
         let mut sigs = Vec::new();
+        let mut sig_map = HashMap::new();
 
         for sig in msg.signals {
-            if let Some(_exist) = self.messages_by_name.get(&sig.name) {
+            if sig_map.get(&sig.name).is_some() {
                 eprintln!(
-                    "Error: signal with name `{}` conflicts with message of same name.",
-                    &sig.name
+                    "Error: signal with name `{}` specified multiple times for message `{}`.",
+                    &sig.name, &msg.name
                 );
                 return None;
             }
 
-            if let Some(_exist) = self.signals_by_name.get(&sig.name) {
-                // the below error message is misleading if there are conflicting signal names
-                // within THIS message description.
-                // TODO: make smarter
-                eprintln!(
-                    "Error: signal with name `{}` already exists in network.",
-                    &sig.name
-                );
-                return None;
-            }
-
-            let sig_idx = self.signals.len();
-            sigs.push(CANSignalHandle { idx: sig_idx });
-
-            self.signals_by_name.insert(sig.name.clone(), sig_idx);
-            self.signals.push(sig);
+            sig_map.insert(sig.name.clone(), sigs.len());
+            sigs.push(sig);
         }
 
         // now do message
-        if let Some(_exist) = self.messages_by_name.get(&msg.name) {
+        if self.messages_by_name.get(&msg.name).is_some() {
             eprintln!(
                 "Error: message with name `{}` already exists in network.",
                 &msg.name
@@ -167,15 +163,7 @@ impl CANNetwork {
             return None;
         }
 
-        if let Some(_exist) = self.signals_by_name.get(&msg.name) {
-            eprintln!(
-                "Error: message with name `{}` conflicts with existing signal of same name.",
-                &msg.name
-            );
-            return None;
-        }
-
-        if let Some(_exist) = self.messages_by_id.get(&msg.id) {
+        if self.messages_by_id.get(&msg.id).is_some() {
             eprintln!(
                 "Error: message with id `{}` already exists in network.",
                 &msg.id
@@ -192,27 +180,9 @@ impl CANNetwork {
             name: msg.name,
             id: msg.id,
             signals: sigs,
+            sig_map,
         });
 
-        Some(CANMessageHandle { idx: msg_idx })
-    }
-
-    pub fn print_msg_human(&self, handle: &CANMessageHandle) {
-        let msg = self.demand_msg(handle);
-
-        println!("{}\n", msg.human_description());
-        println!("**** Signals: ****\n");
-        self.print_signals_human(handle);
-        println!("******************");
-    }
-
-    pub fn print_signals_human(&self, msg: &CANMessageHandle) {
-        let msg = self.demand_msg(msg);
-
-        for sig in &msg.signals {
-            let sig = self.demand_sig(sig);
-
-            println!("{}\n", sig.human_description());
-        }
+        Some(&self.messages[msg_idx])
     }
 }
