@@ -1,7 +1,3 @@
-use std::collections::HashMap;
-
-use crate::can::CANMessage;
-
 mod can;
 
 fn main() {
@@ -27,22 +23,16 @@ fn main() {
     };
 
     let new_msg = can::CANMessageDesc {
-        name: "VCFRONT_Occupancy".to_string(),
+        name: "BRK_Status".to_string(),
         id: 0x20,
         signals: vec![s, ss],
-    };
-
-    let new_msg2 = can::CANMessageDesc {
-        name: "VCFRONT_Occupancy2".to_string(),
-        id: 0x20,
-        signals: vec![],
     };
 
     let mut net = can::CANNetwork::new();
 
     // horror: https://stackoverflow.com/questions/38023871/returning-a-reference-from-a-hashmap-or-vec-causes-a-borrow-to-last-beyond-the-s
     let m = net.add_msg(new_msg).unwrap();
-    let c = net.add_msg(new_msg2).unwrap();
+    let mm = net.message_by_name("BRK_Status");
 
     println!("{}", m["VCFRONT_driverIsLeaving"].human_description());
 }
