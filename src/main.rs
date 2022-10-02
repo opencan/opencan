@@ -22,7 +22,7 @@ fn main() {
         },
     };
 
-    let new_msg = can::CANMessageDesc {
+    let mut new_msg = can::CANMessageDesc {
         name: "BRK_Status".to_string(),
         id: 0x20,
         signals: vec![s, ss],
@@ -31,8 +31,15 @@ fn main() {
     let mut net = can::CANNetwork::new();
 
     // horror: https://stackoverflow.com/questions/38023871/returning-a-reference-from-a-hashmap-or-vec-causes-a-borrow-to-last-beyond-the-s
-    let m = net.add_msg(new_msg).unwrap();
-    let mm = net.message_by_name("BRK_Status");
+    net.add_msg(new_msg.clone()).unwrap();
+    new_msg.name = "NAH".into();
 
-    println!("{}", m["VCFRONT_driverIsLeaving"].human_description());
+    match net.add_msg(new_msg) {
+        Ok(_) => (),
+        Err(s) => println!("{s}"),
+    }
+
+    let mm = net.message_by_name("BRK_Status").unwrap();
+
+    println!("{}", mm["VCFRONT_driverIsLeaving"].human_description());
 }
