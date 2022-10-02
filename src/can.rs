@@ -1,4 +1,4 @@
-use std::{collections::HashMap, ops::Index};
+use std::{collections::HashMap, ops::Index, fmt::Display};
 
 use indoc::formatdoc;
 
@@ -12,6 +12,7 @@ pub struct CANValueType {
     pub signed: bool,
 }
 
+#[derive(Clone)]
 pub struct CANSignal {
     pub offset: i32,
     pub name: String,
@@ -19,6 +20,7 @@ pub struct CANSignal {
     pub value_type: CANValueType,
 }
 
+#[derive(Clone)]
 pub struct CANMessageDesc {
     pub name: String,
     pub id: u32,
@@ -121,6 +123,29 @@ impl Default for CANNetwork {
     }
 }
 
+#[derive(Debug)]
+pub enum CANConstructionError {
+    SignalSpecifiedMultipleTimes(String),
+    MessageNameAlreadyExists(String),
+    MessageIdAlreadyExists(u32),
+}
+
+impl std::fmt::Display for CANConstructionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CANConstructionError::SignalSpecifiedMultipleTimes(s) => {
+                write!(f, "Signal with name {s} specified multiple times.")
+            }
+            CANConstructionError::MessageNameAlreadyExists(n) => {
+                write!(f, "Message with name `{n}` already exists in network.")
+            }
+            CANConstructionError::MessageIdAlreadyExists(i) => {
+                write!(f, "Message with id 0x{:x} already exists in network.", i)
+            }
+        }
+    }
+}
+
 impl CANNetwork {
     pub fn new() -> CANNetwork {
         CANNetwork {
@@ -136,18 +161,14 @@ impl CANNetwork {
         self.messages.get(*idx)
     }
 
-    pub fn add_msg(&mut self, msg: CANMessageDesc) -> Option<&CANMessage> {
+    pub fn add_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
         // do signals
         let mut sigs = Vec::new();
         let mut sig_map = HashMap::new();
 
         for sig in msg.signals {
             if sig_map.get(&sig.name).is_some() {
-                eprintln!(
-                    "Error: signal with name `{}` specified multiple times for message `{}`.",
-                    &sig.name, &msg.name
-                );
-                return None;
+                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
             }
 
             sig_map.insert(sig.name.clone(), sigs.len());
@@ -156,19 +177,11 @@ impl CANNetwork {
 
         // now do message
         if self.messages_by_name.get(&msg.name).is_some() {
-            eprintln!(
-                "Error: message with name `{}` already exists in network.",
-                &msg.name
-            );
-            return None;
+            return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
         }
 
         if self.messages_by_id.get(&msg.id).is_some() {
-            eprintln!(
-                "Error: message with id `{}` already exists in network.",
-                &msg.id
-            );
-            return None;
+            return Err(CANConstructionError::MessageIdAlreadyExists(msg.id));
         }
 
         let msg_idx = self.messages.len();
@@ -183,6 +196,6 @@ impl CANNetwork {
             sig_map,
         });
 
-        Some(&self.messages[msg_idx])
+        Ok(())
     }
 }
