@@ -7,9 +7,14 @@ fn python_capital_bool(b: bool) -> String {
 }
 
 #[derive(Clone)]
-pub struct CANValueType {
+pub struct CANValueTypeInteger {
     pub length: i32,
     pub signed: bool,
+}
+
+#[derive(Clone)]
+pub enum CANValueType {
+    Integer(CANValueTypeInteger),
 }
 
 #[derive(Clone)]
@@ -43,9 +48,17 @@ pub struct CANNetwork {
     messages_by_id: HashMap<u32, usize>,
 }
 
-impl CANValueType {
-    pub fn _human_description(&self) -> String {
-        format!("{}{}", (if self.signed { "s" } else { "u" }), self.length)
+impl std::fmt::Display for CANValueType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            CANValueType::Integer(s) => s.fmt(f)
+        }
+    }
+}
+
+impl std::fmt::Display for CANValueTypeInteger {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", (if self.signed { "s" } else { "u" }), self.length)
     }
 }
 
@@ -58,10 +71,11 @@ impl CANSignal {
               -> type: {}",
             self.name,
             self.offset,
-            self.value_type._human_description()
+            self.value_type,
         )
     }
 
+    /*
     pub fn cantools_description(&self) -> String {
         formatdoc!(
             "
@@ -75,6 +89,7 @@ impl CANSignal {
             signed = python_capital_bool(self.value_type.signed),
         )
     }
+    */
 }
 
 impl CANMessage {
@@ -158,6 +173,11 @@ impl CANNetwork {
 
     pub fn message_by_name(&self, name: &str) -> Option<&CANMessage> {
         let idx = self.messages_by_name.get(name)?;
+        self.messages.get(*idx)
+    }
+
+    pub fn message_by_id(&self, id: &u32) -> Option<&CANMessage> {
+        let idx = self.messages_by_id.get(id)?;
         self.messages.get(*idx)
     }
 
