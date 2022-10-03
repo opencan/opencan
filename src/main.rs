@@ -9,7 +9,10 @@ fn main() {
     let s = can::CANSignal {
         offset: 0,
         name: "VCFRONT_driverIsLeaving".to_string(),
-        value_type: can::CANValueType::Integer(CANValueTypeInteger { length: 5, signed: false }),
+        value_type: can::CANValueType::Integer(CANValueTypeInteger {
+            length: 5,
+            signed: false,
+        }),
     };
 
     let mut new_msg = can::CANMessageDesc {
@@ -29,8 +32,7 @@ fn main() {
         Err(s) => println!("{s}"),
     }
 
-
     let mm = net.message_by_name("BRK_Status").unwrap();
 
-    println!("{}", mm["VCFRONT_driverIsLeaving"].human_description());
+    println!("{}", mm["VCFRONT_driverIsLeaving"]);
 }
