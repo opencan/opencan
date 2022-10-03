@@ -1,3 +1,5 @@
+use crate::can::CANValueTypeInteger;
+
 mod can;
 
 fn main() {
@@ -7,25 +9,13 @@ fn main() {
     let s = can::CANSignal {
         offset: 0,
         name: "VCFRONT_driverIsLeaving".to_string(),
-        value_type: can::CANValueType {
-            length: 5,
-            signed: false,
-        },
-    };
-
-    let ss = can::CANSignal {
-        offset: 6,
-        name: "VCFRONT_drive2rIsLeaving".to_string(),
-        value_type: can::CANValueType {
-            length: 5,
-            signed: false,
-        },
+        value_type: can::CANValueType::Integer(CANValueTypeInteger { length: 5, signed: false }),
     };
 
     let mut new_msg = can::CANMessageDesc {
         name: "BRK_Status".to_string(),
         id: 0x20,
-        signals: vec![s, ss],
+        signals: vec![s],
     };
 
     let mut net = can::CANNetwork::new();
@@ -38,6 +28,7 @@ fn main() {
         Ok(_) => (),
         Err(s) => println!("{s}"),
     }
+
 
     let mm = net.message_by_name("BRK_Status").unwrap();
 
