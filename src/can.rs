@@ -1,10 +1,6 @@
-use std::{collections::HashMap, ops::Index, fmt::Display};
+use std::{collections::HashMap, ops::Index};
 
-use indoc::formatdoc;
-
-fn python_capital_bool(b: bool) -> String {
-    (if b { "True" } else { "False" }).to_string()
-}
+mod can_print;
 
 #[derive(Clone)]
 pub struct CANValueTypeInteger {
@@ -48,33 +44,7 @@ pub struct CANNetwork {
     messages_by_id: HashMap<u32, usize>,
 }
 
-impl std::fmt::Display for CANValueType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CANValueType::Integer(s) => s.fmt(f)
-        }
-    }
-}
-
-impl std::fmt::Display for CANValueTypeInteger {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}{}", (if self.signed { "s" } else { "u" }), self.length)
-    }
-}
-
 impl CANSignal {
-    pub fn human_description(&self) -> String {
-        formatdoc!(
-            "
-            Signal `{}`:
-              -> offset: {},
-              -> type: {}",
-            self.name,
-            self.offset,
-            self.value_type,
-        )
-    }
-
     /*
     pub fn cantools_description(&self) -> String {
         formatdoc!(
@@ -93,29 +63,6 @@ impl CANSignal {
 }
 
 impl CANMessage {
-    pub fn human_description(&self) -> String {
-        formatdoc!(
-            "
-            Message `{}`:
-              -> id: {}",
-            self.name,
-            self.id
-        )
-    }
-
-    pub fn print_human(&self) {
-        println!("{}\n", self.human_description());
-        println!("**** Signals: ****\n");
-        self.print_signals_human();
-        println!("******************");
-    }
-
-    pub fn print_signals_human(&self) {
-        for sig in &self.signals {
-            println!("{}\n", sig.human_description());
-        }
-    }
-
     pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
         let idx = self.sig_map.get(name)?;
 
@@ -143,22 +90,6 @@ pub enum CANConstructionError {
     SignalSpecifiedMultipleTimes(String),
     MessageNameAlreadyExists(String),
     MessageIdAlreadyExists(u32),
-}
-
-impl std::fmt::Display for CANConstructionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            CANConstructionError::SignalSpecifiedMultipleTimes(s) => {
-                write!(f, "Signal with name {s} specified multiple times.")
-            }
-            CANConstructionError::MessageNameAlreadyExists(n) => {
-                write!(f, "Message with name `{n}` already exists in network.")
-            }
-            CANConstructionError::MessageIdAlreadyExists(i) => {
-                write!(f, "Message with id 0x{:x} already exists in network.", i)
-            }
-        }
-    }
 }
 
 impl CANNetwork {
