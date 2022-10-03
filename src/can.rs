@@ -66,11 +66,13 @@ impl CANMessage {
     pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
         let idx = self.sig_map.get(name)?;
 
-        self.signals.get(*idx)
+        // unwrap here, as signals really should have the signal if sig_map does
+        Some(self.signals.get(*idx).unwrap())
     }
 }
 
 // Easy indexing of msg["signal"]. Panics if signal absent.
+// (no, this can't be an Option, the Index trait doesn't allow it)
 impl Index<&str> for CANMessage {
     type Output = CANSignal;
 
@@ -104,12 +106,12 @@ impl CANNetwork {
 
     pub fn message_by_name(&self, name: &str) -> Option<&CANMessage> {
         let idx = self.messages_by_name.get(name)?;
-        self.messages.get(*idx)
+        Some(self.messages.get(*idx).unwrap())
     }
 
     pub fn message_by_id(&self, id: &u32) -> Option<&CANMessage> {
         let idx = self.messages_by_id.get(id)?;
-        self.messages.get(*idx)
+        Some(self.messages.get(*idx).unwrap())
     }
 
     pub fn add_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
