@@ -1,6 +1,4 @@
-use crate::can::CANValueTypeInteger;
-
-mod can;
+use can;
 
 fn main() {
     println!("Hello from protobrain.");
@@ -9,7 +7,7 @@ fn main() {
     let s = can::CANSignal {
         offset: 0,
         name: "VCFRONT_driverIsLeaving".to_string(),
-        value_type: can::CANValueType::Integer(CANValueTypeInteger {
+        value_type: can::CANValueType::Integer(can::CANValueTypeInteger {
             length: 5,
             signed: false,
         }),
