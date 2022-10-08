@@ -1,8 +1,0 @@
-Import('env')
-
-env['CXX'] = 'clang++'
-env['CCFLAGS'] = '-Wall -Wextra -Wpedantic --std=c++20'
-
-protobrain = env.Program('protobrain', Split('src/main.cc src/signal.cc src/value.cc'))
-
-Default(protobrain)
