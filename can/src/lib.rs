@@ -12,3 +12,6 @@ pub use network::*;
 
 mod error;
 pub use error::*;
+
+mod display;
+pub use display::*;
