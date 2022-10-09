@@ -1,5 +1,3 @@
-use can;
-
 fn main() {
     println!("Hello from protobrain.");
     println!("----------------------");
