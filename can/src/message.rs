@@ -37,31 +37,3 @@ impl Index<&str> for CANMessage {
         return self.get_sig(index).unwrap();
     }
 }
-
-impl CANMessage {
-    pub fn print_human(&self) {
-        println!("{}\n", self);
-        println!("**** Signals: ****\n");
-        self.print_signals_human();
-        println!("******************");
-    }
-
-    pub fn print_signals_human(&self) {
-        for sig in &self.signals {
-            println!("{}\n", sig);
-        }
-    }
-}
-
-impl std::fmt::Display for CANMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        indoc::writedoc!(
-            f,
-            "
-            Message `{}`:
-              -> id: {}",
-            self.name,
-            self.id
-        )
-    }
-}
