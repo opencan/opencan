@@ -1,9 +1,14 @@
-use crate::value::*;
-use crate::signal::*;
-use crate::message::*;
+use std::fmt;
+use std::fmt::{Display, Formatter};
 
-impl std::fmt::Display for CANValueTypeInteger {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+use indoc::writedoc;
+
+use crate::message::*;
+use crate::signal::*;
+use crate::value::*;
+
+impl Display for CANValueTypeInteger {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{}{}",
@@ -13,17 +18,17 @@ impl std::fmt::Display for CANValueTypeInteger {
     }
 }
 
-impl std::fmt::Display for CANValueType {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Display for CANValueType {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
             CANValueType::Integer(s) => s.fmt(f),
         }
     }
 }
 
-impl std::fmt::Display for CANSignal {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        indoc::writedoc!(
+impl Display for CANSignal {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writedoc!(
             f,
             "
             Signal `{}`:
@@ -69,9 +74,9 @@ impl CANMessage {
     }
 }
 
-impl std::fmt::Display for CANMessage {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        indoc::writedoc!(
+impl Display for CANMessage {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        writedoc!(
             f,
             "
             Message `{}`:
