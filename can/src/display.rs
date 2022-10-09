@@ -21,7 +21,7 @@ impl Display for CANValueTypeInteger {
 impl Display for CANValueType {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         match self {
-            CANValueType::Integer(s) => s.fmt(f),
+            Self::Integer(s) => s.fmt(f),
         }
     }
 }

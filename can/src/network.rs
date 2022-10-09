@@ -17,8 +17,8 @@ impl Default for CANNetwork {
 }
 
 impl CANNetwork {
-    pub fn new() -> CANNetwork {
-        CANNetwork {
+    pub fn new() -> Self {
+        Self {
             messages: Vec::new(),
 
             messages_by_name: HashMap::new(),

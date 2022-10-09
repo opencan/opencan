@@ -8,13 +8,13 @@ pub enum CANConstructionError {
 impl std::fmt::Display for CANConstructionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            CANConstructionError::SignalSpecifiedMultipleTimes(s) => {
+            Self::SignalSpecifiedMultipleTimes(s) => {
                 write!(f, "Signal with name {s} specified multiple times.")
             }
-            CANConstructionError::MessageNameAlreadyExists(n) => {
+            Self::MessageNameAlreadyExists(n) => {
                 write!(f, "Message with name `{n}` already exists in network.")
             }
-            CANConstructionError::MessageIdAlreadyExists(i) => {
+            Self::MessageIdAlreadyExists(i) => {
                 write!(f, "Message with id 0x{:x} already exists in network.", i)
             }
         }
