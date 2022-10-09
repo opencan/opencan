@@ -44,9 +44,7 @@ impl CANNetwork {
 
         for sig in msg.signals {
             if sig_map.get(&sig.name).is_some() {
-                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(
-                    sig.name.into(),
-                ));
+                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
             }
 
             sig_map.insert(sig.name.to_string(), sigs.len());
@@ -71,7 +69,7 @@ impl CANNetwork {
             name: msg.name,
             id: msg.id,
             signals: sigs,
-            sig_map: sig_map,
+            sig_map,
         });
 
         Ok(())
