@@ -30,6 +30,14 @@ impl CANMessage {
         let mut sigs = Vec::new();
         let mut sig_map = HashMap::new();
 
+        if !desc
+            .name
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || c == '_')
+        {
+            return Err(CANConstructionError::MessageNameInvalidChar(desc.name));
+        }
+
         for sig in desc.signals {
             if sig_map.get(&sig.name).is_some() {
                 return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
