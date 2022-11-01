@@ -36,22 +36,9 @@ impl CANNetwork {
         Some(self.messages.get(*idx).unwrap())
     }
 
-    // most of this code should move to CANMessage::new()
+    /// Create and add a message to the network.
+    /// Checks for message ID and name uniqueness.
     pub fn add_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
-        // do signals
-        let mut sigs = Vec::new();
-        let mut sig_map = HashMap::new();
-
-        for sig in msg.signals {
-            if sig_map.get(&sig.name).is_some() {
-                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
-            }
-
-            sig_map.insert(sig.name.to_string(), sigs.len());
-            sigs.push(sig);
-        }
-
-        // now do message
         if self.messages_by_name.get(&msg.name).is_some() {
             return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
         }
@@ -61,16 +48,10 @@ impl CANNetwork {
         }
 
         let msg_idx = self.messages.len();
-
         self.messages_by_name.insert(msg.name.clone(), msg_idx);
         self.messages_by_id.insert(msg.id, msg_idx); // check dup again?
 
-        self.messages.push(CANMessage {
-            name: msg.name,
-            id: msg.id,
-            signals: sigs,
-            sig_map,
-        });
+        self.messages.push(CANMessage::new(msg)?);
 
         Ok(())
     }

@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use crate::error::*;
 use crate::signal::*;
 
 #[derive(Clone)]
@@ -20,6 +21,32 @@ pub struct CANMessage {
 }
 
 impl CANMessage {
+    /// Create a new CAN message. We currently check for signal name uniqueness
+    /// and nothing else.
+    // todo: check message ID validity and choose extended or non-extended
+    // todo: check that signals fit within message and do not overlap
+    // todo: impose requirements on message name (allowed characters)
+    pub fn new(desc: CANMessageDesc) -> Result<Self, CANConstructionError> {
+        let mut sigs = Vec::new();
+        let mut sig_map = HashMap::new();
+
+        for sig in desc.signals {
+            if sig_map.get(&sig.name).is_some() {
+                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
+            }
+
+            sig_map.insert(sig.name.to_string(), sigs.len());
+            sigs.push(sig);
+        }
+
+        Ok(CANMessage {
+            name: desc.name,
+            id: desc.id,
+            signals: sigs,
+            sig_map,
+        })
+    }
+
     pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
         let idx = self.sig_map.get(name)?;
 
