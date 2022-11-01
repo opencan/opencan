@@ -3,6 +3,7 @@ pub enum CANConstructionError {
     SignalSpecifiedMultipleTimes(String),
     MessageNameAlreadyExists(String),
     MessageIdAlreadyExists(u32),
+    MessageNameInvalidChar(String),
 }
 
 impl std::fmt::Display for CANConstructionError {
@@ -16,6 +17,10 @@ impl std::fmt::Display for CANConstructionError {
             }
             Self::MessageIdAlreadyExists(i) => {
                 write!(f, "Message with id 0x{:x} already exists in network.", i)
+            }
+            // todo: Make description better to pinpoint invalid character
+            Self::MessageNameInvalidChar(s) => {
+                write!(f, "Message name `{s}` includes invalid character")
             }
         }
     }
