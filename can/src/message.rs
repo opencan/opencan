@@ -21,8 +21,7 @@ pub struct CANMessage {
 }
 
 impl CANMessage {
-    /// Create a new CAN message. We currently check for signal name uniqueness
-    /// and nothing else.
+    /// Create a new CAN message.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
     pub fn new(desc: CANMessageDesc) -> Result<Self, CANConstructionError> {
@@ -38,7 +37,7 @@ impl CANMessage {
         }
 
         for sig in desc.signals {
-            if sig_map.get(&sig.name).is_some() {
+            if sig_map.contains_key(&sig.name) {
                 return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
             }
 

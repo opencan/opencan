@@ -39,11 +39,11 @@ impl CANNetwork {
     /// Insert a message into the network.
     /// Checks for message ID and name uniqueness.
     pub fn insert_msg(&mut self, msg: CANMessage) -> Result<(), CANConstructionError> {
-        if self.messages_by_name.get(&msg.name).is_some() {
+        if self.messages_by_name.contains_key(&msg.name) {
             return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
         }
 
-        if self.messages_by_id.get(&msg.id).is_some() {
+        if self.messages_by_id.contains_key(&msg.id) {
             return Err(CANConstructionError::MessageIdAlreadyExists(msg.id));
         }
 
