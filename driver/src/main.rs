@@ -19,11 +19,10 @@ fn main() {
 
     let mut net = can::CANNetwork::new();
 
-    // horror: https://stackoverflow.com/questions/38023871/returning-a-reference-from-a-hashmap-or-vec-causes-a-borrow-to-last-beyond-the-s
-    net.add_msg(new_msg.clone()).unwrap();
+    net.new_msg(new_msg.clone()).unwrap();
     new_msg.name = "NAH".into();
 
-    match net.add_msg(new_msg) {
+    match net.new_msg(new_msg) {
         Ok(_) => (),
         Err(s) => println!("{s}"),
     }
