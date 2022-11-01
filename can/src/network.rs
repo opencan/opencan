@@ -36,9 +36,9 @@ impl CANNetwork {
         Some(self.messages.get(*idx).unwrap())
     }
 
-    /// Create and add a message to the network.
+    /// Insert a message into the network.
     /// Checks for message ID and name uniqueness.
-    pub fn add_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
+    pub fn insert_msg(&mut self, msg: CANMessage) -> Result<(), CANConstructionError> {
         if self.messages_by_name.get(&msg.name).is_some() {
             return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
         }
@@ -51,8 +51,12 @@ impl CANNetwork {
         self.messages_by_name.insert(msg.name.clone(), msg_idx);
         self.messages_by_id.insert(msg.id, msg_idx); // check dup again?
 
-        self.messages.push(CANMessage::new(msg)?);
-
+        self.messages.push(msg);
         Ok(())
+    }
+
+    /// Convenience function to create a message and insert it into the network.
+    pub fn new_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
+        self.insert_msg(CANMessage::new(msg)?)
     }
 }
