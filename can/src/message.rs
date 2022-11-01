@@ -25,7 +25,6 @@ impl CANMessage {
     /// and nothing else.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
-    // todo: impose requirements on message name (allowed characters)
     pub fn new(desc: CANMessageDesc) -> Result<Self, CANConstructionError> {
         let mut sigs = Vec::new();
         let mut sig_map = HashMap::new();
