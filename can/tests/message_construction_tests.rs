@@ -28,5 +28,8 @@ fn test_message_name_chars() {
     }
 
     // Empty name
-    assert!(matches!(try_msg(""), Err(CANConstructionError::MessageNameEmpty)));
+    assert!(matches!(
+        try_msg(""),
+        Err(CANConstructionError::MessageNameEmpty)
+    ));
 }
