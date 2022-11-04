@@ -22,19 +22,15 @@ pub struct CANMessage {
 
 impl CANMessage {
     /// Create a new CAN message.
+    /// Message names must be at least one character long and must contain
+    /// only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
     pub fn new(desc: CANMessageDesc) -> Result<Self, CANConstructionError> {
         let mut sigs = Vec::new();
         let mut sig_map = HashMap::new();
 
-        if !desc
-            .name
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || c == '_')
-        {
-            return Err(CANConstructionError::MessageNameInvalidChar(desc.name));
-        }
+        Self::check_name_validity(&desc.name)?;
 
         for sig in desc.signals {
             if sig_map.contains_key(&sig.name) {
@@ -51,6 +47,21 @@ impl CANMessage {
             signals: sigs,
             sig_map,
         })
+    }
+
+    fn check_name_validity(name: &str) -> Result<(), CANConstructionError> {
+        if name.is_empty() {
+            return Err(CANConstructionError::MessageNameEmpty);
+        }
+
+        if let Some(c) = name
+            .chars()
+            .find(|c| (!c.is_ascii_alphanumeric()) && c != &'_')
+        {
+            return Err(CANConstructionError::MessageNameInvalidChar(name.into(), c));
+        }
+
+        Ok(())
     }
 
     pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
