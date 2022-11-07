@@ -1,12 +1,18 @@
 use std::collections::HashMap;
 
+use serde::{Serialize, Deserialize};
+
 use crate::error::*;
 use crate::message::*;
 
+#[derive(Serialize, Deserialize)]
 pub struct CANNetwork {
     messages: Vec<CANMessage>,
 
+
+    #[serde(skip)]
     messages_by_name: HashMap<String, usize>,
+    #[serde(skip)]
     messages_by_id: HashMap<u32, usize>,
 }
 
