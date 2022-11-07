@@ -13,6 +13,8 @@ name = "can"
 version = "0.1.0"
 dependencies = [
  "indoc",
+ "serde",
+ "serde_json",
  "thiserror",
 ]
 
@@ -32,6 +34,8 @@ name = "driver"
 version = "0.1.0"
 dependencies = [
  "can",
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -113,6 +117,17 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "serde_json"
+version = "1.0.87"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6ce777b7b150d76b9cf60d28b55f5847135a003f7d7350c6be7a773508ce7d45"
+dependencies = [
+ "itoa",
+ "ryu",
+ "serde",
 ]
 
 [[package]]

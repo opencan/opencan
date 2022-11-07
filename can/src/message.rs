@@ -1,6 +1,8 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use serde::{Serialize, Deserialize};
+
 use crate::error::*;
 use crate::signal::*;
 
@@ -12,11 +14,14 @@ pub struct CANMessageDesc {
     pub signals: Vec<CANSignal>,
 }
 
+#[derive(Serialize, Deserialize)]
 pub struct CANMessage {
     pub name: String,
     pub id: u32,
 
     pub signals: Vec<CANSignal>,
+
+    #[serde(skip)]
     pub sig_map: HashMap<String, usize>,
 }
 
