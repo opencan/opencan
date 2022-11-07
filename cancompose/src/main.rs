@@ -37,13 +37,13 @@ struct JMessage {
 #[derive(Serialize, Deserialize, Debug)]
 struct JDesc {
     #[serde(with = "tuple_vec_map")]
-    #[serde(flatten)]
     messages: Vec<(String, JMessage)>
 }
 
 fn main() {
     let input = indoc! {r#"
-    BRAKE_BrakeData:
+    messages:
+      BRAKE_BrakeData:
         id: 0x100
         cycletime_ms: 1
 
@@ -59,5 +59,5 @@ fn main() {
     "#};
     let de: JDesc = serde_yaml::from_str(&input).unwrap();
 
-    println!("{de:#?}");
+    println!("{:#?}", de.messages);
 }
