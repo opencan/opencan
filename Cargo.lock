@@ -20,6 +20,7 @@ dependencies = [
 name = "cancompose"
 version = "0.1.0"
 dependencies = [
+ "can",
  "indoc",
  "serde",
  "serde-tuple-vec-map",

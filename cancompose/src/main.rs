@@ -1,13 +1,23 @@
-use std::{collections::HashMap};
+use std::collections::HashMap;
 
+use can::{CANMessageDesc, CANNetwork, CANSignal, CANValueTypeInteger};
 use indoc::indoc;
 use serde::{Deserialize, Serialize};
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 enum JEnumeratedValue {
     Auto(String),
     Exact(u32),
+}
+
+impl std::fmt::Debug for JEnumeratedValue {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Auto(arg0) => write!(f, "{arg0}"),
+            Self::Exact(arg0) => write!(f, "{arg0}"),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,7 +47,7 @@ struct JMessage {
 #[derive(Serialize, Deserialize, Debug)]
 struct JDesc {
     #[serde(with = "tuple_vec_map")]
-    messages: Vec<(String, JMessage)>
+    messages: Vec<(String, JMessage)>,
 }
 
 fn main() {
@@ -59,5 +69,34 @@ fn main() {
     "#};
     let de: JDesc = serde_yaml::from_str(&input).unwrap();
 
-    println!("{:#?}", de.messages);
+    for msg in &de.messages {
+        println!("{}: {:#?}\n", msg.0, msg.1);
+        println!("{}", serde_yaml::to_string(&de).unwrap());
+    }
+
+    let mut net = CANNetwork::new();
+
+    for msg in de.messages {
+        let sigs: Vec<CANSignal> = msg
+            .1
+            .signals
+            .into_iter()
+            .map(|(name, j)| CANSignal {
+                offset: 0,
+                name: name,
+                value_type: can::CANValueType::Integer(CANValueTypeInteger {
+                    length: 0,
+                    signed: false,
+                }),
+            })
+            .collect();
+
+        let desc = CANMessageDesc {
+            name: msg.0.clone(),
+            id: msg.1.id,
+            signals: sigs,
+        };
+
+        net.new_msg(desc).unwrap();
+    }
 }
