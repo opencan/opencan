@@ -1,14 +1,13 @@
 use std::collections::HashMap;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 use crate::message::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct CANNetwork {
-    messages: Vec<CANMessage>,
-
+    pub(crate) messages: Vec<CANMessage>,
 
     #[serde(skip)]
     messages_by_name: HashMap<String, usize>,
