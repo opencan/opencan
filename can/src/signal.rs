@@ -1,6 +1,6 @@
-use crate::value::*;
+use serde::{Deserialize, Serialize};
 
-use serde::{Serialize, Deserialize};
+use crate::value::*;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CANSignal {

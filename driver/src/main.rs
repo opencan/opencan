@@ -1,3 +1,5 @@
+use can::{CantoolsDecoder, TranslationLayer};
+
 fn main() {
     println!("Hello from protobrain.");
     println!("----------------------");
@@ -30,6 +32,6 @@ fn main() {
     let mm = net.message_by_name("BRK_Status").unwrap();
 
     println!("{}", mm["VCFRONT_driverIsLeaving"]);
-
     println!("{}", serde_json::to_string_pretty(&net).unwrap());
+    println!("{}", CantoolsDecoder::dump_network(&net));
 }
