@@ -6,12 +6,12 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-enum JEnumeratedValue {
+enum YEnumeratedValue {
     Auto(String),
     Exact(u32),
 }
 
-impl std::fmt::Debug for JEnumeratedValue {
+impl std::fmt::Debug for YEnumeratedValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Auto(arg0) => write!(f, "{arg0}"),
@@ -22,32 +22,32 @@ impl std::fmt::Debug for JEnumeratedValue {
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-struct JSignal {
+struct YSignal {
     scale: f32,
 
     #[serde(default)]
     unit: Option<String>,
 
     #[serde(default)]
-    enumerated_values: Vec<HashMap<String, JEnumeratedValue>>,
+    enumerated_values: Vec<HashMap<String, YEnumeratedValue>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
-struct JMessage {
+struct YMessage {
     id: u32,
 
     #[serde(default)]
     cycletime_ms: Option<f32>,
 
     #[serde(with = "tuple_vec_map")]
-    signals: Vec<(String, JSignal)>,
+    signals: Vec<(String, YSignal)>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct JDesc {
+struct YDesc {
     #[serde(with = "tuple_vec_map")]
-    messages: Vec<(String, JMessage)>,
+    messages: Vec<(String, YMessage)>,
 }
 
 fn main() {
@@ -67,7 +67,7 @@ fn main() {
               - SNA: auto
               - SATURATED: 1
     "#};
-    let de: JDesc = serde_yaml::from_str(&input).unwrap();
+    let de: YDesc = serde_yaml::from_str(&input).unwrap();
 
     for msg in &de.messages {
         println!("{}: {:#?}\n", msg.0, msg.1);
