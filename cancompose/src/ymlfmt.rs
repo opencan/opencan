@@ -23,10 +23,12 @@ impl std::fmt::Debug for YEnumeratedValue {
 pub struct YSignal {
     pub width: u32,
 
+    #[serde(default)]
+    pub start_bit: u32,
+
     pub description: Option<String>,
 
     pub scale: Option<f32>,
-
     pub unit: Option<String>,
 
     #[serde(default)]

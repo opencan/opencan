@@ -1,9 +1,19 @@
+use std::fmt::Display;
+
 use indoc::formatdoc;
 use textwrap::indent;
 
 use crate::*;
 
 pub struct CantoolsDecoder;
+
+fn option_to_py<T: Display>(opt: &Option<T>) -> String {
+    if let Some(o) = opt {
+        format!("{}", o)
+    } else {
+        "None".into()
+    }
+}
 
 impl TranslationLayer for CantoolsDecoder {
     fn dump_network(net: &CANNetwork) -> String {
@@ -25,13 +35,19 @@ impl TranslationLayer for CantoolsDecoder {
         formatdoc!(
             "
             cantools.database.can.Message(
-                name = {},
+                name = {:?},
+                frame_id = {:#x},
+                length = 2,
+                cycle_time = {},
                 signals = [
-                {}
+            {}
                 ]
-        ",
+            )
+            ",
             msg.name,
-            indent(&signals.join("\n"), "    ")
+            msg.id,
+            option_to_py(&msg.cycletime_ms),
+            indent(&signals.join("\n"), &" ".repeat(8))
         )
     }
 
@@ -39,10 +55,20 @@ impl TranslationLayer for CantoolsDecoder {
         formatdoc!(
             "
             cantools.database.can.Signal(
-                    name = {},
-                ),
-        ",
-            sig.name
+                name = {:?},
+                start = {},
+                length = {},
+                comment = {:?},
+                scale = {},
+                offset = {},
+            ),
+            ",
+            sig.name,
+            sig.start_bit,
+            sig.width,
+            option_to_py(&sig.description),
+            option_to_py(&sig.scale),
+            if let Some(o) = sig.offset { o } else { 0.0 },
         )
     }
 }

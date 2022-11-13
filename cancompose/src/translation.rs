@@ -13,7 +13,7 @@ impl YDesc {
             for (sig_name, sdesc) in msg.signals {
                 let new_sig = CANSignal::builder()
                     .name(sig_name.clone())
-                    .start_bit(0)
+                    .start_bit(sdesc.start_bit)
                     .width(sdesc.width)
                     .description(sdesc.description)
                     .scale(sdesc.scale)
@@ -36,6 +36,7 @@ impl YDesc {
             net.insert_msg(can_msg)
                 .context(format!("Could not insert message `{msg_name}`"))?;
         }
+
         Ok(net)
     }
 }
