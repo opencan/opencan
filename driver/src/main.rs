@@ -16,6 +16,7 @@ fn main() {
     let mut new_msg = can::CANMessageDesc {
         name: "BRK_Status".to_string(),
         id: 0x20,
+        cycletime_ms: Some(10),
         signals: vec![s],
     };
 

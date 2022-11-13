@@ -10,6 +10,7 @@ use crate::signal::*;
 pub struct CANMessageDesc {
     pub name: String,
     pub id: u32,
+    pub cycletime_ms: Option<u32>,
 
     pub signals: Vec<CANSignal>,
 }
@@ -18,6 +19,7 @@ pub struct CANMessageDesc {
 pub struct CANMessage {
     pub name: String,
     pub id: u32,
+    pub cycletime_ms: Option<u32>,
 
     pub signals: Vec<CANSignal>,
 
@@ -49,6 +51,7 @@ impl CANMessage {
         Ok(CANMessage {
             name: desc.name,
             id: desc.id,
+            cycletime_ms: desc.cycletime_ms,
             signals: sigs,
             sig_map,
         })

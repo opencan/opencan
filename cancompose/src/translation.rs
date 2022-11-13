@@ -23,6 +23,7 @@ impl YDesc {
             let desc = CANMessageDesc {
                 name: msg_name.clone(),
                 id: msg.id,
+                cycletime_ms: msg.cycletime_ms,
                 signals: sigs,
             };
 
