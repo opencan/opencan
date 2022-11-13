@@ -4,12 +4,12 @@ fn main() {
     println!("Hello from protobrain.");
     println!("----------------------");
 
-    let s = can::CANSignal {
-        position: 0,
-        name: "VCFRONT_driverIsLeaving".into(),
-        description: Some("Nothing important".into()),
-        width: 1,
-    };
+    let s = can::CANSignal::builder()
+        .start_bit(0)
+        .name("VCFRONT_driverIsLeaving".into())
+        .width(1)
+        .build()
+        .unwrap();
 
     let mut new_msg = can::CANMessageDesc {
         name: "BRK_Status".into(),
