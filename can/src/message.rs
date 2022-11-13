@@ -1,21 +1,14 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 use crate::signal::*;
 
-#[derive(Clone)]
-pub struct CANMessageDesc {
-    pub name: String,
-    pub id: u32,
-    pub cycletime_ms: Option<u32>,
-
-    pub signals: Vec<CANSignal>,
-}
-
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone, Builder)]
+#[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 pub struct CANMessage {
     pub name: String,
     pub id: u32,
@@ -23,38 +16,36 @@ pub struct CANMessage {
 
     pub signals: Vec<CANSignal>,
 
+    #[builder(setter(skip))]
     #[serde(skip)]
     pub sig_map: HashMap<String, usize>,
 }
 
-impl CANMessage {
+impl CANMessageBuilder {
     /// Create a new CAN message.
     /// Message names must be at least one character long and must contain
     /// only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
-    pub fn new(desc: CANMessageDesc) -> Result<Self, CANConstructionError> {
-        let mut sigs = Vec::new();
+    pub fn build(&self) -> Result<CANMessage, CANConstructionError> {
         let mut sig_map = HashMap::new();
+        let mut msg = self.__build()?; // fix unwrap
 
-        Self::check_name_validity(&desc.name)?;
+        Self::check_name_validity(&msg.name)?;
 
-        for sig in desc.signals {
+        for (i, sig) in msg.signals.iter().enumerate() {
             if sig_map.contains_key(&sig.name) {
-                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
+                return Err(CANConstructionError::SignalSpecifiedMultipleTimes(
+                    sig.name.clone(),
+                ));
             }
 
-            sig_map.insert(sig.name.to_string(), sigs.len());
-            sigs.push(sig);
+            sig_map.insert(sig.name.to_string(), i);
         }
 
-        Ok(CANMessage {
-            name: desc.name,
-            id: desc.id,
-            cycletime_ms: desc.cycletime_ms,
-            signals: sigs,
-            sig_map,
-        })
+        msg.sig_map = sig_map;
+
+        Ok(msg)
     }
 
     fn check_name_validity(name: &str) -> Result<(), CANConstructionError> {
@@ -70,6 +61,12 @@ impl CANMessage {
         }
 
         Ok(())
+    }
+}
+
+impl CANMessage {
+    pub fn builder() -> CANMessageBuilder {
+        CANMessageBuilder::default()
     }
 
     pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {

@@ -3,14 +3,12 @@ use can::*;
 #[test]
 fn test_message_name_chars() {
     let try_msg = |name: &str| -> Result<_, CANConstructionError> {
-        let desc = CANMessageDesc {
-            name: name.into(),
-            id: 0x10,
-            cycletime_ms: None,
-            signals: vec![],
-        };
-
-        CANMessage::new(desc)
+        CANMessage::builder()
+            .name(name.into())
+            .id(0x10)
+            .cycletime_ms(None)
+            .signals(vec![])
+            .build()
     };
 
     // Invalid characters

@@ -25,15 +25,13 @@ impl YDesc {
                 sigs.push(new_sig);
             }
 
-            let desc = CANMessageDesc {
-                name: msg_name.clone(),
-                id: msg.id,
-                cycletime_ms: msg.cycletime_ms,
-                signals: sigs,
-            };
-
-            let can_msg =
-                CANMessage::new(desc).context(format!("Could not create message `{msg_name}`"))?;
+            let can_msg = CANMessage::builder()
+                .name(msg_name.clone())
+                .id(msg.id)
+                .cycletime_ms(msg.cycletime_ms)
+                .signals(sigs)
+                .build()
+                .context(format!("Could not create message `{msg_name}`"))?;
 
             net.insert_msg(can_msg)
                 .context(format!("Could not insert message `{msg_name}`"))?;
