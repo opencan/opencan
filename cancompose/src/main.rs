@@ -22,18 +22,18 @@ fn main() -> Result<()> {
         &args.in_file
     ))?;
 
-    let try_net = de.into_network();
-
-    if let Err(err) = try_net {
-        eprintln!("Failed to compose network.\n");
-        eprintln!("What happened:");
-        for (i, cause) in err.chain().enumerate() {
-            eprintln!("`{} {}", "-".repeat(i), cause);
+    let net = match de.into_network() {
+        Err(e) => {
+            eprintln!("Failed to compose network.\n");
+            eprintln!("What happened:");
+            for (i, cause) in e.chain().enumerate() {
+                eprintln!("`{} {}", "-".repeat(i), cause);
+            }
+            std::process::exit(-1);
         }
-        std::process::exit(-1);
-    }
 
-    let net = try_net.unwrap();
+        Ok(net) => net,
+    };
 
     println!("{}", serde_json::to_string_pretty(&net)?);
     Ok(())
