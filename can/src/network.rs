@@ -59,9 +59,4 @@ impl CANNetwork {
         self.messages.push(msg);
         Ok(())
     }
-
-    /// Convenience function to create a message and insert it into the network.
-    pub fn new_msg(&mut self, msg: CANMessageDesc) -> Result<(), CANConstructionError> {
-        self.insert_msg(CANMessage::new(msg)?)
-    }
 }

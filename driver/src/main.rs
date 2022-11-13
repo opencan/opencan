@@ -11,19 +11,27 @@ fn main() {
         .build()
         .unwrap();
 
-    let mut new_msg = can::CANMessageDesc {
-        name: "BRK_Status".into(),
-        id: 0x20,
-        cycletime_ms: Some(10),
-        signals: vec![s],
-    };
+    // let mut new_msg = can::CANMessageDesc {
+    //     name: "BRK_Status".into(),
+    //     id: 0x20,
+    //     cycletime_ms: Some(10),
+    //     signals: vec![s],
+    // };
+
+    let mut new_msg = can::CANMessageBuilder::default()
+        .name("BRK_Status".into())
+        .id(0x20)
+        .cycletime_ms(Some(10))
+        .signals(vec![s])
+        .build()
+        .unwrap();
 
     let mut net = can::CANNetwork::new();
 
-    net.new_msg(new_msg.clone()).unwrap();
+    net.insert_msg(new_msg.clone()).unwrap();
     new_msg.name = "NAH".into();
 
-    match net.new_msg(new_msg) {
+    match net.insert_msg(new_msg) {
         Ok(_) => (),
         Err(s) => println!("{s}"),
     }

@@ -1,3 +1,4 @@
+use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -20,4 +21,14 @@ pub enum CANConstructionError {
 
     #[error("Message name is empty.")]
     MessageNameEmpty,
+
+    #[error("Missing required field `{0}`")]
+    UninitializedFieldError(String),
+}
+
+// For getting CANConstructionError from builder .build() methods
+impl From<UninitializedFieldError> for CANConstructionError {
+    fn from(uf: UninitializedFieldError) -> Self {
+        Self::UninitializedFieldError(uf.field_name().into())
+    }
 }
