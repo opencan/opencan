@@ -1,4 +1,5 @@
 use anyhow::{Context, Result};
+use can::{CantoolsDecoder, TranslationLayer};
 use clap::Parser;
 
 mod ymlfmt;
@@ -36,5 +37,6 @@ fn main() -> Result<()> {
     };
 
     println!("{}", serde_json::to_string_pretty(&net)?);
+    println!("{}", CantoolsDecoder::dump_network(&net));
     Ok(())
 }

@@ -1,16 +1,18 @@
 messages:
   BRAKE_BrakeData:
     id: 0x100
-    cycletime_ms: 1
+    cycletime_ms: 5
 
     signals:
       brakePressure:
         description: "Brake pressure as last measured"
         width: 1
+        start_bit: 0
 
         scale: 0.5
       brakePercent:
         description: "Brake actuator percentage as last applied"
+        start_bit: 2
         width: 2
         scale: 0.01
         unit: "%"
