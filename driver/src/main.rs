@@ -11,14 +11,7 @@ fn main() {
         .build()
         .unwrap();
 
-    // let mut new_msg = can::CANMessageDesc {
-    //     name: "BRK_Status".into(),
-    //     id: 0x20,
-    //     cycletime_ms: Some(10),
-    //     signals: vec![s],
-    // };
-
-    let mut new_msg = can::CANMessageBuilder::default()
+    let mut new_msg = can::CANMessage::builder()
         .name("BRK_Status".into())
         .id(0x20)
         .cycletime_ms(Some(10))
