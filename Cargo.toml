@@ -1,7 +1,7 @@
 [workspace]
 
 members = [
-    "driver",
     "can",
-    "cancompose"
+    "cancompose",
+    "driver"
 ]
