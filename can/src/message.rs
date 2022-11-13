@@ -12,6 +12,8 @@ use crate::signal::*;
 pub struct CANMessage {
     pub name: String,
     pub id: u32,
+
+    #[builder(default)]
     pub cycletime_ms: Option<u32>,
 
     pub signals: Vec<CANSignal>,
@@ -28,8 +30,9 @@ impl CANMessageBuilder {
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
     pub fn build(&self) -> Result<CANMessage, CANConstructionError> {
-        let mut sig_map = HashMap::new();
         let mut msg = self.__build()?; // fix unwrap
+
+        let mut sig_map = HashMap::new();
 
         Self::check_name_validity(&msg.name)?;
 
