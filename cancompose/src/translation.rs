@@ -11,9 +11,10 @@ impl YDesc {
             let sigs: Vec<CANSignal> = msg
                 .signals
                 .iter()
-                .map(|(sig_name, _)| CANSignal {
+                .map(|(sig_name, sdesc)| CANSignal {
                     offset: 0,
                     name: sig_name.into(),
+                    description: sdesc.description.clone(),
                     value_type: can::CANValueType::Integer(CANValueTypeInteger {
                         length: 0,
                         signed: false,

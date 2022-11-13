@@ -6,7 +6,8 @@ fn main() {
 
     let s = can::CANSignal {
         offset: 0,
-        name: "VCFRONT_driverIsLeaving".to_string(),
+        name: "VCFRONT_driverIsLeaving".into(),
+        description: Some("Nothing important".into()),
         value_type: can::CANValueType::Integer(can::CANValueTypeInteger {
             length: 5,
             signed: false,
@@ -14,7 +15,7 @@ fn main() {
     };
 
     let mut new_msg = can::CANMessageDesc {
-        name: "BRK_Status".to_string(),
+        name: "BRK_Status".into(),
         id: 0x20,
         cycletime_ms: Some(10),
         signals: vec![s],
