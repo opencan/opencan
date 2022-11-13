@@ -11,12 +11,24 @@ impl YDesc {
             let mut sigs = Vec::new();
 
             for (sig_name, sdesc) in msg.signals {
-                let new_sig =
-                    CANSignal::new(0, sig_name.clone(), sdesc.width, sdesc.description.clone())
-                        .context(format!(
-                            "Could not create signal `{sig_name}` in message `{msg_name}`"
-                        ))?;
+                // let new_sig =
+                //     CANSignal::new(0, sig_name.clone(), sdesc.width, sdesc.description.clone())
+                //         .context(format!(
+                //             "Could not create signal `{sig_name}` in message `{msg_name}`"
+                //         ))?;
 
+                // sigs.push(new_sig);
+
+                let new_sig = CANSignalUnchecked::builder()
+                    .name(sig_name.clone())
+                    .start_bit(0)
+                    .width(sdesc.width)
+                    .description(sdesc.description)
+                    .build()
+                    .check()
+                    .context(format!(
+                        "Could not create signal `{sig_name}` while building message `{msg_name}`"
+                    ))?;
                 sigs.push(new_sig);
             }
 
