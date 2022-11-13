@@ -8,6 +8,7 @@ fn main() {
         offset: 0,
         name: "VCFRONT_driverIsLeaving".into(),
         description: Some("Nothing important".into()),
+        width: 1,
     };
 
     let mut new_msg = can::CANMessageDesc {
