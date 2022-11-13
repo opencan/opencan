@@ -19,13 +19,13 @@ fn test_message_name_chars() {
         assert!(matches!(
             try_msg(name),
             Err(CANConstructionError::MessageNameInvalidChar(..))
-        ))
+        ));
     }
 
     // Valid names
     let valid_names = ["test", "0", "_test_", "_", "___", "THING1_THING2"];
     for name in valid_names {
-        assert!(matches!(try_msg(name), Ok(_)))
+        assert!(matches!(try_msg(name), Ok(_)));
     }
 
     // Empty name

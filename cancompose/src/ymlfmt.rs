@@ -25,6 +25,8 @@ pub struct YSignal {
 
     pub scale: f32,
 
+    pub width: u32,
+
     #[serde(default)]
     pub unit: Option<String>,
 

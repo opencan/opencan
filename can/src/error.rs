@@ -5,6 +5,10 @@ pub enum CANConstructionError {
     #[error("Signal with name `{0}` specified multiple times.")]
     SignalSpecifiedMultipleTimes(String),
 
+    /// Signals cannot have zero width.
+    #[error("Signal with name `{0}` cannot have zero width")]
+    SignalHasZeroWidth(String),
+
     #[error("Message with name `{0}` already exists in network.")]
     MessageNameAlreadyExists(String),
 
