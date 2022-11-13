@@ -5,8 +5,10 @@ messages:
 
     signals:
       brakePressure:
+        description: "Brake pressure as last measured"
         scale: 0.5
       brakePercent:
+        description: "Brake actuator percentage as last applied"
         scale: 0.01
         unit: "%"
         enumerated_values:

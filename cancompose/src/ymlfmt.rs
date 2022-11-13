@@ -21,6 +21,8 @@ impl std::fmt::Debug for YEnumeratedValue {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct YSignal {
+    pub description: Option<String>,
+
     pub scale: f32,
 
     #[serde(default)]
