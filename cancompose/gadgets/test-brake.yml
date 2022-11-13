@@ -6,7 +6,7 @@ messages:
     signals:
       brakePressure:
         description: "Brake pressure as last measured"
-        width: 0
+        width: 1
         scale: 0.5
       brakePercent:
         description: "Brake actuator percentage as last applied"

@@ -21,13 +21,12 @@ impl std::fmt::Debug for YEnumeratedValue {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct YSignal {
-    pub description: Option<String>,
-
-    pub scale: f32,
-
     pub width: u32,
 
-    #[serde(default)]
+    pub description: Option<String>,
+
+    pub scale: Option<f32>,
+
     pub unit: Option<String>,
 
     #[serde(default)]
@@ -39,7 +38,6 @@ pub struct YSignal {
 pub struct YMessage {
     pub id: u32,
 
-    #[serde(default)]
     pub cycletime_ms: Option<u32>,
 
     #[serde(with = "tuple_vec_map")]
