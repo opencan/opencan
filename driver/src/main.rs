@@ -5,7 +5,7 @@ fn main() {
     println!("----------------------");
 
     let s = can::CANSignal {
-        offset: 0,
+        position: 0,
         name: "VCFRONT_driverIsLeaving".into(),
         description: Some("Nothing important".into()),
         width: 1,

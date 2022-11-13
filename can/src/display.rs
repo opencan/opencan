@@ -14,7 +14,7 @@ impl Display for CANSignal {
             Signal `{}`:
               -> offset: {}",
             self.name,
-            self.offset,
+            self.start_bit,
         )
     }
 }
