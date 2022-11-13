@@ -15,10 +15,6 @@ impl YDesc {
                     offset: 0,
                     name: sig_name.into(),
                     description: sdesc.description.clone(),
-                    value_type: can::CANValueType::Integer(CANValueTypeInteger {
-                        length: 0,
-                        signed: false,
-                    }),
                 })
                 .collect();
 

@@ -5,26 +5,6 @@ use indoc::writedoc;
 
 use crate::message::*;
 use crate::signal::*;
-use crate::value::*;
-
-impl Display for CANValueTypeInteger {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{}{}",
-            (if self.signed { "s" } else { "u" }),
-            self.length
-        )
-    }
-}
-
-impl Display for CANValueType {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Integer(s) => s.fmt(f),
-        }
-    }
-}
 
 impl Display for CANSignal {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
@@ -32,11 +12,9 @@ impl Display for CANSignal {
             f,
             "
             Signal `{}`:
-              -> offset: {},
-              -> type: {}",
+              -> offset: {}",
             self.name,
             self.offset,
-            self.value_type,
         )
     }
 }
