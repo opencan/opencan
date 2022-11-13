@@ -16,6 +16,7 @@ impl YDesc {
                     .start_bit(0)
                     .width(sdesc.width)
                     .description(sdesc.description)
+                    .scale(sdesc.scale)
                     .build()
                     .context(format!(
                         "Could not create signal `{sig_name}` while building message `{msg_name}`"
