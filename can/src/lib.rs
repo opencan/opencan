@@ -1,6 +1,3 @@
-mod value;
-pub use value::*;
-
 mod signal;
 pub use signal::*;
 

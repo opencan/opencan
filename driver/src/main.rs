@@ -8,10 +8,6 @@ fn main() {
         offset: 0,
         name: "VCFRONT_driverIsLeaving".into(),
         description: Some("Nothing important".into()),
-        value_type: can::CANValueType::Integer(can::CANValueTypeInteger {
-            length: 5,
-            signed: false,
-        }),
     };
 
     let mut new_msg = can::CANMessageDesc {
