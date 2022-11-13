@@ -1,5 +1,6 @@
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use can::*;
+
 use crate::ymlfmt::*;
 
 impl YDesc {
@@ -27,8 +28,10 @@ impl YDesc {
                 signals: sigs,
             };
 
-            let can_msg = CANMessage::new(desc).context(format!("Could not create message `{}`", msg_name))?;
-            net.insert_msg(can_msg).context(format!("Could not insert message `{}`", msg_name))?;
+            let can_msg = CANMessage::new(desc)
+                .context(format!("Could not create message `{}`", msg_name))?;
+            net.insert_msg(can_msg)
+                .context(format!("Could not insert message `{}`", msg_name))?;
         }
         Ok(net)
     }

@@ -15,11 +15,12 @@ struct Args {
 fn main() -> Result<()> {
     let args = Args::parse();
 
-    let input =
-        std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
+    let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
-    let de: YDesc = serde_yaml::from_str(&input)
-        .with_context(|| format!("Failed to parse specification file `{}`", &args.in_file))?;
+    let de: YDesc = serde_yaml::from_str(&input).context(format!(
+        "Failed to parse specification file `{}`",
+        &args.in_file
+    ))?;
 
     let try_net = de.into_network();
 
