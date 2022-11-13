@@ -1,102 +1,39 @@
-use std::collections::HashMap;
+use anyhow::{Context, Result};
+use clap::Parser;
 
-use can::{CANMessageDesc, CANNetwork, CANSignal, CANValueTypeInteger};
-use indoc::indoc;
-use serde::{Deserialize, Serialize};
+mod ymlfmt;
+use ymlfmt::*;
 
-#[derive(Serialize, Deserialize)]
-#[serde(untagged)]
-enum YEnumeratedValue {
-    Auto(String),
-    Exact(u32),
+mod translation;
+
+#[derive(Parser)]
+#[command(version)]
+struct Args {
+    in_file: String,
 }
 
-impl std::fmt::Debug for YEnumeratedValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Auto(arg0) => write!(f, "{arg0}"),
-            Self::Exact(arg0) => write!(f, "{arg0}"),
+fn main() -> Result<()> {
+    let args = Args::parse();
+
+    let input =
+        std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
+
+    let de: YDesc = serde_yaml::from_str(&input)
+        .with_context(|| format!("Failed to parse specification file `{}`", &args.in_file))?;
+
+    let try_net = de.into_network();
+
+    if let Err(err) = try_net {
+        eprintln!("Failed to compose network.\n");
+        eprintln!("What happened:");
+        for (i, cause) in err.chain().enumerate() {
+            eprintln!("`{} {}", "-".repeat(i), cause);
         }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-struct YSignal {
-    scale: f32,
-
-    #[serde(default)]
-    unit: Option<String>,
-
-    #[serde(default)]
-    enumerated_values: Vec<HashMap<String, YEnumeratedValue>>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(deny_unknown_fields)]
-struct YMessage {
-    id: u32,
-
-    #[serde(default)]
-    cycletime_ms: Option<f32>,
-
-    #[serde(with = "tuple_vec_map")]
-    signals: Vec<(String, YSignal)>,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-struct YDesc {
-    #[serde(with = "tuple_vec_map")]
-    messages: Vec<(String, YMessage)>,
-}
-
-fn main() {
-    let input = indoc! {r#"
-    messages:
-      BRAKE_BrakeData:
-        id: 0x100
-        cycletime_ms: 1
-
-        signals:
-          brakePressure:
-            scale: 0.5
-          brakePercent:
-            scale: 0.01
-            unit: "%"
-            enumerated_values:
-              - SNA: auto
-              - SATURATED: 1
-    "#};
-    let de: YDesc = serde_yaml::from_str(&input).unwrap();
-
-    for msg in &de.messages {
-        println!("{}: {:#?}\n", msg.0, msg.1);
-        println!("{}", serde_yaml::to_string(&de).unwrap());
+        std::process::exit(-1);
     }
 
-    let mut net = CANNetwork::new();
+    let net = try_net.unwrap();
 
-    for msg in de.messages {
-        let sigs: Vec<CANSignal> = msg
-            .1
-            .signals
-            .into_iter()
-            .map(|(name, j)| CANSignal {
-                offset: 0,
-                name: name,
-                value_type: can::CANValueType::Integer(CANValueTypeInteger {
-                    length: 0,
-                    signed: false,
-                }),
-            })
-            .collect();
-
-        let desc = CANMessageDesc {
-            name: msg.0.clone(),
-            id: msg.1.id,
-            signals: sigs,
-        };
-
-        net.new_msg(desc).unwrap();
-    }
+    println!("{}", serde_json::to_string_pretty(&net)?);
+    Ok(())
 }

@@ -1,0 +1,14 @@
+messages:
+  BRAKE_BrakeData:
+    id: 0x100
+    cycletime_ms: 1
+
+    signals:
+      brakePressure:
+        scale: 0.5
+      brakePercent:
+        scale: 0.01
+        unit: "%"
+        enumerated_values:
+          - SNA: auto
+          - SATURATED: 1
