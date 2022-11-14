@@ -1,5 +1,15 @@
+use std::fmt::Display;
+
 use derive_builder::UninitializedFieldError;
 use thiserror::Error;
+
+fn maybe_space_name<T: Display>(opt: &Option<T>) -> String {
+    if let Some(s) = opt {
+        format!(" `{}`", s)
+    } else {
+        "".into()
+    }
+}
 
 #[derive(Debug, Error)]
 pub enum CANConstructionError {
@@ -10,10 +20,11 @@ pub enum CANConstructionError {
     #[error("Signal with name `{0}` cannot have zero width")]
     SignalHasZeroWidth(String),
 
-    /// SignalWidthInference may or may not have the signal name as context,
-    /// depending on when .infer_width() was called in the builder chain.
-    #[error("Unable to infer width of signal{}", if let Some(s) = .0 { format!(" `{}`", s) } else { "".into() })]
+    #[error("Unable to infer width of signal{}", maybe_space_name(.0))]
     SignalWidthInferenceFailed(Option<String>),
+
+    #[error("Refusing to infer width when width already specified of signal{}", maybe_space_name(.0))]
+    SignalWidthAlreadySpecified(Option<String>),
 
     #[error("Message with name `{0}` already exists in network.")]
     MessageNameAlreadyExists(String),
