@@ -21,7 +21,7 @@ impl std::fmt::Debug for YEnumeratedValue {
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(deny_unknown_fields)]
 pub struct YSignal {
-    pub width: u32,
+    pub width: Option<u32>,
 
     #[serde(default)]
     pub start_bit: u32,
