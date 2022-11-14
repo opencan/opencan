@@ -20,7 +20,7 @@ fn test_signal_width_nonzero() {
 
 #[test]
 fn test_signal_width_inference() {
-    let base_sig = || { CANSignal::builder().name("testSignal".into()) };
+    let base_sig = || CANSignal::builder().name("testSignal".into());
 
     // nothing given except name
     assert!(matches!(
