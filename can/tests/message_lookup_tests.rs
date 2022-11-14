@@ -4,7 +4,7 @@ use can::*;
 fn test_signal_lookup() {
     let make_msg = |sigs: Vec<CANSignal>| -> CANMessage {
         CANMessage::builder()
-            .name("TestMessage".into())
+            .name("TestMessage")
             .id(0x10)
             .cycletime_ms(None)
             .add_signals(sigs)
@@ -16,7 +16,7 @@ fn test_signal_lookup() {
     let mut bit = 0;
     let mut test_signal = |name: &str| -> CANSignal {
         let s = CANSignal::builder()
-            .name(name.into())
+            .name(name)
             .start_bit(bit)
             .width(1)
             .build()

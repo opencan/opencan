@@ -11,6 +11,7 @@ use crate::signal::*;
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {
+    #[builder(setter(into))]
     pub name: String,
     pub id: u32,
 
