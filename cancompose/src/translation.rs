@@ -11,7 +11,8 @@ impl YDesc {
             let mut sigs = Vec::new();
 
             for (sig_name, sdesc) in msg.signals {
-                let context = || format!("Could not create signal `{sig_name} while building `{msg_name}`");
+                let context =
+                    || format!("Could not create signal `{sig_name} while building `{msg_name}`");
 
                 let mut new_sig = CANSignal::builder()
                     .name(sig_name.clone())
@@ -22,7 +23,7 @@ impl YDesc {
                 if let Some(w) = sdesc.width {
                     new_sig = new_sig.width(w);
                 } else {
-                    new_sig = new_sig.infer_width().context(context())?;
+                    new_sig = new_sig.infer_width_strict().context(context())?;
                 }
 
                 let sig = new_sig.build().context(context())?;

@@ -20,14 +20,21 @@ fn test_signal_width_nonzero() {
 
 #[test]
 fn test_signal_width_inference() {
-    let base_sig = || -> CANSignalBuilder {
-        CANSignal::builder()
-            .name("testSignal".into())
-    };
+    let base_sig = || { CANSignal::builder().name("testSignal".into()) };
 
     // nothing given except name
     assert!(matches!(
         base_sig().infer_width(),
         Err(CANConstructionError::SignalWidthInferenceFailed(..))
+    ));
+
+    // width already specified
+    let ws = base_sig().width(1).infer_width();
+    assert!(matches!(ws, Ok(..)));
+
+    // width already specified, strict
+    assert!(matches!(
+        base_sig().width(1).infer_width_strict(),
+        Err(CANConstructionError::SignalWidthAlreadySpecified(..))
     ));
 }

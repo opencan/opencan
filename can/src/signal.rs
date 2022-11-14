@@ -32,9 +32,24 @@ impl CANSignalBuilder {
         Ok(s)
     }
 
+    /// Infer the width of this signal based on given information.
+    /// TODO: Write and describe inference semantics.
     pub fn infer_width(self) -> Result<Self, CANConstructionError> {
-        // let's try to infer the signal width.
+        if self.width.is_some() {
+            return Ok(self);
+        }
+
         Err(CANConstructionError::SignalWidthInferenceFailed(self.name))
+    }
+
+    /// Infer the width of the signal, but return a SignalWidthAlreadySpecified
+    /// error if the signal width was already specified.
+    pub fn infer_width_strict(self) -> Result<Self, CANConstructionError> {
+        if self.width.is_some() {
+            return Err(CANConstructionError::SignalWidthAlreadySpecified(self.name));
+        }
+
+        self.infer_width()
     }
 }
 
