@@ -29,12 +29,28 @@ fn test_signal_width_inference() {
     ));
 
     // width already specified
-    let ws = base_sig().width(1).infer_width();
-    assert!(matches!(ws, Ok(..)));
+    assert!(matches!(base_sig().width(1).infer_width(), Ok(..)));
 
     // width already specified, strict
     assert!(matches!(
         base_sig().width(1).infer_width_strict(),
         Err(CANConstructionError::SignalWidthAlreadySpecified(..))
+    ));
+}
+
+#[test]
+fn test_signal_width_nonexistent() {
+    assert!(matches!(
+        CANSignal::builder()
+            .name("testSignal".into())
+            .start_bit(1)
+            .width(1)
+            .build(),
+        Ok(..)
+    ));
+
+    assert!(matches!(
+        CANSignal::builder().name("testSignal".into()).start_bit(1).build(),
+        Err(CANConstructionError::UninitializedFieldError(s)) if s == "width"
     ));
 }
