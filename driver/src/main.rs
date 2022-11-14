@@ -15,7 +15,8 @@ fn main() {
         .name("BRK_Status".into())
         .id(0x20)
         .cycletime_ms(Some(10))
-        .add_signals(vec![s]).unwrap()
+        .add_signals(vec![s])
+        .unwrap()
         .build()
         .unwrap();
 
