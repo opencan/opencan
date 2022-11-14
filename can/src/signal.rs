@@ -7,6 +7,7 @@ use crate::error::*;
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANSignal {
+    #[builder(setter(into))]
     pub name: String,
 
     pub start_bit: u32,

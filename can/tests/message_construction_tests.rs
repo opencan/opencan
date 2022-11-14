@@ -4,7 +4,7 @@ use can::*;
 fn test_message_name_chars() {
     let try_msg = |name: &str| -> Result<_, CANConstructionError> {
         CANMessage::builder()
-            .name(name.into())
+            .name(name)
             .id(0x10)
             .cycletime_ms(None)
             .build()

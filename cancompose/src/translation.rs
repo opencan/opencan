@@ -19,7 +19,7 @@ impl YDesc {
 
     fn make_msg(msg_name: &str, mdesc: YMessage) -> Result<CANMessage> {
         let mut can_msg = CANMessageBuilder::default()
-            .name(msg_name.into())
+            .name(msg_name)
             .id(mdesc.id)
             .cycletime_ms(mdesc.cycletime_ms);
 
@@ -40,7 +40,7 @@ impl YDesc {
 
     fn make_sig(sig_name: &str, sdesc: YSignal) -> Result<CANSignal> {
         let mut new_sig = CANSignal::builder()
-            .name(sig_name.into())
+            .name(sig_name)
             .start_bit(sdesc.start_bit) // the answer is that start_bit should be in the MESSAGE!
             .description(sdesc.description)
             .scale(sdesc.scale);

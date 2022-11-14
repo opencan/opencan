@@ -4,7 +4,7 @@ use can::*;
 fn test_signal_width_nonzero() {
     let try_sig = |width| -> Result<_, CANConstructionError> {
         CANSignal::builder()
-            .name("testSignal".into())
+            .name("testSignal")
             .start_bit(0)
             .width(width)
             .build()
@@ -20,7 +20,7 @@ fn test_signal_width_nonzero() {
 
 #[test]
 fn test_signal_width_inference() {
-    let base_sig = || CANSignal::builder().name("testSignal".into());
+    let base_sig = || CANSignal::builder().name("testSignal");
 
     // nothing given except name
     assert!(matches!(
@@ -42,7 +42,7 @@ fn test_signal_width_inference() {
 fn test_signal_width_nonexistent() {
     assert!(matches!(
         CANSignal::builder()
-            .name("testSignal".into())
+            .name("testSignal")
             .start_bit(1)
             .width(1)
             .build(),
@@ -50,7 +50,7 @@ fn test_signal_width_nonexistent() {
     ));
 
     assert!(matches!(
-        CANSignal::builder().name("testSignal".into()).start_bit(1).build(),
+        CANSignal::builder().name("testSignal").start_bit(1).build(),
         Err(CANConstructionError::UninitializedFieldError(s)) if s == "width"
     ));
 }
