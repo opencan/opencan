@@ -9,6 +9,7 @@ use crate::signal::*;
 
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
+#[builder(pattern = "owned")]
 pub struct CANMessage {
     pub name: String,
     pub id: u32,
@@ -31,7 +32,7 @@ impl CANMessageBuilder {
     /// only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
-    pub fn build(&mut self) -> Result<CANMessage, CANConstructionError> {
+    pub fn build(mut self) -> Result<CANMessage, CANConstructionError> {
         self.ensure_signals_init();
 
         let msg = self.__build()?;
@@ -43,9 +44,9 @@ impl CANMessageBuilder {
 
     /// Add multiple signals to message.
     /// Convenience wrapper for add_signal.
-    pub fn add_signals(&mut self, sigs: Vec<CANSignal>) -> Result<&mut Self, CANConstructionError> {
+    pub fn add_signals(mut self, sigs: Vec<CANSignal>) -> Result<Self, CANConstructionError> {
         for sig in sigs {
-            self.add_signal(sig)?;
+            self = self.add_signal(sig)?;
         }
 
         Ok(self)
@@ -54,7 +55,7 @@ impl CANMessageBuilder {
     /// Add single signal to message.
     /// Checks:
     ///  - signal name does not repeat (SignalSpecifiedMultipleTimes)
-    pub fn add_signal(&mut self, sig: CANSignal) -> Result<&mut Self, CANConstructionError> {
+    pub fn add_signal(mut self, sig: CANSignal) -> Result<Self, CANConstructionError> {
         self.ensure_signals_init();
 
         let sig_map = self.sig_map.as_mut().unwrap();
