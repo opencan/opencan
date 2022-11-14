@@ -7,7 +7,8 @@ fn test_signal_lookup() {
             .name("TestMessage".into())
             .id(0x10)
             .cycletime_ms(None)
-            .signals(sigs)
+            .add_signals(sigs)
+            .unwrap()
             .build()
             .unwrap()
     };

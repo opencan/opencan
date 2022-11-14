@@ -7,7 +7,6 @@ fn test_message_name_chars() {
             .name(name.into())
             .id(0x10)
             .cycletime_ms(None)
-            .signals(vec![])
             .build()
     };
 
