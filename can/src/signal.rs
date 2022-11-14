@@ -1,12 +1,14 @@
-use serde::{Deserialize, Serialize};
 use derive_builder::Builder;
+use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
+#[builder(pattern = "owned")]
 pub struct CANSignal {
     pub name: String,
+
     pub start_bit: u32,
     pub width: u32,
 
@@ -21,13 +23,18 @@ pub struct CANSignal {
 }
 
 impl CANSignalBuilder {
-    pub fn build(&self) -> Result<CANSignal, CANConstructionError> {
+    pub fn build(self) -> Result<CANSignal, CANConstructionError> {
         let s = self.__build()?;
         if s.width == 0 {
             return Err(CANConstructionError::SignalHasZeroWidth(s.name));
         }
 
         Ok(s)
+    }
+
+    pub fn infer_width(self) -> Result<Self, CANConstructionError> {
+        // let's try to infer the signal width.
+        Err(CANConstructionError::SignalWidthInferenceFailed(self.name))
     }
 }
 

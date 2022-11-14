@@ -6,7 +6,7 @@ messages:
     signals:
       brakePressure:
         description: "Brake pressure as last measured"
-        width: 1
+        # width: 1
         start_bit: 0
 
         scale: 0.5

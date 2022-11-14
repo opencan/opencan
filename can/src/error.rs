@@ -10,6 +10,11 @@ pub enum CANConstructionError {
     #[error("Signal with name `{0}` cannot have zero width")]
     SignalHasZeroWidth(String),
 
+    /// SignalWidthInference may or may not have the signal name as context,
+    /// depending on when .infer_width() was called in the builder chain.
+    #[error("Unable to infer width of signal{}", if let Some(s) = .0 { format!(" `{}`", s) } else { "".into() })]
+    SignalWidthInferenceFailed(Option<String>),
+
     #[error("Message with name `{0}` already exists in network.")]
     MessageNameAlreadyExists(String),
 
