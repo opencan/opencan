@@ -3,5 +3,4 @@
 members = [
     "can",
     "cancompose",
-    "driver"
 ]
