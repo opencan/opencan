@@ -29,7 +29,7 @@ impl TranslationLayer for CantoolsDecoder {
         let mut signals = Vec::new();
 
         for sig in &msg.signals {
-            signals.push(CantoolsDecoder::dump_signal(sig));
+            signals.push(Self::dump_signal(sig));
         }
 
         formatdoc!(
@@ -68,7 +68,7 @@ impl TranslationLayer for CantoolsDecoder {
             sig.width,
             option_to_py(&sig.description),
             option_to_py(&sig.scale),
-            if let Some(o) = sig.offset { o } else { 0.0 },
+            sig.offset.map_or(0.0, |o| o)
         )
     }
 }
