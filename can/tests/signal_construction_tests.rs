@@ -5,7 +5,6 @@ fn test_signal_width_nonzero() {
     let try_sig = |width| -> Result<_, CANConstructionError> {
         CANSignal::builder()
             .name("testSignal")
-            .start_bit(0)
             .width(width)
             .build()
     };
@@ -43,14 +42,13 @@ fn test_signal_width_nonexistent() {
     assert!(matches!(
         CANSignal::builder()
             .name("testSignal")
-            .start_bit(1)
             .width(1)
             .build(),
         Ok(..)
     ));
 
     assert!(matches!(
-        CANSignal::builder().name("testSignal").start_bit(1).build(),
+        CANSignal::builder().name("testSignal").build(),
         Err(CANConstructionError::UninitializedFieldError(s)) if s == "width"
     ));
 }

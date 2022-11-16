@@ -10,7 +10,6 @@ pub struct CANSignal {
     #[builder(setter(into))]
     pub name: String,
 
-    pub start_bit: u32,
     pub width: u32,
 
     #[builder(default)]

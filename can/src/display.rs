@@ -14,27 +14,9 @@ impl Display for CANSignal {
             Signal `{}`:
               -> offset: {}",
             self.name,
-            self.start_bit,
+            0
         )
     }
-}
-
-impl CANSignal {
-    /*
-    pub fn cantools_description(&self) -> String {
-        formatdoc!(
-            "
-            cantools.database.can.Signal(name = '{name}',
-                start = {offset},
-                length = {length},
-                is_signed = {signed})",
-            name = self.name,
-            offset = self.offset,
-            length = self.value_type.length,
-            signed = python_capital_bool(self.value_type.signed),
-        )
-    }
-    */
 }
 
 impl CANMessage {
