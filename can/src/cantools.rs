@@ -51,7 +51,7 @@ impl TranslationLayer for CantoolsDecoder {
         )
     }
 
-    fn dump_signal(sig: &CANSignal) -> String {
+    fn dump_signal(s: &CANSignalWithPosition) -> String {
         formatdoc!(
             "
             cantools.database.can.Signal(
@@ -63,12 +63,12 @@ impl TranslationLayer for CantoolsDecoder {
                 offset = {},
             ),
             ",
-            sig.name,
-            0,
-            sig.width,
-            option_to_py(&sig.description),
-            option_to_py(&sig.scale),
-            sig.offset.map_or(0.0, |o| o)
+            s.sig.name,
+            s.bit,
+            s.sig.width,
+            option_to_py(&s.sig.description),
+            option_to_py(&s.sig.scale),
+            s.sig.offset.map_or(0.0, |o| o)
         )
     }
 }

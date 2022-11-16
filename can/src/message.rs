@@ -7,6 +7,12 @@ use serde::{Deserialize, Serialize};
 use crate::error::*;
 use crate::signal::*;
 
+#[derive(Serialize, Deserialize, Clone)]
+pub struct CANSignalWithPosition { // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
+    pub bit: u32,
+    pub sig: CANSignal
+}
+
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
@@ -19,8 +25,8 @@ pub struct CANMessage {
     pub cycletime_ms: Option<u32>,
 
     // skip builder because we will provide add_signals() instead
-    #[builder(setter(custom), field(type = "Vec<CANSignal>"))]
-    pub signals: Vec<CANSignal>,
+    #[builder(setter(custom), field(type = "Vec<CANSignalWithPosition>"))]
+    pub signals: Vec<CANSignalWithPosition>,
 
     #[builder(setter(custom), field(type = "HashMap<String, usize>"))]
     #[serde(skip)]
@@ -60,7 +66,7 @@ impl CANMessageBuilder {
         }
 
         self.sig_map.insert(sig.name.clone(), self.signals.len());
-        self.signals.push(sig);
+        self.signals.push(CANSignalWithPosition {bit: 0, sig}); // todo
 
         Ok(self)
     }
@@ -86,7 +92,7 @@ impl CANMessage {
         CANMessageBuilder::default()
     }
 
-    pub fn get_sig(&self, name: &str) -> Option<&CANSignal> {
+    pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let idx = self.sig_map.get(name)?;
 
         // unwrap here, as signals really should have the signal if sig_map does
@@ -100,6 +106,6 @@ impl Index<&str> for CANMessage {
     type Output = CANSignal;
 
     fn index(&self, index: &str) -> &Self::Output {
-        return self.get_sig(index).unwrap();
+        return &self.get_sig(index).unwrap().sig;
     }
 }
