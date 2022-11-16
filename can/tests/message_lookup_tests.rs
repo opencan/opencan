@@ -17,7 +17,6 @@ fn test_signal_lookup() {
     let mut test_signal = |name: &str| -> CANSignal {
         let s = CANSignal::builder()
             .name(name)
-            .start_bit(bit)
             .width(1)
             .build()
             .unwrap();

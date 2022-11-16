@@ -41,7 +41,6 @@ impl YDesc {
     fn make_sig(sig_name: &str, sdesc: YSignal) -> Result<CANSignal> {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
-            .start_bit(sdesc.start_bit) // the answer is that start_bit should be in the MESSAGE!
             .description(sdesc.description)
             .scale(sdesc.scale);
 
