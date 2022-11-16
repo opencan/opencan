@@ -8,9 +8,10 @@ use crate::error::*;
 use crate::signal::*;
 
 #[derive(Serialize, Deserialize, Clone)]
-pub struct CANSignalWithPosition { // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
+pub struct CANSignalWithPosition {
+    // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
     pub bit: u32,
-    pub sig: CANSignal
+    pub sig: CANSignal,
 }
 
 #[derive(Serialize, Deserialize, Clone, Builder)]
@@ -47,8 +48,20 @@ impl CANMessageBuilder {
         Ok(msg)
     }
 
-    /// Add multiple signals to message.
-    /// Convenience wrapper for add_signal.
+    /// Add multiple signals to message with signal positions (start bits) specified.
+    ///
+    /// Convenience wrapper for [`add_signal_fixed()`][CANMessageBuilder::add_signal_fixed].
+    pub fn add_signals_fixed(
+        mut self,
+        sigs: Vec<(u32, CANSignal)>,
+    ) -> Result<Self, CANConstructionError> {
+        todo!()
+    }
+
+    /// Add multiple signals to message, placing each signal's start position
+    /// after the previous signal ends.
+    ///
+    /// Convenience wrapper for [`add_signal()`][CANMessageBuilder::add_signal].
     pub fn add_signals(mut self, sigs: Vec<CANSignal>) -> Result<Self, CANConstructionError> {
         for sig in sigs {
             self = self.add_signal(sig)?;
@@ -59,16 +72,26 @@ impl CANMessageBuilder {
 
     /// Add single signal to message.
     /// Checks:
-    ///  - signal name does not repeat (SignalSpecifiedMultipleTimes)
+    ///  - signal name does not repeat ([`SignalSpecifiedMultipleTimes`][CANConstructionError::SignalSpecifiedMultipleTimes])
     pub fn add_signal(mut self, sig: CANSignal) -> Result<Self, CANConstructionError> {
         if self.sig_map.contains_key(&sig.name) {
             return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
         }
 
         self.sig_map.insert(sig.name.clone(), self.signals.len());
-        self.signals.push(CANSignalWithPosition {bit: 0, sig}); // todo
+        self.signals.push(CANSignalWithPosition { bit: 0, sig }); // todo
 
         Ok(self)
+    }
+
+    /// Add single signal to message with signal position (start bit) specified.
+    ///
+    /// See [`add_signal()`][CANMessageBuilder::add_signal()] for more details.
+    pub fn add_signal_fixed(
+        mut self,
+        sigs: Vec<(u32, CANSignal)>,
+    ) -> Result<Self, CANConstructionError> {
+        todo!()
     }
 
     fn check_name_validity(name: &str) -> Result<(), CANConstructionError> {

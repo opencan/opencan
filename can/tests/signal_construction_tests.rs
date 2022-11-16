@@ -3,10 +3,7 @@ use can::*;
 #[test]
 fn test_signal_width_nonzero() {
     let try_sig = |width| -> Result<_, CANConstructionError> {
-        CANSignal::builder()
-            .name("testSignal")
-            .width(width)
-            .build()
+        CANSignal::builder().name("testSignal").width(width).build()
     };
 
     assert!(matches!(
@@ -40,10 +37,7 @@ fn test_signal_width_inference() {
 #[test]
 fn test_signal_width_nonexistent() {
     assert!(matches!(
-        CANSignal::builder()
-            .name("testSignal")
-            .width(1)
-            .build(),
+        CANSignal::builder().name("testSignal").width(1).build(),
         Ok(..)
     ));
 
