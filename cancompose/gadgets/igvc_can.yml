@@ -1,0 +1,30 @@
+---
+
+messages:
+  NodeStatus:
+    id: 0xE0
+    cycletime_ms: 100
+
+    signals:
+      sysStatus:
+        description: Status of the node.
+        width: 2
+        enumerated_values:
+          - IDLE: auto
+          - UNHEALTHY: auto
+          - ACTIVE: auto
+          - ESTOP: auto
+      counter:
+        scale: 2
+        description: Counter for fun.
+        width: 8
+      resetReason:
+        description: Reset reason.
+        width: 2
+        enumerated_values:
+          - POWERON: auto
+          - WATCHDOG_RESET: auto
+          - UNKNOWN: auto
+      esp32ResetReasonCode:
+        description: ESP32 reset reason code (enum RESET_REASON)
+        width: 5
