@@ -19,10 +19,10 @@ pub struct CANMessage {
     pub cycletime_ms: Option<u32>,
 
     // skip builder because we will provide add_signals() instead
-    #[builder(setter(custom))]
+    #[builder(setter(custom), field(type = "Vec<CANSignal>"))]
     pub signals: Vec<CANSignal>,
 
-    #[builder(setter(custom))]
+    #[builder(setter(custom), field(type = "HashMap<String, usize>"))]
     #[serde(skip)]
     pub sig_map: HashMap<String, usize>,
 }
@@ -33,9 +33,7 @@ impl CANMessageBuilder {
     /// only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     // todo: check that signals fit within message and do not overlap
-    pub fn build(mut self) -> Result<CANMessage, CANConstructionError> {
-        self.ensure_signals_init();
-
+    pub fn build(self) -> Result<CANMessage, CANConstructionError> {
         let msg = self.__build()?;
 
         Self::check_name_validity(&msg.name)?;
@@ -57,26 +55,14 @@ impl CANMessageBuilder {
     /// Checks:
     ///  - signal name does not repeat (SignalSpecifiedMultipleTimes)
     pub fn add_signal(mut self, sig: CANSignal) -> Result<Self, CANConstructionError> {
-        self.ensure_signals_init();
-
-        let sig_map = self.sig_map.as_mut().unwrap();
-        let signals = self.signals.as_mut().unwrap();
-
-        if sig_map.contains_key(&sig.name) {
+        if self.sig_map.contains_key(&sig.name) {
             return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
         }
 
-        sig_map.insert(sig.name.clone(), signals.len());
-        signals.push(sig);
+        self.sig_map.insert(sig.name.clone(), self.signals.len());
+        self.signals.push(sig);
 
         Ok(self)
-    }
-
-    fn ensure_signals_init(&mut self) {
-        if self.signals.is_none() {
-            self.signals = Some(vec![]);
-            self.sig_map = Some(HashMap::new());
-        }
     }
 
     fn check_name_validity(name: &str) -> Result<(), CANConstructionError> {
