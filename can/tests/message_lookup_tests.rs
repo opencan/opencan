@@ -15,11 +15,7 @@ fn test_signal_lookup() {
 
     let mut bit = 0;
     let mut test_signal = |name: &str| -> CANSignal {
-        let s = CANSignal::builder()
-            .name(name)
-            .width(1)
-            .build()
-            .unwrap();
+        let s = CANSignal::builder().name(name).width(1).build().unwrap();
 
         bit += 1;
         s
