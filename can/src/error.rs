@@ -13,8 +13,8 @@ fn maybe_space_name<T: Display>(opt: &Option<T>) -> String {
 
 #[derive(Debug, Error)]
 pub enum CANConstructionError {
-    #[error("Signal with name `{0}` specified multiple times.")]
-    SignalSpecifiedMultipleTimes(String),
+    #[error("Signal with name `{0}` already exists in this message.")]
+    SignalNameAlreadyExists(String),
 
     /// Signals cannot have zero width.
     #[error("Signal with name `{0}` cannot have zero width")]
@@ -29,7 +29,7 @@ pub enum CANConstructionError {
     #[error("Message with name `{0}` already exists in network.")]
     MessageNameAlreadyExists(String),
 
-    #[error("Message with id 0x{:x} already exists in network.", .0)]
+    #[error("Message with id 0x{0:x} already exists in network.")]
     MessageIdAlreadyExists(u32),
 
     #[error("Message name `{0}` includes invalid character `{1}`.")]
