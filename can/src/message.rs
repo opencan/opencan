@@ -60,7 +60,7 @@ impl CANMessageBuilder {
     ///  - signal name does not repeat ([`SignalSpecifiedMultipleTimes`][CANConstructionError::SignalSpecifiedMultipleTimes])
     pub fn add_signal_fixed(mut self, bit: u32, sig: CANSignal) -> Result<Self, CANConstructionError> {
         if self.sig_map.contains_key(&sig.name) {
-            return Err(CANConstructionError::SignalSpecifiedMultipleTimes(sig.name));
+            return Err(CANConstructionError::SignalNameAlreadyExists(sig.name));
         }
 
         self.sig_map.insert(sig.name.clone(), self.signals.len());
