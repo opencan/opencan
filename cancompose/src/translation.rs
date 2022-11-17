@@ -24,11 +24,13 @@ impl YDesc {
             .cycletime_ms(mdesc.cycletime_ms);
 
         for (sig_name, sdesc) in mdesc.signals {
+            let start_bit = sdesc.start_bit;
+
             let sig = Self::make_sig(&sig_name, sdesc).context(format!(
                 "Could not create signal `{sig_name}` while composing message `{msg_name}`"
             ))?;
 
-            can_msg = can_msg.add_signal(sig).context(format!(
+            can_msg = can_msg.add_signal_fixed(start_bit, sig).context(format!(
                 "Could not add signal `{sig_name}` to message `{msg_name}`"
             ))?;
         }
