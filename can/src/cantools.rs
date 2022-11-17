@@ -37,7 +37,7 @@ impl TranslationLayer for CantoolsDecoder {
             cantools.database.can.Message(
                 name = {:?},
                 frame_id = {:#x},
-                length = 2,
+                length = {},
                 cycle_time = {},
                 signals = [
             {}
@@ -46,6 +46,7 @@ impl TranslationLayer for CantoolsDecoder {
             ",
             msg.name,
             msg.id,
+            msg.length,
             option_to_py(&msg.cycletime_ms),
             indent(&signals.join("\n"), &" ".repeat(8))
         )

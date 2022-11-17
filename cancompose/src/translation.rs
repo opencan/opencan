@@ -30,7 +30,11 @@ impl YDesc {
                 "Could not create signal `{sig_name}` while composing message `{msg_name}`"
             ))?;
 
-            can_msg = can_msg.add_signal_fixed(start_bit, sig).context(format!(
+            can_msg = match start_bit {
+                Some(bit) => can_msg.add_signal_fixed(bit, sig),
+                None => can_msg.add_signal(sig),
+            }
+            .context(format!(
                 "Could not add signal `{sig_name}` to message `{msg_name}`"
             ))?;
         }

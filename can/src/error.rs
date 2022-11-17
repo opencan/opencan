@@ -38,6 +38,12 @@ pub enum CANConstructionError {
     #[error("Message name is empty.")]
     MessageNameEmpty,
 
+    #[error("Signals `{0}` and `{1}` overlap at bit {2}.")]
+    SignalsOverlap(String, String, u32),
+
+    #[error("Signal `{0}` does not fit in message and would end at bit {1}; max is {2}")]
+    SignalWillNotFitInMessage(String, u32, u32),
+
     #[error("Missing required field `{0}`")]
     UninitializedFieldError(String),
 }

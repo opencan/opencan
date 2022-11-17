@@ -7,7 +7,7 @@ fn test_signal_lookup() {
             .name("TestMessage")
             .id(0x10)
             .cycletime_ms(None)
-            .add_signals_fixed(sigs.into_iter().map(|s| (0, s)).collect())
+            .add_signals(sigs)
             .unwrap()
             .build()
             .unwrap()
