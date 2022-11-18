@@ -73,7 +73,7 @@ impl CANMessageBuilder {
     /// Add single signal to message with signal position (start bit) specified.
     ///
     /// Checks:
-    ///  - signal name does not repeat ([`SignalSpecifiedMultipleTimes`][CANConstructionError::SignalSpecifiedMultipleTimes])
+    ///  - signal name does not repeat ([`SignalSpecifiedMultipleTimes`][CANConstructionError::SignalNameAlreadyExists])
     ///  - signals in message do not overlap ([`SignalsOverlap`][CANConstructionError::SignalsOverlap])
     ///  - signal does not extend past end of message (['SignalWillNotFitInMessage`][CANConstructionError::SignalWillNotFitInMessage])
     pub fn add_signal_fixed(
