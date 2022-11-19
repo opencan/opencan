@@ -65,7 +65,7 @@ impl TranslationLayer for CantoolsDecoder {
             ),
             ",
             s.sig.name,
-            s.bit,
+            s.start(),
             s.sig.width,
             option_to_py(&s.sig.description),
             option_to_py(&s.sig.scale),

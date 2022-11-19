@@ -34,7 +34,7 @@ impl CANSignalBuilder {
 
     /// Infer the width of this signal based on given information.
     // TODO: Write and describe inference semantics.
-    // TODO: Maybe this should just be implictly called when no with is specified?
+    // TODO: Maybe this should just be implictly called when no width is specified?
     pub fn infer_width(self) -> Result<Self, CANConstructionError> {
         if self.width.is_some() {
             return Ok(self);

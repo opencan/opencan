@@ -12,8 +12,22 @@ const MAX_MESSAGE_BIT: u32 = 63;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CANSignalWithPosition {
     // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
-    pub bit: u32,
+    bit: u32,
     pub sig: CANSignal,
+}
+
+impl CANSignalWithPosition {
+    pub fn start(&self) -> u32 {
+        self.bit
+    }
+
+    pub fn end(&self) -> u32 {
+        self.start() + self.sig.width - 1
+    }
+
+    pub fn name_clone(&self) -> String {
+        self.sig.name.clone()
+    }
 }
 
 #[derive(Serialize, Deserialize, Clone, Builder)]
@@ -45,14 +59,11 @@ impl CANMessageBuilder {
     /// only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     pub fn build(mut self) -> Result<CANMessage, CANConstructionError> {
-        // set message length in bytes to last signal's end position / 8
+        // set message length in bytes
         self.length = self.signals.last().map_or(0, |s| {
-            let end = s.bit + s.sig.width;
-            if (end % 8) == 0 {
-                end / 8
-            } else {
-                (end / 8) + 1
-            }
+            let bits = s.end() + 1;
+
+            (bits / 8) + ((bits % 8) != 0) as u32 // ceiling integer divide
         });
 
         let msg = self.__build()?;
@@ -90,9 +101,9 @@ impl CANMessageBuilder {
         // only need to ensure the last signal's end bit is no later than this
         // signal's start bit
         if let Some(last) = self.signals.last() {
-            if bit <= (last.bit + last.sig.width - 1) {
+            if bit <= (last.end()) {
                 return Err(CANConstructionError::SignalsOverlap(
-                    last.sig.name.clone(),
+                    last.name_clone(),
                     sig.name,
                     bit,
                 ));
@@ -100,17 +111,17 @@ impl CANMessageBuilder {
         }
 
         // Check signal end position is not past the end of the message
-        let new_end = bit + sig.width - 1;
-        if new_end > MAX_MESSAGE_BIT {
+        let new = CANSignalWithPosition { bit, sig };
+        if new.end() > MAX_MESSAGE_BIT {
             return Err(CANConstructionError::SignalWillNotFitInMessage(
-                sig.name,
-                new_end,
+                new.name_clone(),
+                new.end(),
                 MAX_MESSAGE_BIT,
             ));
         }
 
-        self.sig_map.insert(sig.name.clone(), self.signals.len());
-        self.signals.push(CANSignalWithPosition { bit, sig });
+        self.sig_map.insert(new.name_clone(), self.signals.len());
+        self.signals.push(new);
 
         Ok(self)
     }
