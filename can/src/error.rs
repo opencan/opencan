@@ -38,6 +38,12 @@ pub enum CANConstructionError {
     #[error("Message name is empty.")]
     MessageNameEmpty,
 
+    #[error(
+        "Signal `{0}` has start bit {1}, which precedes previous signal `{2}`'s start bit of \
+            {3}. Signals must be added to message in order."
+    )]
+    MessageSignalsOutOfOrder(String, u32, String, u32),
+
     #[error("Signals `{0}` and `{1}` overlap at bit {2}.")]
     SignalsOverlap(String, String, u32),
 
