@@ -92,15 +92,25 @@ impl CANMessageBuilder {
         bit: u32,
         sig: CANSignal,
     ) -> Result<Self, CANConstructionError> {
+        // Check that signal name is unique within this message
         if self.sig_map.contains_key(&sig.name) {
             return Err(CANConstructionError::SignalNameAlreadyExists(sig.name));
         }
 
-        // Check signal ranges don't overlap
-        // The signals are stored sorted by start bit in self.signals, so we
-        // only need to ensure the last signal's end bit is no later than this
-        // signal's start bit
         if let Some(last) = self.signals.last() {
+            // Check that this signal comes after the last signal.
+            if bit <= (last.start()) {
+                return Err(CANConstructionError::MessageSignalsOutOfOrder(
+                    sig.name,
+                    bit,
+                    last.name_clone(),
+                    last.start(),
+                ));
+            }
+            // Check signal ranges don't overlap
+            // The signals are stored sorted by start bit in self.signals, so we
+            // only need to ensure the last signal's end bit is no later than this
+            // signal's start bit
             if bit <= (last.end()) {
                 return Err(CANConstructionError::SignalsOverlap(
                     last.name_clone(),
