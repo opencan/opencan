@@ -50,6 +50,21 @@ impl YDesc {
             .description(sdesc.description)
             .scale(sdesc.scale);
 
+        for h in sdesc.enumerated_values {
+            // len should be one because every `- VALUE: val` pair is its own dict
+            assert!(h.iter().len() == 1);
+
+            let e = h.iter().next().unwrap();
+            match e.1 {
+                YEnumeratedValue::Auto(_) => {
+                    new_sig = new_sig.add_enumerated_value_inferred(e.0.clone())?;
+                }
+                YEnumeratedValue::Exact(v) => {
+                    new_sig = new_sig.add_enumerated_value(e.0.clone(), *v)?;
+                }
+            }
+        }
+
         if let Some(w) = sdesc.width {
             new_sig = new_sig.width(w);
         } else {
