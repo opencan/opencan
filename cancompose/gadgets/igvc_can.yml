@@ -8,7 +8,6 @@ messages:
     signals:
       sysStatus:
         description: Status of the node.
-        width: 2
         enumerated_values:
           - IDLE: auto
           - UNHEALTHY: auto
@@ -20,7 +19,6 @@ messages:
         width: 8
       resetReason:
         description: Reset reason.
-        width: 2
         enumerated_values:
           - POWERON: auto
           - WATCHDOG_RESET: auto

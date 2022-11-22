@@ -44,12 +44,23 @@ impl CANSignalBuilder {
     /// Infer the width of this signal based on given information.
     // TODO: Write and describe inference semantics.
     // TODO: Maybe this should just be implictly called when no width is specified?
-    pub fn infer_width(self) -> Result<Self, CANConstructionError> {
+    pub fn infer_width(mut self) -> Result<Self, CANConstructionError> {
         if self.width.is_some() {
             return Ok(self);
         }
 
-        Err(CANConstructionError::SignalWidthInferenceFailed(self.name))
+        // choose the biggest minimum width we have
+        let min_width = [self.min_width_for_enumerated_values()]
+            .into_iter()
+            .max()
+            .unwrap();
+
+        if min_width == 0 {
+            Err(CANConstructionError::SignalWidthInferenceFailed(self.name))
+        } else {
+            self.width = Some(min_width);
+            Ok(self)
+        }
     }
 
     /// Infer the width of the signal, but return a SignalWidthAlreadySpecified
@@ -92,6 +103,14 @@ impl CANSignalBuilder {
         assert!(!self.enumerated_values.insert(name, val).did_overwrite());
 
         Ok(self)
+    }
+
+    fn min_width_for_enumerated_values(&self) -> u32 {
+        if !self.enumerated_values.is_empty() {
+            (self._highest_enumerated_value as f32).log2().ceil() as u32
+        } else {
+            0
+        }
     }
 }
 
