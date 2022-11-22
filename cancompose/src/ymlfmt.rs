@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 #[serde(untagged)]
 pub enum YEnumeratedValue {
     Auto(String),
-    Exact(u32),
+    Exact(u64),
 }
 
 impl std::fmt::Debug for YEnumeratedValue {

@@ -62,6 +62,9 @@ impl TranslationLayer for CantoolsDecoder {
                 comment = {:?},
                 scale = {},
                 offset = {},
+                choices = {{
+            {}
+                }},
             ),
             ",
             s.sig.name,
@@ -69,7 +72,21 @@ impl TranslationLayer for CantoolsDecoder {
             s.sig.width,
             option_to_py(&s.sig.description),
             option_to_py(&s.sig.scale),
-            s.sig.offset.map_or(0.0, |o| o)
+            s.sig.offset.map_or(0.0, |o| o),
+            indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8))
         )
+    }
+}
+
+impl CantoolsDecoder {
+    fn signal_py_choices(s: &CANSignal) -> String {
+        let mut ch: Vec<(&String, &u64)> = s.enumerated_values.iter().collect();
+
+        ch.sort_by(|a, b| a.1.cmp(b.1));
+
+        ch.iter()
+            .map(|(s, v)| format!("'{s}': {v},"))
+            .collect::<Vec<String>>()
+            .join("\n")
     }
 }

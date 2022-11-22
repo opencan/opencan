@@ -26,6 +26,12 @@ pub enum CANConstructionError {
     #[error("Refusing to infer width when width already specified of signal{}", maybe_space_name(.0))]
     SignalWidthAlreadySpecified(Option<String>),
 
+    #[error("Enumerated value name `{0}` already exists for signal (previous value = {1});")]
+    EnumeratedValueNameAlreadyExists(String, u64),
+
+    #[error("Enumerated value `{1}` already named as `{0}`; values can only be named once")]
+    EnumeratedValueValueAlreadyNamed(String, u64),
+
     #[error("Message with name `{0}` already exists in network.")]
     MessageNameAlreadyExists(String),
 
