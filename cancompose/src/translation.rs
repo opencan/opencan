@@ -53,23 +53,18 @@ impl YDesc {
         for h in sdesc.enumerated_values {
             // len should be one because every `- VALUE: val` pair is its own dict
             assert!(h.iter().len() == 1);
-
             let e = h.into_iter().next().unwrap();
-            match e.1 {
-                YEnumeratedValue::Auto(_) => {
-                    new_sig = new_sig.add_enumerated_value_inferred(e.0)?;
-                }
-                YEnumeratedValue::Exact(v) => {
-                    new_sig = new_sig.add_enumerated_value(e.0, v)?;
-                }
+
+            new_sig = match e.1 {
+                YEnumeratedValue::Auto(_) => new_sig.add_enumerated_value_inferred(e.0)?,
+                YEnumeratedValue::Exact(v) => new_sig.add_enumerated_value(e.0, v)?,
             }
         }
 
-        if let Some(w) = sdesc.width {
-            new_sig = new_sig.width(w);
-        } else {
-            new_sig = new_sig.infer_width_strict()?;
-        }
+        new_sig = match sdesc.width {
+            Some(w) => new_sig.width(w),
+            None => new_sig.infer_width_strict()?,
+        };
 
         new_sig
             .build()
