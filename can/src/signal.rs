@@ -107,7 +107,9 @@ impl CANSignalBuilder {
 
     fn min_width_for_enumerated_values(&self) -> u32 {
         if !self.enumerated_values.is_empty() {
-            (self._highest_enumerated_value as f32).log2().ceil() as u32
+            // this is (self._highest_enumerated_value.next_power_of_two).ilog2()
+            // ilog2() should be stabilized in 1.66
+            u64::BITS - 1 - self._highest_enumerated_value.next_power_of_two().leading_zeros()
         } else {
             0
         }
