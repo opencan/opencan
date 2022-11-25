@@ -32,13 +32,13 @@ impl CANNetwork {
     }
 
     pub fn message_by_name(&self, name: &str) -> Option<&CANMessage> {
-        let idx = self.messages_by_name.get(name)?;
-        Some(self.messages.get(*idx).unwrap())
+        let &idx = self.messages_by_name.get(name)?;
+        Some(self.messages.get(idx).unwrap())
     }
 
     pub fn message_by_id(&self, id: &u32) -> Option<&CANMessage> {
-        let idx = self.messages_by_id.get(id)?;
-        Some(self.messages.get(*idx).unwrap())
+        let &idx = self.messages_by_id.get(id)?;
+        Some(self.messages.get(idx).unwrap())
     }
 
     /// Insert a message into the network.

@@ -184,10 +184,10 @@ impl CANMessage {
     }
 
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
-        let idx = self.sig_map.get(name)?;
+        let &idx = self.sig_map.get(name)?;
 
         // unwrap here, as signals really should have the signal if sig_map does
-        Some(self.signals.get(*idx).unwrap())
+        Some(self.signals.get(idx).unwrap())
     }
 }
 

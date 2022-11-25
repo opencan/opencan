@@ -54,13 +54,13 @@ impl YDesc {
             // len should be one because every `- VALUE: val` pair is its own dict
             assert!(h.iter().len() == 1);
 
-            let e = h.iter().next().unwrap();
+            let e = h.into_iter().next().unwrap();
             match e.1 {
                 YEnumeratedValue::Auto(_) => {
-                    new_sig = new_sig.add_enumerated_value_inferred(e.0.clone())?;
+                    new_sig = new_sig.add_enumerated_value_inferred(e.0)?;
                 }
                 YEnumeratedValue::Exact(v) => {
-                    new_sig = new_sig.add_enumerated_value(e.0.clone(), *v)?;
+                    new_sig = new_sig.add_enumerated_value(e.0, v)?;
                 }
             }
         }
