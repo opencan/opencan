@@ -31,3 +31,38 @@ fn test_message_name_chars() {
         Err(CANConstructionError::MessageNameEmpty)
     ));
 }
+
+#[test]
+//signal name does not repeat ([`SignalNameAlreadyExists`][CANConstructionError::SignalNameAlreadyExists])
+fn test_repeated_sig_name() {
+    let sig1 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+    let sig2 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+    let sig3 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+
+    CANMessage::builder()
+        .name("TestMessage")
+        .id(0x10)
+        .add_signal(sig1).expect("Expected CANMessageBuilder");
+
+    assert!(matches!(
+        CANMessage::builder()
+            .name("TestMessage")
+            .id(0x10)
+            .add_signal(sig2)
+            .unwrap()
+            .add_signal(sig3),
+        Err(CANConstructionError::SignalNameAlreadyExists(..))
+    ));
+}
