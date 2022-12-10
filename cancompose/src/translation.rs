@@ -1,13 +1,13 @@
 use anyhow::{Context, Result};
-use thiserror::Error;
 use can::*;
+use thiserror::Error;
 
 use crate::ymlfmt::*;
 
 #[derive(Error, Debug)]
 enum CANCompositionError {
     #[error("Invalid directive `{0}` for enumerated value `{1}`.")]
-    InvalidEnumeratedValueDirective(String, String)
+    InvalidEnumeratedValueDirective(String, String),
 }
 
 impl YDesc {
@@ -65,10 +65,12 @@ impl YDesc {
             new_sig = match e.1 {
                 YEnumeratedValue::Auto(s) => {
                     if s != "auto" {
-                        return Err(CANCompositionError::InvalidEnumeratedValueDirective(s, e.0).into());
+                        return Err(
+                            CANCompositionError::InvalidEnumeratedValueDirective(s, e.0).into()
+                        );
                     }
                     new_sig.add_enumerated_value_inferred(e.0)?
-                },
+                }
                 YEnumeratedValue::Exact(v) => new_sig.add_enumerated_value(e.0, v)?,
             }
         }
