@@ -54,7 +54,8 @@ fn test_repeated_sig_name() {
     CANMessage::builder()
         .name("TestMessage")
         .id(0x10)
-        .add_signal(sig1).expect("Expected CANMessageBuilder");
+        .add_signal(sig1)
+        .expect("Expected CANMessageBuilder");
 
     assert!(matches!(
         CANMessage::builder()
@@ -71,25 +72,23 @@ fn test_repeated_sig_name() {
 //ok but CANSignal doesn't even have an option for startbit ??? in its struct so what ??
 #[test]
 fn test_sig_specified_in_order() {
+    //try to make this into a closure or a function to make it easier
     let sig1 = CANSignal::builder()
         .name("sig1")
-        .offset(5)
         .width(1)
+        .build()
         .unwrap();
     let sig2 = CANSignal::builder()
         .name("sig2")
-        .offset(0)
         .width(1)
+        .build()
         .unwrap();
+    let sigs = vec![(5, sig1), (0, sig2)];
     assert!(matches!(
-    CANMessage::builder()
-                .name("TestMessage")
-                .id(0x10)
-                .add_signal(sig1)
-                .unwrap()
-                .add_signal(sig2),
-            Err(CANConstructionError::MessageSignalsOutOfOrder(..))));
-    
-
-
+        CANMessage::builder()
+            .name("TestMessage")
+            .id(0x10)
+            .add_signals_fixed(sigs),
+        Err(CANConstructionError::MessageSignalsOutOfOrder(..))
+    ));
 }
