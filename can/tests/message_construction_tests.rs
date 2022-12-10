@@ -66,3 +66,29 @@ fn test_repeated_sig_name() {
         Err(CANConstructionError::SignalNameAlreadyExists(..))
     ));
 }
+
+///  - signals are specified in order([`MessageSignalsOutOfOrder`][CANConstructionError::MessageSignalsOutOfOrder])
+#[test]
+fn test_sig_specified_in_order() {
+    let sig1 = CANSignal::builder()
+        .name("sig1")
+        .offset(5)
+        .width(1)
+        .unwrap();
+    let sig2 = CANSignal::builder()
+        .name("sig2")
+        .offset(0)
+        .width(1)
+        .unwrap();
+    assert!(matches!(
+    CANMessage::builder()
+                .name("TestMessage")
+                .id(0x10)
+                .add_signal(sig1)
+                .unwrap()
+                .add_signal(sig2),
+            Err(CANConstructionError::MessageSignalsOutOfOrder(..))));
+    
+
+
+}
