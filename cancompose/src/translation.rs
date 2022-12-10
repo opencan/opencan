@@ -62,7 +62,6 @@ impl YDesc {
             assert!(h.iter().len() == 1);
             let e = h.into_iter().next().unwrap();
 
-            // We should actually check that the String inside Auto(String) is "auto".
             new_sig = match e.1 {
                 YEnumeratedValue::Auto(s) => {
                     if s != "auto" {
