@@ -85,6 +85,7 @@ dependencies = [
  "serde-tuple-vec-map",
  "serde_json",
  "serde_yaml",
+ "thiserror",
 ]
 
 [[package]]
