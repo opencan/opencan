@@ -1,7 +1,14 @@
 use anyhow::{Context, Result};
+use thiserror::Error;
 use can::*;
 
 use crate::ymlfmt::*;
+
+#[derive(Error, Debug)]
+enum CANCompositionError {
+    #[error("Invalid directive `{0}` for enumerated value `{1}`.")]
+    InvalidEnumeratedValueDirective(String, String)
+}
 
 impl YDesc {
     pub fn into_network(self) -> Result<CANNetwork> {
@@ -55,8 +62,14 @@ impl YDesc {
             assert!(h.iter().len() == 1);
             let e = h.into_iter().next().unwrap();
 
+            // We should actually check that the String inside Auto(String) is "auto".
             new_sig = match e.1 {
-                YEnumeratedValue::Auto(_) => new_sig.add_enumerated_value_inferred(e.0)?,
+                YEnumeratedValue::Auto(s) => {
+                    if s != "auto" {
+                        return Err(CANCompositionError::InvalidEnumeratedValueDirective(s, e.0).into());
+                    }
+                    new_sig.add_enumerated_value_inferred(e.0)?
+                },
                 YEnumeratedValue::Exact(v) => new_sig.add_enumerated_value(e.0, v)?,
             }
         }
