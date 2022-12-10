@@ -13,12 +13,8 @@ fn test_signal_lookup() {
             .unwrap()
     };
 
-    let mut bit = 0;
-    let mut test_signal = |name: &str| -> CANSignal {
-        let s = CANSignal::builder().name(name).width(1).build().unwrap();
-
-        bit += 1;
-        s
+    let test_signal = |name: &str| -> CANSignal {
+        CANSignal::builder().name(name).width(1).build().unwrap()
     };
 
     let msg = make_msg(vec![]);
