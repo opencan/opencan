@@ -109,7 +109,12 @@ impl CANSignalBuilder {
         if !self.enumerated_values.is_empty() {
             // this is (self._highest_enumerated_value.next_power_of_two).ilog2()
             // ilog2() should be stabilized in 1.66
-            u64::BITS - 1 - self._highest_enumerated_value.next_power_of_two().leading_zeros()
+            u64::BITS
+                - 1
+                - self
+                    ._highest_enumerated_value
+                    .next_power_of_two()
+                    .leading_zeros()
         } else {
             0
         }
