@@ -69,7 +69,6 @@ fn test_repeated_sig_name() {
 }
 
 ///  - signals are specified in order([`MessageSignalsOutOfOrder`][CANConstructionError::MessageSignalsOutOfOrder])
-//ok but CANSignal doesn't even have an option for startbit ??? in its struct so what ??
 #[test]
 fn test_sig_specified_in_order() {
     //try to make this into a closure or a function to make it easier
