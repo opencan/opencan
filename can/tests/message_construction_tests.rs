@@ -31,3 +31,63 @@ fn test_message_name_chars() {
         Err(CANConstructionError::MessageNameEmpty)
     ));
 }
+
+#[test]
+//signal name does not repeat ([`SignalNameAlreadyExists`][CANConstructionError::SignalNameAlreadyExists])
+fn test_repeated_sig_name() {
+    let sig1 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+    let sig2 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+    let sig3 = CANSignal::builder()
+        .name("testsig")
+        .width(1)
+        .build()
+        .unwrap();
+
+    CANMessage::builder()
+        .name("TestMessage")
+        .id(0x10)
+        .add_signal(sig1)
+        .expect("Expected CANMessageBuilder");
+
+    assert!(matches!(
+        CANMessage::builder()
+            .name("TestMessage")
+            .id(0x10)
+            .add_signal(sig2)
+            .unwrap()
+            .add_signal(sig3),
+        Err(CANConstructionError::SignalNameAlreadyExists(..))
+    ));
+}
+
+///  - signals are specified in order([`MessageSignalsOutOfOrder`][CANConstructionError::MessageSignalsOutOfOrder])
+#[test]
+fn test_sig_specified_in_order() {
+    //try to make this into a closure or a function to make it easier
+    let sig1 = CANSignal::builder()
+        .name("sig1")
+        .width(1)
+        .build()
+        .unwrap();
+    let sig2 = CANSignal::builder()
+        .name("sig2")
+        .width(1)
+        .build()
+        .unwrap();
+    let sigs = vec![(5, sig1), (0, sig2)];
+    assert!(matches!(
+        CANMessage::builder()
+            .name("TestMessage")
+            .id(0x10)
+            .add_signals_fixed(sigs),
+        Err(CANConstructionError::MessageSignalsOutOfOrder(..))
+    ));
+}
