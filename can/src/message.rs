@@ -141,7 +141,10 @@ impl CANMessageBuilder {
     /// after the previous signal ends.
     ///
     /// Convenience wrapper for [`add_signal()`][CANMessageBuilder::add_signal].
-    pub fn add_signals(mut self, sigs: Vec<CANSignal>) -> Result<Self, CANConstructionError> {
+    pub fn add_signals(
+        mut self,
+        sigs: impl IntoIterator<Item = CANSignal>,
+    ) -> Result<Self, CANConstructionError> {
         for sig in sigs {
             self = self.add_signal(sig)?;
         }
@@ -154,7 +157,7 @@ impl CANMessageBuilder {
     /// Convenience wrapper for [`add_signal_fixed()`][CANMessageBuilder::add_signal_fixed].
     pub fn add_signals_fixed(
         mut self,
-        sigs: Vec<(u32, CANSignal)>,
+        sigs: impl IntoIterator<Item = (u32, CANSignal)>,
     ) -> Result<Self, CANConstructionError> {
         for (bit, sig) in sigs {
             self = self.add_signal_fixed(bit, sig)?;
