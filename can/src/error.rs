@@ -5,7 +5,7 @@ use thiserror::Error;
 
 fn maybe_space_name<T: Display>(opt: &Option<T>) -> String {
     if let Some(s) = opt {
-        format!(" `{}`", s)
+        format!(" `{s}`")
     } else {
         "".into()
     }
