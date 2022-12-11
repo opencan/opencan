@@ -9,7 +9,7 @@ pub struct CantoolsDecoder;
 
 fn option_to_py<T: Display>(opt: &Option<T>) -> String {
     if let Some(o) = opt {
-        format!("{}", o)
+        format!("{o}")
     } else {
         "None".into()
     }
