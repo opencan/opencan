@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::ops::Index;
 
+use bitvec::prelude::*;
 use derive_builder::Builder;
 use serde::{Deserialize, Serialize};
 
@@ -192,6 +193,27 @@ impl CANMessage {
 
         // unwrap here, as signals really should have the signal if sig_map does
         Some(self.signals.get(idx).unwrap())
+    }
+
+    pub fn decode_string(&self, raw: u64) -> String {
+        let raw = raw.view_bits::<Lsb0>();
+        let mut out = String::new();
+        out += &self.name;
+        out += "(\n";
+
+        for sig in &self.signals {
+            let start = sig.bit;
+            let end = start + sig.sig.width - 1;
+
+            // use different load for little/big endian later
+            let sigraw: u64 = raw[start as usize .. end as usize].load();
+
+            out += &format!("    {},\n", sig.sig.decode_string(sigraw));
+        }
+
+        out += ")\n";
+
+        out
     }
 }
 
