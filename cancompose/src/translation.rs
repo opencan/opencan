@@ -55,7 +55,8 @@ impl YDesc {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
             .description(sdesc.description)
-            .scale(sdesc.scale);
+            .scale(sdesc.scale)
+            .offset(sdesc.offset);
 
         for h in sdesc.enumerated_values {
             // len should be one because every `- VALUE: val` pair is its own dict
