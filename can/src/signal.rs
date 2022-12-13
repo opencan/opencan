@@ -16,10 +16,10 @@ pub struct CANSignal {
     pub description: Option<String>,
 
     #[builder(default)]
-    pub offset: Option<f32>,
+    pub offset: Option<f64>,
 
     #[builder(default)]
-    pub scale: Option<f32>,
+    pub scale: Option<f64>,
 
     #[builder(setter(custom), field(type = "bimap::BiMap<String, u64>"))]
     pub enumerated_values: bimap::BiMap<String, u64>,
@@ -127,7 +127,7 @@ impl CANSignal {
         let enval = self.enumerated_values.iter().find(|&e| *e.1 == raw);
 
         if self.scale.is_some() || self.offset.is_some() {
-            let expanded = (raw as f64 * self.scale.unwrap_or(1.) as f64) + self.offset.unwrap_or(0.) as f64;
+            let expanded = (raw as f64 * self.scale.unwrap_or(1.)) + self.offset.unwrap_or(0.);
             out += &format!("{}: {}", self.name, expanded);
         } else {
             out += &format!("{}: {}", self.name, raw);

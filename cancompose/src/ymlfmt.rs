@@ -27,8 +27,8 @@ pub struct YSignal {
 
     pub description: Option<String>,
 
-    pub scale: Option<f32>,
-    pub offset: Option<f32>,
+    pub scale: Option<f64>,
+    pub offset: Option<f64>,
     pub unit: Option<String>,
 
     #[serde(default)]
