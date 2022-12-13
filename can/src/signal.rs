@@ -126,8 +126,12 @@ impl CANSignal {
 
         let enval = self.enumerated_values.iter().find(|&e| *e.1 == raw);
 
-        let expanded = (raw as f64 * self.scale.unwrap_or(1.) as f64) + self.offset.unwrap_or(0.) as f64;
-        out += &format!("{}: {}", self.name, expanded);
+        if self.scale.is_some() || self.offset.is_some() {
+            let expanded = (raw as f64 * self.scale.unwrap_or(1.) as f64) + self.offset.unwrap_or(0.) as f64;
+            out += &format!("{}: {}", self.name, expanded);
+        } else {
+            out += &format!("{}: {}", self.name, raw);
+        }
 
         if let Some(e) = enval {
             out += &format!(" ('{}')", e.0);
