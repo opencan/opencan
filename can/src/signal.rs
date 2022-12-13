@@ -130,7 +130,7 @@ impl CANSignal {
         out += &format!("{}: {}", self.name, expanded);
 
         if let Some(e) = enval {
-            out += &format!(" ('{}')", e.1);
+            out += &format!(" ('{}')", e.0);
         }
 
         out

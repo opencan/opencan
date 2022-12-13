@@ -203,7 +203,7 @@ impl CANMessage {
 
         for sig in &self.signals {
             let start = sig.bit;
-            let end = start + sig.sig.width - 1;
+            let end = start + sig.sig.width;
 
             // use different load for little/big endian later
             let sigraw: u64 = raw[start as usize .. end as usize].load();
