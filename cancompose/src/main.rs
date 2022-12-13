@@ -1,3 +1,5 @@
+use std::io::{self, BufRead};
+
 use anyhow::{Context, Result};
 use can::{CantoolsDecoder, TranslationLayer};
 use clap::Parser;
@@ -11,7 +13,7 @@ mod translation;
 #[command(version)]
 struct Args {
     in_file: String,
-    msg_name: String,
+    // msg_name: String,
 }
 
 fn main() -> Result<()> {
@@ -41,12 +43,43 @@ fn main() -> Result<()> {
     // println!("{}", CantoolsDecoder::dump_network(&net));
 
     println!("Ok, decoding...");
-    println!(
-        "{}",
-        net.message_by_name(&args.msg_name)
-            .unwrap()
-            .decode_string(0xFFFFFFFF)
-    );
+    // println!(
+    //     "{}",
+    //     net.message_by_name(&args.msg_name)
+    //         .unwrap()
+    //         .decode_string(0xFFFFFFFF)
+    // );
 
+    let stdin = io::stdin();
+    let mut lines = stdin.lock().lines();
+
+    while let Some(line) = lines.next() {
+        let line = line.unwrap();
+        let cols: Vec<&str> = line.split_whitespace().collect();
+
+        // cols[0] is the can iface
+        // cols[1] is the message id
+        let message_id: u32 = cols[1].parse().unwrap();
+
+        // cols[2] is the [dlc]
+        let mut i = cols[2].chars().into_iter();
+        i.next();
+        i.next_back();
+
+        let dlc: u8 = i.collect::<String>().parse().unwrap();
+
+        let data: String = cols.into_iter().skip(3).collect();
+        let data_padded = format!("{:0>16}", data);
+        println!("{message_id}: [{dlc}] {data_padded}");
+
+        let data_raw = u64::from_str_radix(&data_padded, 16).unwrap();
+
+        println!(
+            "{}",
+            net.message_by_id(&message_id)
+                .unwrap()
+                .decode_string(data_raw)
+        );
+    }
     Ok(())
 }

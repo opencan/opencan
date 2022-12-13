@@ -14,7 +14,8 @@ messages:
           - ACTIVE: auto
           - ESTOP: auto
       counter:
-        scale: 2
+        scale: 2.6
+        offset: -100.0
         description: Counter for fun.
         width: 8
       resetReason:
