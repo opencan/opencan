@@ -124,8 +124,6 @@ impl CANSignal {
     pub fn decode_string(&self, raw: u64) -> String {
         let mut out = String::new();
 
-        let enval = self.enumerated_values.iter().find(|&e| *e.1 == raw);
-
         if self.scale.is_some() || self.offset.is_some() {
             let expanded = (raw as f64 * self.scale.unwrap_or(1.)) + self.offset.unwrap_or(0.);
             out += &format!("{}: {}", self.name, expanded);
@@ -133,8 +131,8 @@ impl CANSignal {
             out += &format!("{}: {}", self.name, raw);
         }
 
-        if let Some(e) = enval {
-            out += &format!(" ('{}')", e.0);
+        if let Some(n) = self.enumerated_values.get_by_right(&raw) {
+            out += &format!(" ('{}')", n);
         }
 
         out
