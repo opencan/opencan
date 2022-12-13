@@ -25,8 +25,8 @@ pub struct CANSignal {
     pub enumerated_values: bimap::BiMap<String, u64>,
 
     #[serde(skip)]
-    #[builder(setter(custom), field(type = "u64"))]
-    _highest_enumerated_value: u64,
+    #[builder(setter(custom), field(type = "Option<u64>"))]
+    _highest_enumerated_value: Option<u64>,
 }
 
 impl CANSignalBuilder {
@@ -74,7 +74,8 @@ impl CANSignalBuilder {
     }
 
     pub fn add_enumerated_value_inferred(self, name: String) -> Result<Self, CANConstructionError> {
-        let val = self._highest_enumerated_value + 1;
+        let val = self._highest_enumerated_value.map_or(0, |v| v + 1);
+
         self.add_enumerated_value(name, val)
     }
 
@@ -96,9 +97,9 @@ impl CANSignalBuilder {
             ));
         }
 
-        if val > self._highest_enumerated_value {
-            self._highest_enumerated_value = val;
-        }
+        // set highest to max of existing and new
+        self._highest_enumerated_value =
+            Some(self._highest_enumerated_value.map_or(val, |h| h.max(val)));
 
         assert!(!self.enumerated_values.insert(name, val).did_overwrite());
 
@@ -106,15 +107,9 @@ impl CANSignalBuilder {
     }
 
     fn min_width_for_enumerated_values(&self) -> u32 {
-        if !self.enumerated_values.is_empty() {
-            // this is (self._highest_enumerated_value.next_power_of_two).ilog2()
-            // ilog2() should be stabilized in 1.66
-            u64::BITS
-                - 1
-                - self
-                    ._highest_enumerated_value
-                    .next_power_of_two()
-                    .leading_zeros()
+        if let Some(v) = self._highest_enumerated_value {
+            // this is ilog2() - .ilog2() stable in 1.67
+            u64::BITS - 1 - (v + 1).next_power_of_two().leading_zeros()
         } else {
             0
         }
