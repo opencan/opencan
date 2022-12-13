@@ -11,6 +11,7 @@ mod translation;
 #[command(version)]
 struct Args {
     in_file: String,
+    msg_name: String,
 }
 
 fn main() -> Result<()> {
@@ -37,6 +38,10 @@ fn main() -> Result<()> {
     };
 
     println!("{}", serde_json::to_string_pretty(&net)?);
-    println!("{}", CantoolsDecoder::dump_network(&net));
+    // println!("{}", CantoolsDecoder::dump_network(&net));
+
+    println!("Ok, decoding...");
+    println!("{}", net.message_by_name(&args.msg_name).unwrap().decode_string(0xFFFFFFFF));
+
     Ok(())
 }
