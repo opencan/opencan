@@ -206,7 +206,7 @@ impl CANMessage {
             let end = start + sig.sig.width;
 
             // use different load for little/big endian later
-            let sigraw: u64 = raw[start as usize .. end as usize].load();
+            let sigraw = raw[start as usize..end as usize].load();
 
             out += &format!("    {},\n", sig.sig.decode_string(sigraw));
         }

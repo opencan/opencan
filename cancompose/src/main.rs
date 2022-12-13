@@ -41,7 +41,12 @@ fn main() -> Result<()> {
     // println!("{}", CantoolsDecoder::dump_network(&net));
 
     println!("Ok, decoding...");
-    println!("{}", net.message_by_name(&args.msg_name).unwrap().decode_string(0xFFFFFFFF));
+    println!(
+        "{}",
+        net.message_by_name(&args.msg_name)
+            .unwrap()
+            .decode_string(0xFFFFFFFF)
+    );
 
     Ok(())
 }
