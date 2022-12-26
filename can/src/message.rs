@@ -213,7 +213,6 @@ mod tests {
     use super::*;
     use crate::tests::*;
 
-    /// Convenience function
     fn new_msg() -> CANMessageBuilder {
         CANMessage::builder()
     }
@@ -290,7 +289,7 @@ mod tests {
         let sigs = vec![(5, sig1), (0, sig2)];
 
         assert!(matches!(
-            CANMessage::builder()
+            new_msg()
                 .name("TestMessage")
                 .id(0x10)
                 .add_signals_fixed(sigs),
@@ -303,7 +302,7 @@ mod tests {
     // ([`SignalNameAlreadyExists`][CANConstructionError::SignalNameAlreadyExists])
     fn unique_sig_names() {
         assert!(matches!(
-            CANMessage::builder()
+            new_msg()
                 .name("TestMessage")
                 .id(0x10)
                 .add_signal(basic_sig("sigA"))
