@@ -72,16 +72,8 @@ fn test_repeated_sig_name() {
 #[test]
 fn test_sig_specified_in_order() {
     //try to make this into a closure or a function to make it easier
-    let sig1 = CANSignal::builder()
-        .name("sig1")
-        .width(1)
-        .build()
-        .unwrap();
-    let sig2 = CANSignal::builder()
-        .name("sig2")
-        .width(1)
-        .build()
-        .unwrap();
+    let sig1 = CANSignal::builder().name("sig1").width(1).build().unwrap();
+    let sig2 = CANSignal::builder().name("sig2").width(1).build().unwrap();
     let sigs = vec![(5, sig1), (0, sig2)];
     assert!(matches!(
         CANMessage::builder()

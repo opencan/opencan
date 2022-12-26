@@ -201,6 +201,24 @@ impl Index<&str> for CANMessage {
     type Output = CANSignal;
 
     fn index(&self, index: &str) -> &Self::Output {
-        return &self.get_sig(index).unwrap().sig;
+        &self
+            .get_sig(index)
+            .unwrap_or_else(|| panic!("No signal `{index}` in message `{}`", self.name))
+            .sig
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn new_empty_test_msg() -> CANMessage {
+        CANMessage::builder().name("Test").id(0).build().unwrap()
+    }
+
+    #[test]
+    #[should_panic(expected = "No signal `nonexistent` in message `Test`")]
+    fn panic_on_nonexistent_signal_index() {
+        _ = new_empty_test_msg()["nonexistent"];
     }
 }
