@@ -211,14 +211,45 @@ impl Index<&str> for CANMessage {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tests::*;
 
-    fn new_empty_test_msg() -> CANMessage {
-        CANMessage::builder().name("Test").id(0).build().unwrap()
+    /// Convenience function
+    fn new_msg() -> CANMessageBuilder {
+        CANMessage::builder()
+    }
+
+    fn basic_msg(sigs: impl IntoIterator<Item = CANSignal>) -> CANMessage {
+        new_msg()
+            .name("TestMessage")
+            .id(0)
+            .add_signals(sigs)
+            .unwrap()
+            .build()
+            .unwrap()
     }
 
     #[test]
-    #[should_panic(expected = "No signal `nonexistent` in message `Test`")]
+    #[should_panic(expected = "No signal `nonexistent` in message `TestMessage`")]
     fn panic_on_nonexistent_signal_index() {
-        _ = new_empty_test_msg()["nonexistent"];
+        _ = basic_msg([])["nonexistent"];
+    }
+
+    #[test]
+    fn basic_sig_lookup() {
+        // empty
+        let msg = basic_msg([]);
+        assert!(matches!(msg.get_sig("sigA"), None));
+
+        // one signal
+        let msg = basic_msg([basic_sig("sigA")]);
+        assert!(matches!(msg["sigA"].name.as_str(), "sigA"));
+        assert!(matches!(msg.get_sig("siga"), None));
+
+        // three signals
+        let msg = basic_msg([basic_sig("sigA"), basic_sig("sigB"), basic_sig("sigC")]);
+        assert!(matches!(msg["sigA"].name.as_str(), "sigA"));
+        assert!(matches!(msg["sigB"].name.as_str(), "sigB"));
+        assert!(matches!(msg["sigC"].name.as_str(), "sigC"));
+        assert!(matches!(msg.get_sig("sigD"), None));
     }
 }

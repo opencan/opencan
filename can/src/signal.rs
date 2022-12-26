@@ -121,3 +121,12 @@ impl CANSignal {
         CANSignalBuilder::default()
     }
 }
+
+#[cfg(test)]
+pub(crate) mod tests {
+    use super::*;
+
+    pub fn basic_sig(name: &str) -> CANSignal {
+        CANSignal::builder().name(name).width(1).build().unwrap()
+    }
+}
