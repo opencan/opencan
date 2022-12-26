@@ -126,7 +126,58 @@ impl CANSignal {
 pub(crate) mod tests {
     use super::*;
 
+    pub fn new_sig() -> CANSignalBuilder {
+        CANSignal::builder()
+    }
+
     pub fn basic_sig(name: &str) -> CANSignal {
-        CANSignal::builder().name(name).width(1).build().unwrap()
+        new_sig().name(name).width(1).build().unwrap()
+    }
+
+    #[test]
+    fn signal_width_zero() {
+        let try_sig = |width| -> Result<_, CANConstructionError> {
+            new_sig().name("testSignal").width(width).build()
+        };
+
+        assert!(matches!(
+            try_sig(0),
+            Err(CANConstructionError::SignalHasZeroWidth(..))
+        ));
+
+        assert!(matches!(try_sig(1), Ok(..)));
+    }
+
+    #[test]
+    fn signal_width_nonexistent() {
+        assert!(matches!(
+            new_sig().name("testSignal").width(1).build(),
+            Ok(..)
+        ));
+
+        assert!(matches!(
+            new_sig().name("testSignal").build(),
+            Err(CANConstructionError::UninitializedFieldError(s)) if s == "width"
+        ));
+    }
+
+    #[test]
+    fn signal_width_inference() {
+        let base_sig = || new_sig().name("testSignal");
+
+        // nothing given except name
+        assert!(matches!(
+            base_sig().infer_width(),
+            Err(CANConstructionError::SignalWidthInferenceFailed(..))
+        ));
+
+        // width already specified
+        assert!(matches!(base_sig().width(1).infer_width(), Ok(..)));
+
+        // width already specified, strict
+        assert!(matches!(
+            base_sig().width(1).infer_width_strict(),
+            Err(CANConstructionError::SignalWidthAlreadySpecified(..))
+        ));
     }
 }
