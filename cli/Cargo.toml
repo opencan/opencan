@@ -6,5 +6,5 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
-cancompose = { path = "../cancompose" }
+opencan-compose = { path = "../compose" }
 clap = "4.0.32"

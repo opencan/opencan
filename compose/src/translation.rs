@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use can::*;
+use opencan_core::*;
 use thiserror::Error;
 
 use crate::ymlfmt::*;

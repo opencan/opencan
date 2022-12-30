@@ -9,14 +9,14 @@ struct PrimaryArgs {
 
 #[derive(clap::Subcommand)]
 enum Command {
-    Compose(cancompose::Args),
+    Compose(opencan_compose::Args),
 }
 
 fn main() -> Result<()> {
     let args = PrimaryArgs::parse();
 
     match args.subcommand {
-        Command::Compose(a) => cancompose::compose_entry(a)?,
+        Command::Compose(a) => opencan_compose::compose_entry(a)?,
     }
 
     Ok(())

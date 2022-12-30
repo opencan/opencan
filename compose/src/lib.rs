@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
-use can::{CantoolsDecoder, TranslationLayer};
 use clap::Parser;
+use opencan_core::{CantoolsDecoder, TranslationLayer};
 
 mod ymlfmt;
 use ymlfmt::*;

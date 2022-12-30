@@ -1,6 +1,6 @@
 use anyhow::Result;
-use cancompose::*;
 use clap::Parser;
+use opencan_compose::*;
 
 fn main() -> Result<()> {
     let args = Args::parse();
