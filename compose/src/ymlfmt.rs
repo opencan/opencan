@@ -46,7 +46,13 @@ pub struct YMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct YDesc {
+pub struct YNode {
     #[serde(with = "tuple_vec_map")]
     pub messages: Vec<(String, YMessage)>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct YDesc {
+    #[serde(with = "tuple_vec_map")]
+    pub nodes: Vec<(String, YNode)>,
 }

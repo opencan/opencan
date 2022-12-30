@@ -14,26 +14,51 @@ impl YDesc {
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
 
-        for (msg_name, mdesc) in self.messages {
-            let m = Self::make_msg(&msg_name, mdesc)?;
-
-            net.insert_msg(m)
-                .context(format!("Could not insert message `{msg_name}`"))?;
+        for (node_name, ndesc) in self.nodes {
+            Self::add_node(&mut net, &node_name, ndesc)
+                .context(format!("Could not build node `{node_name}`"))?;
         }
 
         Ok(net)
     }
 
-    fn make_msg(msg_name: &str, mdesc: YMessage) -> Result<CANMessage> {
+    fn add_node(net: &mut CANNetwork, node_name: &str, ndesc: YNode) -> Result<()> {
+        let msgs = ndesc.into_messages(node_name)?;
+
+        for msg in msgs {
+            net.insert_msg(msg)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl YNode {
+    fn into_messages(self, name: &str) -> Result<Vec<CANMessage>> {
+        let mut msgs = Vec::new();
+
+        for (msg_name, mdesc) in self.messages {
+            let appended_name = format!("{name}_{msg_name}");
+            let m = mdesc.into_message(&appended_name)?;
+
+            msgs.push(m);
+        }
+
+        Ok(msgs)
+    }
+}
+
+impl YMessage {
+    fn into_message(self, msg_name: &str) -> Result<CANMessage> {
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
-            .id(mdesc.id)
-            .cycletime_ms(mdesc.cycletime_ms);
+            .id(self.id)
+            .cycletime_ms(self.cycletime_ms);
 
-        for (sig_name, sdesc) in mdesc.signals {
+        for (sig_name, sdesc) in self.signals {
             let start_bit = sdesc.start_bit;
 
-            let sig = Self::make_sig(&sig_name, sdesc).context(format!(
+            let sig = sdesc.into_signal(&sig_name).context(format!(
                 "Could not create signal `{sig_name}` while composing message `{msg_name}`"
             ))?;
 
@@ -50,14 +75,16 @@ impl YDesc {
             .build()
             .context(format!("Could not build message `{msg_name}`"))
     }
+}
 
-    fn make_sig(sig_name: &str, sdesc: YSignal) -> Result<CANSignal> {
+impl YSignal {
+    fn into_signal(self, sig_name: &str) -> Result<CANSignal> {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
-            .description(sdesc.description)
-            .scale(sdesc.scale);
+            .description(self.description.clone())
+            .scale(self.scale);
 
-        for h in sdesc.enumerated_values {
+        for h in self.enumerated_values {
             // len should be one because every `- VALUE: val` pair is its own dict
             assert!(h.iter().len() == 1);
             let e = h.into_iter().next().unwrap();
@@ -75,7 +102,7 @@ impl YDesc {
             }
         }
 
-        new_sig = match sdesc.width {
+        new_sig = match self.width {
             Some(w) => new_sig.width(w),
             None => new_sig.infer_width_strict()?,
         };

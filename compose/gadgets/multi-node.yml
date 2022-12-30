@@ -1,0 +1,16 @@
+nodes:
+  DBW:
+    messages:
+      VelCmd:
+        id: 0x20
+        cycletime_ms: 100
+
+        signals:
+          throttlePercent:
+            description: Throttle percentage.
+            unit: percent
+            width: 7
+          brakePercent:
+            description: Brake percentage.
+            unit: percent
+            width: 7
