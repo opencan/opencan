@@ -76,7 +76,7 @@ impl CANMessageBuilder {
     /// Add single signal to message.
     /// See [`add_signal_fixed()`][CANMessageBuilder::add_signal_fixed()] for more details.
     pub fn add_signal(self, sig: CANSignal) -> Result<Self, CANConstructionError> {
-        let bit = self.signals.last().map_or(0, |s| s.bit + s.sig.width);
+        let bit = self.signals.last().map_or(0, |s| s.end() + 1);
 
         self.add_signal_fixed(bit, sig)
     }
@@ -189,9 +189,7 @@ impl CANMessage {
 
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let &idx = self.sig_map.get(name)?;
-
-        // unwrap here, as signals really should have the signal if sig_map does
-        Some(self.signals.get(idx).unwrap())
+        Some(&self.signals[idx])
     }
 }
 

@@ -4,10 +4,9 @@ use derive_builder::UninitializedFieldError;
 use thiserror::Error;
 
 fn maybe_space_name<T: Display>(opt: &Option<T>) -> String {
-    if let Some(s) = opt {
-        format!(" `{s}`")
-    } else {
-        "".into()
+    match opt {
+        Some(s) => format!(" `{s}`"),
+        None => "".into(),
     }
 }
 

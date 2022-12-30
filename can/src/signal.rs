@@ -107,12 +107,10 @@ impl CANSignalBuilder {
     }
 
     fn min_width_for_enumerated_values(&self) -> u32 {
-        if let Some(v) = self._highest_enumerated_value {
+        self._highest_enumerated_value.map_or(0, |v| {
             // this is ilog2() - .ilog2() stable in 1.67
             u64::BITS - 1 - (v + 1).next_power_of_two().leading_zeros()
-        } else {
-            0
-        }
+        })
     }
 }
 
