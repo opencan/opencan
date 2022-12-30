@@ -8,10 +8,9 @@ use crate::*;
 pub struct CantoolsDecoder;
 
 fn option_to_py<T: Display>(opt: &Option<T>) -> String {
-    if let Some(o) = opt {
-        format!("{o}")
-    } else {
-        "None".into()
+    match opt {
+        Some(o) => format!("{o}"),
+        None => "None".into(),
     }
 }
 
