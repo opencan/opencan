@@ -9,6 +9,7 @@ struct PrimaryArgs {
 
 #[derive(clap::Subcommand)]
 enum Command {
+    /// Compose a CAN network using a definitions file
     Compose(opencan_compose::Args),
 }
 
