@@ -3,4 +3,5 @@
 members = [
     "can",
     "cancompose",
+    "opencan-cli",
 ]
