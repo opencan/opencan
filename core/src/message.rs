@@ -41,6 +41,9 @@ pub struct CANMessage {
     #[builder(default)]
     pub cycletime_ms: Option<u32>,
 
+    #[builder(default)]
+    pub tx_node: Option<String>,
+
     // skip builder because we will provide add_signals() instead
     #[builder(setter(custom), field(type = "Vec<CANSignalWithPosition>"))]
     pub signals: Vec<CANSignalWithPosition>,

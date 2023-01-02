@@ -57,6 +57,7 @@ impl CANNetwork {
 
     /// Insert a message into the network.
     /// Checks for message ID and name uniqueness.
+    /// If a node is specified, it must already exist in the network.
     pub fn insert_msg(&mut self, msg: CANMessage) -> Result<(), CANConstructionError> {
         if self.messages_by_name.contains_key(&msg.name) {
             return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
@@ -67,8 +68,21 @@ impl CANNetwork {
         }
 
         let msg_idx = self.messages.len();
+
+        if let Some(node) = &msg.tx_node {
+            let &node_idx = self
+                .nodes_by_name
+                .get(node)
+                .ok_or(CANConstructionError::NodeDoesNotExist(node.into()))?;
+
+            // After this point, we are making changes to the network and must
+            // finish up or panic, not return in an inconsistent state.
+
+            self.nodes[node_idx].add_message(&msg.name, msg_idx);
+        }
+
         self.messages_by_name.insert(msg.name.clone(), msg_idx);
-        self.messages_by_id.insert(msg.id, msg_idx); // check dup again?
+        self.messages_by_id.insert(msg.id, msg_idx);
 
         self.messages.push(msg);
         Ok(())
@@ -78,7 +92,7 @@ impl CANNetwork {
     /// Checks for node name uniqueness.
     pub fn add_node(&mut self, name: &str) -> Result<(), CANConstructionError> {
         if self.nodes_by_name.contains_key(name) {
-            return Err(CANConstructionError::NodeNameAlreadyExists(name.into()));
+            return Err(CANConstructionError::NodeAlreadyExists(name.into()));
         }
 
         let node = CANNode::new(name.into());
@@ -103,6 +117,6 @@ mod tests {
         assert!(matches!(net.add_node("test"), Ok(..)));
         assert!(matches!(
             net.add_node("TEST"),
-            Err(CANConstructionError::NodeNameAlreadyExists(t)) if t == "TEST"));
+            Err(CANConstructionError::NodeAlreadyExists(t)) if t == "TEST"));
     }
 }
