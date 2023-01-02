@@ -44,7 +44,10 @@ pub enum CANConstructionError {
     MessageNameEmpty,
 
     #[error("Node with name `{0}` already exists in network.")]
-    NodeNameAlreadyExists(String),
+    NodeAlreadyExists(String),
+
+    #[error("Node with name `{0}` does not exist in network.")]
+    NodeDoesNotExist(String),
 
     #[error(
         "Signal `{0}` has start bit {1}, which precedes previous signal `{2}`'s start bit of \
