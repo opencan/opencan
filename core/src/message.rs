@@ -41,7 +41,7 @@ pub struct CANMessage {
     #[builder(default)]
     pub cycletime_ms: Option<u32>,
 
-    #[builder(default)]
+    #[builder(setter(into, strip_option), default)]
     pub tx_node: Option<String>,
 
     // skip builder because we will provide add_signals() instead
@@ -193,6 +193,10 @@ impl CANMessage {
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let &idx = self.sig_map.get(name)?;
         Some(&self.signals[idx])
+    }
+
+    pub fn tx_node(&self) -> Option<&str> {
+        self.tx_node.as_deref()
     }
 }
 

@@ -8,11 +8,11 @@ use crate::node::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct CANNetwork {
-    /// Owning Vec of all CANMessage in this network.
-    pub(crate) messages: Vec<CANMessage>,
-
     /// Owning Vec of all CANNode in this network.
     nodes: Vec<CANNode>,
+
+    /// Owning Vec of all CANMessage in this network.
+    pub(crate) messages: Vec<CANMessage>,
 
     /// index into .messages
     #[serde(skip)]
@@ -22,6 +22,7 @@ pub struct CANNetwork {
     #[serde(skip)]
     messages_by_id: HashMap<u32, usize>,
 
+    #[serde(skip)]
     /// index into .nodes
     nodes_by_name: HashMap<String, usize>,
 }
