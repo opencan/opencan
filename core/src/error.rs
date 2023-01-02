@@ -43,6 +43,9 @@ pub enum CANConstructionError {
     #[error("Message name is empty.")]
     MessageNameEmpty,
 
+    #[error("Node with name `{0}` already exists in network.")]
+    NodeNameAlreadyExists(String),
+
     #[error(
         "Signal `{0}` has start bit {1}, which precedes previous signal `{2}`'s start bit of \
             {3}. Signals must be added to message in order."

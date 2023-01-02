@@ -6,6 +6,9 @@ pub use signal::*;
 mod message;
 pub use message::*;
 
+mod node;
+// no public exports for node
+
 mod network;
 pub use network::*;
 
