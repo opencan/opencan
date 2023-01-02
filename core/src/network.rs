@@ -4,15 +4,26 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 use crate::message::*;
+use crate::node::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct CANNetwork {
+    /// Owning Vec of all CANMessage in this network.
     pub(crate) messages: Vec<CANMessage>,
 
+    /// Owning Vec of all CANNode in this network.
+    nodes: Vec<CANNode>,
+
+    /// index into .messages
     #[serde(skip)]
     messages_by_name: HashMap<String, usize>,
+
+    /// index into .messages
     #[serde(skip)]
     messages_by_id: HashMap<u32, usize>,
+
+    /// index into .nodes
+    nodes_by_name: HashMap<String, usize>,
 }
 
 impl Default for CANNetwork {
@@ -24,10 +35,13 @@ impl Default for CANNetwork {
 impl CANNetwork {
     pub fn new() -> Self {
         Self {
+            nodes: Vec::new(),
             messages: Vec::new(),
 
             messages_by_name: HashMap::new(),
             messages_by_id: HashMap::new(),
+
+            nodes_by_name: HashMap::new(),
         }
     }
 
@@ -58,5 +72,37 @@ impl CANNetwork {
 
         self.messages.push(msg);
         Ok(())
+    }
+
+    /// Add a new node to the network.
+    /// Checks for node name uniqueness.
+    pub fn add_node(&mut self, name: &str) -> Result<(), CANConstructionError> {
+        if self.nodes_by_name.contains_key(name) {
+            return Err(CANConstructionError::NodeNameAlreadyExists(name.into()));
+        }
+
+        let node = CANNode::new(name.into());
+
+        let node_idx = self.nodes.len();
+        self.nodes_by_name.insert(name.into(), node_idx);
+
+        self.nodes.push(node);
+        Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{CANConstructionError, CANNetwork};
+
+    #[test]
+    fn node_name_unique() {
+        let mut net = CANNetwork::new();
+
+        assert!(matches!(net.add_node("TEST"), Ok(..)));
+        assert!(matches!(net.add_node("test"), Ok(..)));
+        assert!(matches!(
+            net.add_node("TEST"),
+            Err(CANConstructionError::NodeNameAlreadyExists(t)) if t == "TEST"));
     }
 }
