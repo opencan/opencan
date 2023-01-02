@@ -23,6 +23,8 @@ impl YDesc {
     }
 
     fn add_node(net: &mut CANNetwork, node_name: &str, ndesc: YNode) -> Result<()> {
+        net.add_node(node_name)?;
+
         let msgs = ndesc.into_messages(node_name)?;
 
         for msg in msgs {
@@ -39,7 +41,7 @@ impl YNode {
 
         for (msg_name, mdesc) in self.messages {
             let appended_name = format!("{name}_{msg_name}");
-            let m = mdesc.into_message(&appended_name)?;
+            let m = mdesc.into_message(&appended_name, name)?;
 
             msgs.push(m);
         }
@@ -49,11 +51,12 @@ impl YNode {
 }
 
 impl YMessage {
-    fn into_message(self, msg_name: &str) -> Result<CANMessage> {
+    fn into_message(self, msg_name: &str, node_name: &str) -> Result<CANMessage> {
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
             .id(self.id)
-            .cycletime_ms(self.cycletime_ms);
+            .cycletime_ms(self.cycletime_ms)
+            .tx_node(node_name);
 
         for (sig_name, sdesc) in self.signals {
             let start_bit = sdesc.start_bit;
