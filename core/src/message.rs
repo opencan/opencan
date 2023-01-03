@@ -12,7 +12,7 @@ const MAX_MESSAGE_BIT: u32 = 63;
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CANSignalWithPosition {
     // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
-    bit: u32,
+    pub bit: u32,
     pub sig: CANSignal,
 }
 
