@@ -4,4 +4,5 @@ members = [
     "core",
     "compose",
     "cli",
+    "codegen",
 ]

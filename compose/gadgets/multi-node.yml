@@ -14,3 +14,13 @@ nodes:
             description: Brake percentage.
             unit: percent
             width: 7
+      SystemCmd:
+        id: 0x21
+        cycletime_ms: 10
+
+        signals:
+          systemCommand:
+            description: What do!?
+            enumerated_values:
+              - HUMAN_CONTROL: auto
+              - DBW_GO: auto

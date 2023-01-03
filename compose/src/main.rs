@@ -4,5 +4,6 @@ use opencan_compose::*;
 
 fn main() -> Result<()> {
     let args = Args::parse();
-    compose_entry(args)
+    compose_entry(args)?;
+    Ok(())
 }
