@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use clap::Parser;
-use opencan_core::{CantoolsDecoder, TranslationLayer};
+use opencan_core::{CANNetwork, CantoolsDecoder, TranslationLayer};
 
 mod ymlfmt;
 use ymlfmt::*;
@@ -10,10 +10,10 @@ mod translation;
 #[derive(Parser)]
 #[command(version)]
 pub struct Args {
-    in_file: String,
+    pub in_file: String,
 }
 
-pub fn compose_entry(args: Args) -> Result<()> {
+pub fn compose_entry(args: Args) -> Result<CANNetwork> {
     let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
     let de: YDesc = serde_yaml::from_str(&input).context(format!(
@@ -36,5 +36,5 @@ pub fn compose_entry(args: Args) -> Result<()> {
 
     println!("{}", serde_json::to_string_pretty(&net)?);
     println!("{}", CantoolsDecoder::dump_network(&net));
-    Ok(())
+    Ok(net)
 }

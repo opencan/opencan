@@ -306,7 +306,17 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "clap",
+ "opencan-codegen",
  "opencan-compose",
+]
+
+[[package]]
+name = "opencan-codegen"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "opencan-core",
 ]
 
 [[package]]

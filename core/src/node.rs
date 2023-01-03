@@ -7,7 +7,7 @@ pub(crate) struct CANNode {
     name: String,
 
     // index into parent CANNetwork messages vec
-    messages: HashMap<String, usize>,
+    pub(crate) messages: HashMap<String, usize>,
 }
 
 impl CANNode {
