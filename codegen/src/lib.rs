@@ -78,7 +78,7 @@ impl Codegen {
 
         let node_msgs = net
             .messages_by_node(&args.node)
-            .ok_or(anyhow!("Node `{}` not found in network.", args.node))?;
+            .ok_or_else(|| anyhow!("Node `{}` not found in network.", args.node))?;
 
         for msg in node_msgs {
             output.push(Self::struct_for_message(msg), 0);
@@ -172,9 +172,9 @@ impl Codegen {
     fn ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
         match sig.width {
             1..=8 => CSignalTy::U8,
-            ..=16 => CSignalTy::U16,
-            ..=32 => CSignalTy::U32,
-            ..=64 => CSignalTy::U64,
+            9..=16 => CSignalTy::U16,
+            17..=32 => CSignalTy::U32,
+            33..=64 => CSignalTy::U64,
             w => panic!(
                 "Unexpectedly wide signal: `{}` is `{}` bits wide",
                 sig.name, w
