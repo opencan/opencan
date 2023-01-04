@@ -36,9 +36,56 @@ impl Display for CSignalTy {
     }
 }
 
+struct CodegenCtxt {
+    content: String,
+    indent: usize,
+}
+
+impl ToString for CodegenCtxt {
+    fn to_string(&self) -> String {
+        self.content.clone()
+    }
+}
+
+impl CodegenCtxt {
+    fn get_prefix(&self) -> String {
+        " ".repeat(4 * self.indent)
+    }
+
+    fn push(&mut self, next: Self) {
+        self.content += &textwrap::indent(&next.content, &next.get_prefix());
+    }
+
+    fn new_indented(&self) -> Self {
+        return Self {
+            content: String::new(),
+            indent: self.indent + 1,
+        };
+    }
+
+    fn new() -> Self {
+        return Self {
+            content: String::new(),
+            indent: 0,
+        };
+    }
+
+    fn str(&mut self, s: impl AsRef<str>) {
+        self.content += s.as_ref();
+    }
+
+    fn line(&mut self, s: impl AsRef<str>) {
+        self.str(format!("{}\n", s.as_ref()));
+    }
+
+    fn newline(&mut self) {
+        self.content += "\n";
+    }
+}
+
 impl Codegen {
     pub fn network_to_c(args: Args, net: CANNetwork) -> Result<String> {
-        let mut output = String::new();
+        let mut output = CodegenCtxt::new();
 
         let node_msgs = net
             .messages_by_node(&args.node)
@@ -47,37 +94,40 @@ impl Codegen {
         for msg in node_msgs {
             // generate structs
             // ok, for this message, let's generate a struct for each signal
-            output += &format!("struct CAN_Message_{} {{", msg.name);
+            output.str(format!("struct CAN_Message_{} {{", msg.name));
+
+            let mut s = output.new_indented();
 
             for sigbit in &msg.signals {
-                output += "\n";
+                s.newline();
 
                 /* start comment block with signal name */
-                output += &format!("    /* --- Signal: {}\n", sigbit.sig.name);
+                s.line(format!("/* --- Signal: {}", sigbit.sig.name));
 
                 /* description */
                 if let Some(d) = &sigbit.sig.description {
-                    output += "     *\n";
-                    output += &format!("     * ----> Description: \"{d}\"\n");
+                    s.line(" *");
+                    s.line(format!(" * ----> Description: \"{d}\""));
                 }
 
                 /* start bit */
-                output += &format!("     * ----> Start bit: {}\n", sigbit.bit);
+                s.line(format!(" * ----> Start bit: {}", sigbit.bit));
 
                 /* finish comment block */
-                output += "     */\n";
+                s.line(" */");
 
-                output += &format!(
-                    "    {} {};\n",
+                s.line(format!(
+                    "{} {};",
                     Self::get_ty_for_decoded_signal(&sigbit.sig),
                     sigbit.sig.name
-                );
+                ));
             }
-
-            output += "};\n\n";
+            output.push(s);
+            output.line("};");
+            output.newline();
         }
 
-        Ok(output)
+        Ok(output.to_string())
     }
 
     /// Get the C type for the decoded signal, not taking into account minimum/maximum capping.
