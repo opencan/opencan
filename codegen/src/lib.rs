@@ -3,7 +3,7 @@ use std::fmt::Display;
 use anyhow::{anyhow, Result};
 use clap::Parser;
 use indoc::formatdoc;
-use opencan_core::{CANNetwork, CANSignal, CANMessage};
+use opencan_core::{CANMessage, CANNetwork, CANSignal};
 
 #[derive(Parser)]
 pub struct Args {
@@ -91,14 +91,15 @@ impl Codegen {
     fn decode_fn_for_message(msg: &CANMessage) -> CodeCtxt {
         let mut top = CodeCtxt::new();
 
-        top.line(format!(
-            "{} {}(const uint64_t data) {{",
-            Self::struct_name_for_message(msg),
-            Self::decode_fn_name_for_message(msg),
-        ));
+        top.line(formatdoc!(
+            "
+            {} {}(const uint64_t data) {{
 
-        top.line("}");
-        top.newline();
+            }}
+            ",
+            Self::struct_name_for_message(msg),
+            Self::decode_fn_name_for_message(msg)
+        ));
 
         top
     }
@@ -114,26 +115,19 @@ impl Codegen {
         for sigbit in &msg.signals {
             inner.newline();
 
-            /* start comment block */
-            inner.line("/**");
-
-            /* name */
-            inner.line(format!(" * -- Signal: {}", sigbit.sig.name));
-
-            /* description */
-            if let Some(d) = &sigbit.sig.description {
-                inner.line(" *");
-                inner.line(format!(" * ----> Description: \"{d}\""));
-            }
-
-            /* start bit */
-            inner.line(format!(" * ----> Start bit: {}", sigbit.bit));
-
-            /* finish comment block */
-            inner.line(" */");
-
-            inner.line(format!(
-                "{} {};",
+            inner.line(formatdoc!(
+                "
+                /**
+                 * -- Signal: {}
+                 *
+                 * ----> Description: {}
+                 * ----> Start bit: {}
+                 */
+                {} {};
+                ",
+                &sigbit.sig.name,
+                sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
+                sigbit.bit,
                 Self::ty_for_decoded_signal(&sigbit.sig),
                 sigbit.sig.name
             ));
@@ -154,21 +148,28 @@ impl Codegen {
         format!("CANRX_decode_{}", msg.name)
     }
 
-    /// Get the C type for the decoded signal, not taking into account minimum/maximum capping.
-    /// This is always float right now.
-    fn ty_for_decoded_signal(_sig: &CANSignal) -> CSignalTy {
-        // todo: need integer signal bounds support
+    /// Get the C type for the decoded signal.
+    ///
+    /// This does not take into account minimum/maximum capping - that is, this
+    /// gives the type for the entire _representable_ decoded range, not just
+    /// what's within the minimum/maximum additional bounds.
+    fn ty_for_decoded_signal(sig: &CANSignal) -> CSignalTy {
+        // todo: complete integer signal bounds support
         // should we make this implicit or explicit... hmmm...
         // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
         // -> otoh, saying force_integer: yes or force_float: yes all the time is annnoying
 
         // I think I lean implicit. The problem is then it becomes a nightmare in Rust code....
 
-        CSignalTy::Float
+        // for now, if the signal has no offset or scale, then return its raw type, else float.
+        if sig.scale.is_none() && sig.offset.is_none() {
+            Self::ty_for_raw_signal(sig)
+        } else {
+            CSignalTy::Float
+        }
     }
 
-    fn _ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
-        // this is totally wrong, what a fail
+    fn ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
         match sig.width {
             1..=8 => CSignalTy::U8,
             ..=16 => CSignalTy::U16,
