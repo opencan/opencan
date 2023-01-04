@@ -74,7 +74,7 @@ impl CANNetwork {
             let &node_idx = self
                 .nodes_by_name
                 .get(node)
-                .ok_or(CANConstructionError::NodeDoesNotExist(node.into()))?;
+                .ok_or_else(|| CANConstructionError::NodeDoesNotExist(node.into()))?;
 
             // After this point, we are making changes to the network and must
             // finish up or panic, not return in an inconsistent state.
