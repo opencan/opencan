@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 anyhow = "1.0.68"
 clap = "4.0.32"
+indoc = "1.0.8"
 textwrap = "0.16.0"
 
 opencan-core = { path = "../core" }
