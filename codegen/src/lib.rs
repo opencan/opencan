@@ -2,7 +2,8 @@ use std::fmt::Display;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
-use opencan_core::{CANNetwork, CANSignal};
+use indoc::formatdoc;
+use opencan_core::{CANNetwork, CANSignal, CANMessage};
 
 #[derive(Parser)]
 pub struct Args {
@@ -36,38 +37,26 @@ impl Display for CSignalTy {
     }
 }
 
-struct CodegenCtxt {
+struct CodeCtxt {
     content: String,
-    indent: usize,
 }
 
-impl ToString for CodegenCtxt {
+impl ToString for CodeCtxt {
     fn to_string(&self) -> String {
         self.content.clone()
     }
 }
 
-impl CodegenCtxt {
-    fn get_prefix(&self) -> String {
-        " ".repeat(4 * self.indent)
-    }
-
-    fn push(&mut self, next: Self) {
-        self.content += &textwrap::indent(&next.content, &next.get_prefix());
-    }
-
-    fn new_indented(&self) -> Self {
-        return Self {
-            content: String::new(),
-            indent: self.indent + 1,
-        };
-    }
-
+impl CodeCtxt {
     fn new() -> Self {
-        return Self {
+        Self {
             content: String::new(),
-            indent: 0,
-        };
+        }
+    }
+
+    fn push(&mut self, next: Self, indent: usize) {
+        let prefix = " ".repeat(4 * indent);
+        self.content += &textwrap::indent(&next.content, &prefix);
     }
 
     fn str(&mut self, s: impl AsRef<str>) {
@@ -85,54 +74,89 @@ impl CodegenCtxt {
 
 impl Codegen {
     pub fn network_to_c(args: Args, net: CANNetwork) -> Result<String> {
-        let mut output = CodegenCtxt::new();
+        let mut output = CodeCtxt::new();
 
         let node_msgs = net
             .messages_by_node(&args.node)
             .ok_or(anyhow!("Node `{}` not found in network.", args.node))?;
 
         for msg in node_msgs {
-            // generate structs
-            // ok, for this message, let's generate a struct for each signal
-            output.str(format!("struct CAN_Message_{} {{", msg.name));
-
-            let mut s = output.new_indented();
-
-            for sigbit in &msg.signals {
-                s.newline();
-
-                /* start comment block with signal name */
-                s.line(format!("/* --- Signal: {}", sigbit.sig.name));
-
-                /* description */
-                if let Some(d) = &sigbit.sig.description {
-                    s.line(" *");
-                    s.line(format!(" * ----> Description: \"{d}\""));
-                }
-
-                /* start bit */
-                s.line(format!(" * ----> Start bit: {}", sigbit.bit));
-
-                /* finish comment block */
-                s.line(" */");
-
-                s.line(format!(
-                    "{} {};",
-                    Self::get_ty_for_decoded_signal(&sigbit.sig),
-                    sigbit.sig.name
-                ));
-            }
-            output.push(s);
-            output.line("};");
-            output.newline();
+            output.push(Self::struct_for_message(msg), 0);
+            output.push(Self::decode_fn_for_message(msg), 0);
         }
 
         Ok(output.to_string())
     }
 
+    fn decode_fn_for_message(msg: &CANMessage) -> CodeCtxt {
+        let mut top = CodeCtxt::new();
+
+        top.line(format!(
+            "{} {}(const uint64_t data) {{",
+            Self::struct_name_for_message(msg),
+            Self::decode_fn_name_for_message(msg),
+        ));
+
+        top.line("}");
+        top.newline();
+
+        top
+    }
+
+    fn struct_for_message(msg: &CANMessage) -> CodeCtxt {
+        // generate structs
+        // ok, for this message, let's generate a struct for each signal
+        let mut top = CodeCtxt::new();
+        let mut inner = CodeCtxt::new(); // struct contents
+
+        top.str(format!("{} {{", Self::struct_name_for_message(msg)));
+
+        for sigbit in &msg.signals {
+            inner.newline();
+
+            /* start comment block */
+            inner.line("/**");
+
+            /* name */
+            inner.line(format!(" * -- Signal: {}", sigbit.sig.name));
+
+            /* description */
+            if let Some(d) = &sigbit.sig.description {
+                inner.line(" *");
+                inner.line(format!(" * ----> Description: \"{d}\""));
+            }
+
+            /* start bit */
+            inner.line(format!(" * ----> Start bit: {}", sigbit.bit));
+
+            /* finish comment block */
+            inner.line(" */");
+
+            inner.line(format!(
+                "{} {};",
+                Self::ty_for_decoded_signal(&sigbit.sig),
+                sigbit.sig.name
+            ));
+        }
+
+        top.push(inner, 1);
+        top.line("};");
+        top.newline();
+
+        top
+    }
+
+    fn struct_name_for_message(msg: &CANMessage) -> String {
+        format!("struct CAN_Message_{}", msg.name)
+    }
+
+    fn decode_fn_name_for_message(msg: &CANMessage) -> String {
+        format!("CANRX_decode_{}", msg.name)
+    }
+
     /// Get the C type for the decoded signal, not taking into account minimum/maximum capping.
     /// This is always float right now.
-    fn get_ty_for_decoded_signal(_sig: &CANSignal) -> CSignalTy {
+    fn ty_for_decoded_signal(_sig: &CANSignal) -> CSignalTy {
         // todo: need integer signal bounds support
         // should we make this implicit or explicit... hmmm...
         // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
@@ -143,7 +167,7 @@ impl Codegen {
         CSignalTy::Float
     }
 
-    fn _get_ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
+    fn _ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
         // this is totally wrong, what a fail
         match sig.width {
             1..=8 => CSignalTy::U8,
