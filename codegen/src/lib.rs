@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, Context};
 use clap::Parser;
 use indoc::formatdoc;
 use opencan_core::{CANMessage, CANNetwork, CANSignal};
@@ -78,7 +78,7 @@ impl Codegen {
 
         let node_msgs = net
             .messages_by_node(&args.node)
-            .ok_or_else(|| anyhow!("Node `{}` not found in network.", args.node))?;
+            .context(format!("Node `{}` not found in network.", args.node))?;
 
         for msg in node_msgs {
             output.push(Self::struct_for_message(msg), 0);
@@ -125,7 +125,7 @@ impl Codegen {
                  */
                 {} {};
                 ",
-                &sigbit.sig.name,
+                sigbit.sig.name,
                 sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
                 sigbit.bit,
                 Self::ty_for_decoded_signal(&sigbit.sig),
