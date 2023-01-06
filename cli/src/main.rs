@@ -1,5 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
+use opencan_codegen::Codegen;
 
 #[derive(clap::Parser)]
 struct PrimaryArgs {
@@ -24,7 +25,8 @@ fn main() -> Result<()> {
             let net = opencan_compose::compose_entry(opencan_compose::Args {
                 in_file: a.in_file.clone(),
             })?;
-            let out = opencan_codegen::Codegen::network_to_c(a, net)?;
+            let gen = Codegen::new(a);
+            let out = gen.network_to_c(net)?;
             println!("{out}");
             Ok(())
         }
