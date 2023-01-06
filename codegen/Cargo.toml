@@ -11,6 +11,6 @@ anyhow = "1.0.68"
 chrono = { version = "0.4.23", features = ["clock", "std"], default-features = false }
 clap = { version = "4.0.32", features = ["cargo"] }
 indoc = "1.0.8"
-textwrap = "0.16.0"
+textwrap = { version = "0.16.0", default-features = false }
 
 opencan-core = { path = "../core" }
