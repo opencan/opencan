@@ -10,6 +10,7 @@ nodes:
             description: Throttle percentage.
             unit: percent
             width: 7
+            scale: 0.01
           brakePercent:
             description: Brake percentage.
             unit: percent
