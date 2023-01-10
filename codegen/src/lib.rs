@@ -54,6 +54,12 @@ impl Indent for String {
 trait MessageCodegen {
     fn struct_name(&self) -> String;
     fn struct_def(&self) -> String;
+    fn global_struct_ident(&self) -> String;
+
+    fn raw_struct_name(&self) -> String;
+    fn raw_struct_def(&self) -> String;
+    fn global_raw_struct_ident(&self) -> String;
+
     fn decode_fn_name(&self) -> String;
     fn decode_fn_def(&self) -> String;
 }
@@ -64,7 +70,6 @@ impl MessageCodegen for CANMessage {
     }
 
     fn struct_def(&self) -> String {
-        // ok, for this message, let's generate a struct for each signal
         let mut top = String::new();
         let mut inner = String::new(); // struct contents
 
@@ -96,6 +101,50 @@ impl MessageCodegen for CANMessage {
         top
     }
 
+    fn global_struct_ident(&self) -> String {
+        format!("CANRX_Message_{}", self.name)
+    }
+
+    fn raw_struct_name(&self) -> String {
+        format!("struct CAN_MessageRaw_{}", self.name)
+    }
+
+    fn raw_struct_def(&self) -> String {
+        let mut top = String::new();
+        let mut inner = String::new(); // struct contents
+
+        top += &format!("{} {{", self.raw_struct_name());
+
+        for sigbit in &self.signals {
+            inner += "\n";
+            inner += &formatdoc! {"
+                /**
+                 * -- Raw signal: {name}
+                 *
+                 * ----> Description: {desc}
+                 * ----> Start bit: {start}
+                 * ----> Width: {width}
+                 */
+                {sigty} {name};
+                ",
+                name = sigbit.sig.name,
+                desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
+                start = sigbit.bit,
+                width = sigbit.sig.width,
+                sigty = sigbit.sig.c_ty_raw(),
+            };
+        }
+
+        top += &inner.indent(4);
+        top += "};";
+
+        top
+    }
+
+    fn global_raw_struct_ident(&self) -> String {
+        format!("CANRX_MessageRaw_{}", self.name)
+    }
+
     fn decode_fn_name(&self) -> String {
         format!("CANRX_decode_{}", self.name)
     }
@@ -117,9 +166,7 @@ impl MessageCodegen for CANMessage {
 
         let args = formatdoc! {"
             const uint8_t * const data,
-            const uint_fast8_t len,
-            const {} * const out",
-            self.struct_name()
+            const uint_fast8_t len"
         }
         .indent(4);
 
@@ -210,12 +257,25 @@ impl Codegen {
 
         for msg in node_msgs {
             output += &formatdoc! {"
+                /*********************************************************/
+                /* Message: {name} */
+                /*********************************************************/
+
+                {mstruct_raw}
+                static {mstruct_raw_name} {global_ident_raw};
 
                 {mstruct}
+                static {mstruct_name} {global_ident};
 
                 {decode_fn}
                 ",
+                name = msg.name,
+                mstruct_raw = msg.raw_struct_def(),
+                mstruct_raw_name = msg.raw_struct_name(),
+                global_ident_raw = msg.global_raw_struct_ident(),
                 mstruct = msg.struct_def(),
+                mstruct_name = msg.struct_name(),
+                global_ident = msg.global_struct_ident(),
                 decode_fn = msg.decode_fn_def(),
             }
         }
