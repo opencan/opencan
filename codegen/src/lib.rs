@@ -52,11 +52,11 @@ impl Indent for String {
 }
 
 trait MessageCodegen {
-    fn struct_name(&self) -> String;
+    fn struct_ty(&self) -> String;
     fn struct_def(&self) -> String;
     fn global_struct_ident(&self) -> String;
 
-    fn raw_struct_name(&self) -> String;
+    fn raw_struct_ty(&self) -> String;
     fn raw_struct_def(&self) -> String;
     fn global_raw_struct_ident(&self) -> String;
 
@@ -67,7 +67,7 @@ trait MessageCodegen {
 }
 
 impl MessageCodegen for CANMessage {
-    fn struct_name(&self) -> String {
+    fn struct_ty(&self) -> String {
         format!("struct CAN_Message_{}", self.name)
     }
 
@@ -75,7 +75,7 @@ impl MessageCodegen for CANMessage {
         let mut top = String::new();
         let mut inner = String::new(); // struct contents
 
-        top += &format!("{} {{", self.struct_name());
+        top += &format!("{} {{", self.struct_ty());
 
         for sigbit in &self.signals {
             inner += "\n";
@@ -107,7 +107,7 @@ impl MessageCodegen for CANMessage {
         format!("CANRX_Message_{}", self.name)
     }
 
-    fn raw_struct_name(&self) -> String {
+    fn raw_struct_ty(&self) -> String {
         format!("struct CAN_MessageRaw_{}", self.name)
     }
 
@@ -115,7 +115,7 @@ impl MessageCodegen for CANMessage {
         let mut top = String::new();
         let mut inner = String::new(); // struct contents
 
-        top += &format!("{} {{", self.raw_struct_name());
+        top += &format!("{} {{", self.raw_struct_ty());
 
         for sigbit in &self.signals {
             inner += "\n";
@@ -318,10 +318,10 @@ impl Codegen {
                 ",
                 name = msg.name,
                 mstruct_raw = msg.raw_struct_def(),
-                mstruct_raw_name = msg.raw_struct_name(),
+                mstruct_raw_name = msg.raw_struct_ty(),
                 global_ident_raw = msg.global_raw_struct_ident(),
                 mstruct = msg.struct_def(),
-                mstruct_name = msg.struct_name(),
+                mstruct_name = msg.struct_ty(),
                 global_ident = msg.global_struct_ident(),
                 getters = msg.getter_fn_defs(),
                 decode_fn = msg.decode_fn_def(),
