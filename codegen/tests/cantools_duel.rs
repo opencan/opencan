@@ -1,6 +1,6 @@
-use std::{ffi::c_int, process::Command};
+use std::{ffi::c_int, path::Path, process::Command};
 
-use anyhow::Result;
+use anyhow::{anyhow, Result};
 use libloading::{Library, Symbol};
 use pyo3::prelude::*;
 use tempdir::TempDir;
@@ -24,31 +24,46 @@ fn check_python_env() -> Result<()> {
     })
 }
 
+fn c_to_so(c_file: &Path) -> Result<Library> {
+    let temp_dir = TempDir::new("c_to_so")?;
+
+    let dir = temp_dir.path();
+    let so = dir.join("check.so");
+
+    let c = Command::new("gcc")
+        .arg("-Wall")
+        .arg("-Wextra")
+        .arg("-Werror")
+        .arg("-Wpedantic")
+        .arg("-shared")
+        .arg(&c_file)
+        .arg("-o")
+        .arg(&so)
+        .output()?;
+
+    if !c.status.success() {
+        return Err(anyhow!(
+            "Failed compiling file {}:\n\n{}",
+            c_file.display(),
+            String::from_utf8_lossy(&c.stderr)
+        ));
+    }
+
+    Ok(unsafe { Library::new(&so)? })
+}
+
 #[test]
 fn check_cc_works() -> Result<()> {
     let temp_dir = TempDir::new("check_cc_works")?;
 
     let dir = temp_dir.path();
     let c_file = dir.join("check.c");
-    let so = dir.join("check.so");
 
-    std::fs::write(&c_file, r#"int test_sanity(void) { return 99; } "#)?;
+    std::fs::write(&c_file, "int test_sanity(void) { return 99; }\n")?;
 
-    let c = Command::new("gcc")
-        .arg("-shared")
-        .arg(c_file)
-        .arg("-o")
-        .arg(&so)
-        .output()?;
-
-    assert!(c.status.success());
-
-    for path in dir.read_dir()? {
-        println!("Entry: {}", path?.path().display())
-    }
+    let lib = c_to_so(&c_file)?;
 
     let res = unsafe {
-        let lib = Library::new(&so)?;
         let check_fn: Symbol<unsafe fn() -> c_int> = lib.get(b"test_sanity")?;
 
         check_fn()
