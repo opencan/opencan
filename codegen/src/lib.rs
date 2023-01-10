@@ -159,6 +159,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn decode_fn_def(&self) -> String {
+        /* function comment */
         let comment = formatdoc! {"
             /**
              * Unpacks and decodes message `{}` from raw data.
@@ -173,25 +174,64 @@ impl MessageCodegen for CANMessage {
             self.length
         };
 
+        /* arguments */
         let args = formatdoc! {"
             const uint8_t * const data,
             const uint_fast8_t len"
-        }
-        .indent(4);
+        };
 
+        /* length condition check */
         let length_cond = formatdoc! {"
-            // Check that data length is correct
+            /*  Check that data length is correct  */
             if (len != {}U) {{
                 return false;
             }}",
             self.length
+        };
+
+        /* unpacking */
+        let unpack_start = formatdoc! {"
+            /*  Unpack signals  */
+            {rawty} raw = {{0}};",
+            rawty = self.raw_struct_ty()
+        };
+
+        let mut unpack = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            let bit = sigbit.bit;
+
+            unpack += &format!(
+                "// Unpack `{}`, start bit {}, width {}\n",
+                sig.name, bit, sig.width
+            );
         }
-        .indent(4);
+
+        unpack = unpack.trim().into();
+
+        /* set global variables */
+        let set_global = formatdoc! {"
+            /* Set global data. */
+            {global_raw} = raw;",
+            global_raw = self.global_raw_struct_ident()
+        };
+
+        /* stitch it all together */
+        let body = formatdoc! {"
+            {length_cond}
+
+            {unpack_start}
+
+            {unpack}
+
+            {set_global}"
+        }.indent(4);
 
         formatdoc! {"
             {comment}
             bool {}(\n{args})\n{{
-            {length_cond}
+            {body}
             }}",
             self.decode_fn_name(),
         }
