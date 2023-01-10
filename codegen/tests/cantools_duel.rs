@@ -28,7 +28,7 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
     let temp_dir = TempDir::new("c_to_so")?;
 
     let dir = temp_dir.path();
-    let so = dir.join("check.so");
+    let so = dir.join("lib.so");
 
     let c = Command::new("gcc")
         .arg("-Wall")
