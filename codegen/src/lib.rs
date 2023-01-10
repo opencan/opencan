@@ -62,6 +62,8 @@ trait MessageCodegen {
 
     fn decode_fn_name(&self) -> String;
     fn decode_fn_def(&self) -> String;
+
+    fn getter_fn_defs(&self) -> String;
 }
 
 impl MessageCodegen for CANMessage {
@@ -183,16 +185,44 @@ impl MessageCodegen for CANMessage {
             {comment}
             bool {}(\n{args})\n{{
             {length_cond}
-            }}
-            ",
+            }}",
             self.decode_fn_name(),
         }
+    }
+
+    fn getter_fn_defs(&self) -> String {
+        let mut getters = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            getters += &formatdoc! {"\n
+                {sigty_dec} {fn_name}(void) {{
+                    return {global_decoded}.{name};
+                }}
+
+                {sigty_raw} {fn_name_raw}(void) {{
+                    return {global_raw}.{name};
+                }}",
+                name = sig.name,
+                sigty_dec = sig.c_ty_decoded(),
+                sigty_raw = sig.c_ty_raw(),
+                global_decoded = self.global_struct_ident(),
+                global_raw = self.global_raw_struct_ident(),
+                fn_name = sig.getter_fn_name(),
+                fn_name_raw = sig.raw_getter_fn_name(),
+            }
+        }
+
+        getters.trim().into()
     }
 }
 
 trait SignalCodegen {
     fn c_ty_raw(&self) -> CSignalTy;
     fn c_ty_decoded(&self) -> CSignalTy;
+
+    fn getter_fn_name(&self) -> String;
+    fn raw_getter_fn_name(&self) -> String;
 }
 
 impl SignalCodegen for CANSignal {
@@ -229,6 +259,14 @@ impl SignalCodegen for CANSignal {
             CSignalTy::Float
         }
     }
+
+    fn getter_fn_name(&self) -> String {
+        format!("CANRX_get_NODE_{}", self.name) // todo: needs node name
+    }
+
+    fn raw_getter_fn_name(&self) -> String {
+        format!("CANRX_getRaw_NODE_{}", self.name) // todo: needs node name
+    }
 }
 
 impl Codegen {
@@ -256,16 +294,25 @@ impl Codegen {
         };
 
         for msg in node_msgs {
+            output += "\n";
             output += &formatdoc! {"
                 /*********************************************************/
                 /* Message: {name} */
                 /*********************************************************/
+
+                /*** Message Structs ***/
 
                 {mstruct_raw}
                 static {mstruct_raw_name} {global_ident_raw};
 
                 {mstruct}
                 static {mstruct_name} {global_ident};
+
+                /*** Signal Getters ***/
+
+                {getters}
+
+                /*** Decode Function ***/
 
                 {decode_fn}
                 ",
@@ -276,6 +323,7 @@ impl Codegen {
                 mstruct = msg.struct_def(),
                 mstruct_name = msg.struct_name(),
                 global_ident = msg.global_struct_ident(),
+                getters = msg.getter_fn_defs(),
                 decode_fn = msg.decode_fn_def(),
             }
         }
