@@ -82,32 +82,33 @@ fn check_cc_works() -> Result<()> {
 fn test_message_id_lookup() -> Result<()> {
     // Make a CAN network with some messages
     let mut net = CANNetwork::new();
+    let node = "TEST";
+    net.add_node(node)?;
 
-    net.add_node("TEST")?;
+    let mut make_msg = |name: &str, id: u32| -> Result<CANMessage> {
+        let msg = CANMessage::builder()
+            .name(format!("{node}_{name}"))
+            .id(id)
+            .tx_node(node)
+            .build()?;
 
-    let msg1 = CANMessage::builder()
-        .name("TEST_Message1")
-        .id(0x30)
-        .tx_node("TEST")
-        .build()?;
-    let msg2 = CANMessage::builder()
-        .name("TEST_Message2")
-        .id(0x27)
-        .tx_node("TEST")
-        .build()?;
+        net.insert_msg(msg.clone())?;
 
-    net.insert_msg(msg1.clone())?;
-    net.insert_msg(msg2.clone())?;
+        Ok(msg)
+    };
 
-    // Do codegen and compile
+    let msg1 = make_msg("Message1", 0x30)?;
+    let msg2 = make_msg("Message2", 0x27)?;
+
+    // Do codegen
     let args = opencan_codegen::Args {
-        node: "TEST".into(),
+        node: node.into(),
         in_file: "".into(),
     };
     let c_content = opencan_codegen::Codegen::new(args, net).network_to_c()?;
 
+    // Compile
     println!("{c_content}");
-
     let lib = c_string_to_so(c_content)?;
 
     // Look up symbols
