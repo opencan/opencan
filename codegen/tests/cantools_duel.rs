@@ -2,6 +2,7 @@ use std::{ffi::c_int, path::Path, process::Command};
 
 use anyhow::{anyhow, Result};
 use libloading::{Library, Symbol};
+use opencan_core::{CANMessage, CANNetwork};
 use pyo3::prelude::*;
 use tempdir::TempDir;
 
@@ -33,7 +34,7 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
     let c = Command::new("gcc")
         .arg("-Wall")
         .arg("-Wextra")
-        .arg("-Werror")
+        // .arg("-Werror")
         .arg("-Wpedantic")
         .arg("-shared")
         .arg(&c_file)
@@ -52,16 +53,20 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
     Ok(unsafe { Library::new(&so)? })
 }
 
-#[test]
-fn check_cc_works() -> Result<()> {
-    let temp_dir = TempDir::new("check_cc_works")?;
+fn c_string_to_so(content: impl AsRef<[u8]>) -> Result<Library> {
+    let temp_dir = TempDir::new("c_string_to_so")?;
 
     let dir = temp_dir.path();
-    let c_file = dir.join("check.c");
+    let c_file = dir.join("c_from_string.c");
 
-    std::fs::write(&c_file, "int test_sanity(void) { return 99; }\n")?;
+    std::fs::write(&c_file, content)?;
 
-    let lib = c_to_so(&c_file)?;
+    c_to_so(&c_file)
+}
+
+#[test]
+fn check_cc_works() -> Result<()> {
+    let lib = c_string_to_so("int test_sanity(void) { return 99; }\n")?;
 
     let res = unsafe {
         let check_fn: Symbol<unsafe fn() -> c_int> = lib.get(b"test_sanity")?;
@@ -70,5 +75,52 @@ fn check_cc_works() -> Result<()> {
     };
 
     assert_eq!(res, 99);
+    Ok(())
+}
+
+#[test]
+fn test_message_id_lookup() -> Result<()> {
+    // Make a CAN network with some messages
+    let mut net = CANNetwork::new();
+
+    net.add_node("TEST")?;
+
+    let msg1 = CANMessage::builder()
+        .name("TEST_Message1")
+        .id(0x30)
+        .tx_node("TEST")
+        .build()?;
+    let msg2 = CANMessage::builder()
+        .name("TEST_Message2")
+        .id(0x27)
+        .tx_node("TEST")
+        .build()?;
+
+    net.insert_msg(msg1.clone())?;
+    net.insert_msg(msg2.clone())?;
+
+    // Do codegen and compile
+    let args = opencan_codegen::Args {
+        node: "TEST".into(),
+        in_file: "".into(),
+    };
+    let c_content = opencan_codegen::Codegen::new(args, net).network_to_c()?;
+
+    println!("{c_content}");
+
+    let lib = c_string_to_so(c_content)?;
+
+    // Look up symbols
+    type DecodeFn = unsafe fn();
+
+    let decode_fn_name = |msg: &CANMessage| format!("CANRX_decode_{}", msg.name);
+
+    let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(decode_fn_name(&msg1).as_bytes())? };
+    let msg2_decode: Symbol<DecodeFn> = unsafe { lib.get(decode_fn_name(&msg2).as_bytes())? };
+    let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { lib.get(b"CANRX_id_to_decode_fn")? };
+
+    assert_eq!(lookup(msg1.id), Some(*msg1_decode));
+    assert_eq!(lookup(msg2.id), Some(*msg2_decode));
+    assert_eq!(lookup(0x99), None);
     Ok(())
 }

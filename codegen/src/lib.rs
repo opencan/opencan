@@ -390,7 +390,7 @@ impl Codegen {
         }
 
         formatdoc! {"
-            static {dec_ptr} {name}(const uint32_t id)
+            {dec_ptr} {name}(const uint32_t id)
             {{
                 switch (id) {{
             {cases}
