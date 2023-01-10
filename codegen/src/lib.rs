@@ -261,11 +261,11 @@ impl SignalCodegen for CANSignal {
     }
 
     fn getter_fn_name(&self) -> String {
-        format!("CANRX_get_NODE_{}", self.name) // todo: needs node name
+        format!("CANRX_get_{}", self.name)
     }
 
     fn raw_getter_fn_name(&self) -> String {
-        format!("CANRX_getRaw_NODE_{}", self.name) // todo: needs node name
+        format!("CANRX_getRaw_{}", self.name)
     }
 }
 

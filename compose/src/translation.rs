@@ -61,7 +61,9 @@ impl YMessage {
         for (sig_name, sdesc) in self.signals {
             let start_bit = sdesc.start_bit;
 
-            let sig = sdesc.into_signal(&sig_name).context(format!(
+            let full_sig_name = format!("{node_name}_{sig_name}");
+
+            let sig = sdesc.into_signal(&full_sig_name).context(format!(
                 "Could not create signal `{sig_name}` while composing message `{msg_name}`"
             ))?;
 
