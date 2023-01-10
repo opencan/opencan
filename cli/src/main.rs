@@ -25,8 +25,8 @@ fn main() -> Result<()> {
             let net = opencan_compose::compose_entry(opencan_compose::Args {
                 in_file: a.in_file.clone(),
             })?;
-            let gen = Codegen::new(a);
-            let out = gen.network_to_c(net)?;
+            let gen = Codegen::new(a, net);
+            let out = gen.network_to_c()?;
             println!("{out}");
             Ok(())
         }
