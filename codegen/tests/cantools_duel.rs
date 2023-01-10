@@ -26,9 +26,11 @@ fn check_python_env() -> Result<()> {
 
 #[test]
 fn check_cc_works() -> Result<()> {
-    let dir = TempDir::new("check_cc_works")?;
-    let c_file = dir.path().join("check.c");
-    let so = dir.path().join("check.so");
+    let temp_dir = TempDir::new("check_cc_works")?;
+
+    let dir = temp_dir.path();
+    let c_file = dir.join("check.c");
+    let so = dir.join("check.so");
 
     std::fs::write(&c_file, r#"int test_sanity(void) { return 99; } "#)?;
 
@@ -41,7 +43,7 @@ fn check_cc_works() -> Result<()> {
 
     assert!(c.status.success());
 
-    for path in dir.path().read_dir()? {
+    for path in dir.read_dir()? {
         println!("Entry: {}", path?.path().display())
     }
 
