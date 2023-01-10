@@ -225,6 +225,7 @@ impl Codegen {
 
     fn internal_prelude_defs() -> String {
         formatdoc! {"
+            #include <stdbool.h>
             #include <stdint.h>
             "
         }
