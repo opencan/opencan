@@ -4,6 +4,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use indoc::formatdoc;
 use opencan_core::{CANMessage, CANNetwork, CANSignal};
+use textwrap::indent;
 
 #[derive(Parser)]
 pub struct Args {
@@ -40,38 +41,146 @@ impl Display for CSignalTy {
     }
 }
 
-struct CodeCtxt {
-    content: String,
+trait Indent {
+    fn indent(&mut self, n: usize) -> String;
 }
 
-impl ToString for CodeCtxt {
-    fn to_string(&self) -> String {
-        self.content.clone()
+impl Indent for String {
+    fn indent(&mut self, n: usize) -> String {
+        indent(self, &" ".repeat(n))
     }
 }
 
-impl CodeCtxt {
-    fn new() -> Self {
-        Self {
-            content: String::new(),
+trait MessageCodegen {
+    fn struct_name(&self) -> String;
+    fn struct_def(&self) -> String;
+    fn decode_fn_name(&self) -> String;
+    fn decode_fn_def(&self) -> String;
+}
+
+impl MessageCodegen for CANMessage {
+    fn struct_name(&self) -> String {
+        format!("struct CAN_Message_{}", self.name)
+    }
+
+    fn struct_def(&self) -> String {
+        // ok, for this message, let's generate a struct for each signal
+        let mut top = String::new();
+        let mut inner = String::new(); // struct contents
+
+        top += &format!("{} {{", self.struct_name());
+
+        for sigbit in &self.signals {
+            inner += "\n";
+            inner += &formatdoc! {"
+                /**
+                 * -- Signal: {name}
+                 *
+                 * ----> Description: {desc}
+                 * ----> Start bit: {start}
+                 * ----> Width: {width}
+                 */
+                {sigty} {name};
+                ",
+                name = sigbit.sig.name,
+                desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
+                start = sigbit.bit,
+                width = sigbit.sig.width,
+                sigty = sigbit.sig.c_ty_decoded(),
+            };
+        }
+
+        top += &inner.indent(4);
+        top += "};";
+
+        top
+    }
+
+    fn decode_fn_name(&self) -> String {
+        format!("CANRX_decode_{}", self.name)
+    }
+
+    fn decode_fn_def(&self) -> String {
+        let comment = formatdoc! {"
+            /**
+             * Unpacks and decodes message `{}` from raw data.
+             *
+             * @param data - Input raw data array
+             * @param len  - Length of data (must be {} for this function),
+             * @param out  - Pointer to output struct
+             *
+             * @return     - boolean indicating whether decoding was done (len was correct)
+             */",
+            self.name,
+            self.length
+        };
+
+        let args = formatdoc! {"
+            const uint8_t * const data,
+            const uint_fast8_t len,
+            const {} * const out",
+            self.struct_name()
+        }
+        .indent(4);
+
+        let length_cond = formatdoc! {"
+            // Check that data length is correct
+            if (len != {}U) {{
+                return false;
+            }}",
+            self.length
+        }
+        .indent(4);
+
+        formatdoc! {"
+            {comment}
+            bool {}(\n{args})\n{{
+            {length_cond}
+            }}
+            ",
+            self.decode_fn_name(),
+        }
+    }
+}
+
+trait SignalCodegen {
+    fn c_ty_raw(&self) -> CSignalTy;
+    fn c_ty_decoded(&self) -> CSignalTy;
+}
+
+impl SignalCodegen for CANSignal {
+    fn c_ty_raw(&self) -> CSignalTy {
+        match self.width {
+            1..=8 => CSignalTy::U8,
+            9..=16 => CSignalTy::U16,
+            17..=32 => CSignalTy::U32,
+            33..=64 => CSignalTy::U64,
+            w => panic!(
+                "Unexpectedly wide signal: `{}` is `{}` bits wide",
+                self.name, w
+            ),
         }
     }
 
-    fn push(&mut self, next: Self, indent: usize) {
-        let prefix = " ".repeat(4 * indent);
-        self.content += &textwrap::indent(&next.content, &prefix);
-    }
+    /// Get the C type for the decoded signal.
+    ///
+    /// This does not take into account minimum/maximum capping - that is, this
+    /// gives the type for the entire _representable_ decoded range, not just
+    /// what's within the minimum/maximum additional bounds.
+    fn c_ty_decoded(&self) -> CSignalTy {
+        // todo: complete integer signal bounds support
+        // should we make this implicit or explicit... hmmm...
+        // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
+        // -> otoh, saying force_integer: yes or force_float: yes all the time is annnoying
 
-    fn str(&mut self, s: impl AsRef<str>) {
-        self.content += s.as_ref();
-    }
+        // I think I lean implicit. The problem is then it becomes a nightmare in Rust code....
 
-    fn line(&mut self, s: impl AsRef<str>) {
-        self.str(format!("{}\n", s.as_ref()));
-    }
-
-    fn newline(&mut self) {
-        self.content += "\n";
+        // for now, if the signal has no offset or scale, then return its raw type, else float.
+        if self.scale.is_none() && self.offset.is_none() {
+            self.c_ty_raw()
+        } else {
+            CSignalTy::Float
+        }
     }
 }
 
@@ -84,39 +193,45 @@ impl Codegen {
     }
 
     pub fn network_to_c(&self, net: CANNetwork) -> Result<String> {
-        let mut output = CodeCtxt::new();
+        let mut output = String::new();
 
         let node_msgs = net
             .messages_by_node(&self.args.node)
             .context(format!("Node `{}` not found in network.", self.args.node))?;
 
-        output.push(self.internal_prelude_greeting(), 0);
+        output += &formatdoc! {"
+            {greet}
+
+            {defs}
+            ",
+            greet = self.internal_prelude_greeting(),
+            defs = Self::internal_prelude_defs(),
+        };
 
         for msg in node_msgs {
-            output.push(Self::struct_for_message(msg), 0);
-            output.push(Self::decode_fn_for_message(msg), 0);
+            output += &formatdoc! {"
+
+                {mstruct}
+
+                {decode_fn}
+                ",
+                mstruct = msg.struct_def(),
+                decode_fn = msg.decode_fn_def(),
+            }
         }
 
         Ok(output.to_string())
     }
 
-    fn _internal_prelude_defs() -> CodeCtxt {
-        let mut out = CodeCtxt::new();
-
-        out.line(formatdoc!(
+    fn internal_prelude_defs() -> String {
+        formatdoc! {"
+            #include <stdint.h>
             "
-
-            "
-        ));
-
-        out
+        }
     }
 
-    fn internal_prelude_greeting(&self) -> CodeCtxt {
-        let mut out = CodeCtxt::new();
-
-        out.line(formatdoc!(
-            "
+    fn internal_prelude_greeting(&self) -> String {
+        formatdoc! {"
             /**
              * OpenCAN CAN C Codegen - opencan_generated.c
              *
@@ -131,103 +246,6 @@ impl Codegen {
             clap::crate_name!(),
             clap::crate_version!(),
             self.time.format("%a %b %d, %T %Y %Z")
-        ));
-
-        out
-    }
-
-    fn decode_fn_for_message(msg: &CANMessage) -> CodeCtxt {
-        let mut top = CodeCtxt::new();
-
-        top.line(formatdoc!(
-            "
-            {} {}(const uint64_t data) {{
-
-            }}
-            ",
-            Self::struct_name_for_message(msg),
-            Self::decode_fn_name_for_message(msg)
-        ));
-
-        top
-    }
-
-    fn struct_for_message(msg: &CANMessage) -> CodeCtxt {
-        // generate structs
-        // ok, for this message, let's generate a struct for each signal
-        let mut top = CodeCtxt::new();
-        let mut inner = CodeCtxt::new(); // struct contents
-
-        top.str(format!("{} {{", Self::struct_name_for_message(msg)));
-
-        for sigbit in &msg.signals {
-            inner.newline();
-
-            inner.line(formatdoc!(
-                "
-                /**
-                 * -- Signal: {}
-                 *
-                 * ----> Description: {}
-                 * ----> Start bit: {}
-                 * ----> Width: {}
-                 */
-                {} {};",
-                sigbit.sig.name,
-                sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
-                sigbit.bit,
-                sigbit.sig.width,
-                Self::ty_for_decoded_signal(&sigbit.sig),
-                sigbit.sig.name
-            ));
-        }
-
-        top.push(inner, 1);
-        top.line("};");
-        top.newline();
-
-        top
-    }
-
-    fn struct_name_for_message(msg: &CANMessage) -> String {
-        format!("struct CAN_Message_{}", msg.name)
-    }
-
-    fn decode_fn_name_for_message(msg: &CANMessage) -> String {
-        format!("CANRX_decode_{}", msg.name)
-    }
-
-    /// Get the C type for the decoded signal.
-    ///
-    /// This does not take into account minimum/maximum capping - that is, this
-    /// gives the type for the entire _representable_ decoded range, not just
-    /// what's within the minimum/maximum additional bounds.
-    fn ty_for_decoded_signal(sig: &CANSignal) -> CSignalTy {
-        // todo: complete integer signal bounds support
-        // should we make this implicit or explicit... hmmm...
-        // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
-        // -> otoh, saying force_integer: yes or force_float: yes all the time is annnoying
-
-        // I think I lean implicit. The problem is then it becomes a nightmare in Rust code....
-
-        // for now, if the signal has no offset or scale, then return its raw type, else float.
-        if sig.scale.is_none() && sig.offset.is_none() {
-            Self::ty_for_raw_signal(sig)
-        } else {
-            CSignalTy::Float
-        }
-    }
-
-    fn ty_for_raw_signal(sig: &CANSignal) -> CSignalTy {
-        match sig.width {
-            1..=8 => CSignalTy::U8,
-            9..=16 => CSignalTy::U16,
-            17..=32 => CSignalTy::U32,
-            33..=64 => CSignalTy::U64,
-            w => panic!(
-                "Unexpectedly wide signal: `{}` is `{}` bits wide",
-                sig.name, w
-            ),
         }
     }
 }
