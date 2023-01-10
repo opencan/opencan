@@ -14,6 +14,7 @@ pub struct Args {
 
 pub struct Codegen {
     args: Args,
+    net: CANNetwork,
     time: chrono::DateTime<chrono::Utc>,
 }
 
@@ -46,6 +47,12 @@ trait Indent {
 }
 
 impl Indent for String {
+    fn indent(&mut self, n: usize) -> String {
+        indent(self, &" ".repeat(n))
+    }
+}
+
+impl Indent for &str {
     fn indent(&mut self, n: usize) -> String {
         indent(self, &" ".repeat(n))
     }
@@ -270,27 +277,32 @@ impl SignalCodegen for CANSignal {
 }
 
 impl Codegen {
-    pub fn new(args: Args) -> Self {
+    const DECODE_FN_PTR_TYPEDEF: &str = "decode_fn_ptr";
+    const ID_TO_DECODE_FN: &str = "CANRX_id_to_decode_fn";
+
+    pub fn new(args: Args, net: CANNetwork) -> Self {
         Self {
             args,
+            net,
             time: chrono::Utc::now(),
         }
     }
 
-    pub fn network_to_c(&self, net: CANNetwork) -> Result<String> {
+    pub fn network_to_c(&self) -> Result<String> {
         let mut output = String::new();
 
-        let node_msgs = net
+        let node_msgs = self
+            .net
             .messages_by_node(&self.args.node)
             .context(format!("Node `{}` not found in network.", self.args.node))?;
 
         output += &formatdoc! {"
             {greet}
 
-            {defs}
+            {pre_defs}
             ",
             greet = self.internal_prelude_greeting(),
-            defs = Self::internal_prelude_defs(),
+            pre_defs = Self::internal_prelude_defs(),
         };
 
         for msg in node_msgs {
@@ -328,14 +340,21 @@ impl Codegen {
             }
         }
 
-        Ok(output.to_string())
+        output += "\n";
+        output += &self.rx_id_to_decode_fn();
+
+        Ok(output)
     }
 
     fn internal_prelude_defs() -> String {
         formatdoc! {"
             #include <stdbool.h>
+            #include <stddef.h>
             #include <stdint.h>
-            "
+
+            typedef bool (*{})(const uint8_t * const data, const uint_fast8_t len);
+            ",
+            Self::DECODE_FN_PTR_TYPEDEF,
         }
     }
 
@@ -355,6 +374,34 @@ impl Codegen {
             clap::crate_name!(),
             clap::crate_version!(),
             self.time.format("%a %b %d, %T %Y %Z")
+        }
+    }
+
+    fn rx_id_to_decode_fn(&self) -> String {
+        let mut cases = String::new();
+
+        for msg in self.net.messages_by_node(&self.args.node).unwrap() {
+            cases += &formatdoc! {"
+                case 0x{:X}: return {};
+                ",
+                msg.id,
+                msg.decode_fn_name()
+            };
+        }
+
+        formatdoc! {"
+            static {dec_ptr} {name}(const uint32_t id)
+            {{
+                switch (id) {{
+            {cases}
+                    default:
+                        return NULL;
+                }}
+            }}
+            ",
+            dec_ptr = Self::DECODE_FN_PTR_TYPEDEF,
+            name = Self::ID_TO_DECODE_FN,
+            cases = cases.trim().indent(8),
         }
     }
 }
