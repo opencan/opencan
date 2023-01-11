@@ -5,7 +5,7 @@ use indoc::formatdoc;
 use libloading::{Library, Symbol};
 use opencan_core::{CANMessage, CANNetwork};
 use pyo3::prelude::*;
-use tempdir::TempDir;
+use tempfile::tempdir;
 
 type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
@@ -29,7 +29,7 @@ fn check_python_env() -> Result<()> {
 }
 
 fn c_to_so(c_file: &Path) -> Result<Library> {
-    let temp_dir = TempDir::new("c_to_so")?;
+    let temp_dir = tempdir()?;
 
     let dir = temp_dir.path();
     let so = dir.join("lib.so");
@@ -57,7 +57,7 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
 }
 
 fn c_string_to_so(content: impl AsRef<[u8]>) -> Result<Library> {
-    let temp_dir = TempDir::new("c_string_to_so")?;
+    let temp_dir = tempdir()?;
 
     let dir = temp_dir.path();
     let c_file = dir.join("c_from_string.c");
