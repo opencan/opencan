@@ -206,6 +206,49 @@ impl MessageCodegen for CANMessage {
                 "// Unpack `{}`, start bit {}, width {}\n",
                 sig.name, bit, sig.width
             );
+
+            // todo: assumes big-endian.
+            // step through each of the bit-byte boundaries
+
+            // AUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGH FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK 
+            // say the signal is 3 bits wide and starts at position 6.
+            // then, select bits from each raw data byte as needed.
+            //
+            // raw->signal |= ((data[0] & (0b11 << 5)) >> 5) << 0; // select signal bits 0-1 from message bits 6-7 (byte 0 :: bits 6-7)
+            // raw->signal |= ((data[1] & (0b1  << 0)) >> 0) << 2; // select signal bit 2 from message bit 8 (byte 1 :: bit 0)
+            //                       ^------------------------------- byte
+            //                               ^----------------------- mask of bits to select from this byte
+            //                                     ^------^---------- ending offset of range within this byte
+            //                                                  ^---- current offset within the signal 
+
+            assert!(sigbit.end() < u8::MAX.into(), "Too many bits for me :P, please fix for CAN FD");
+
+            let mut pos = bit;
+            let end = sigbit.end();
+            while pos <= end {
+                let byte = pos / 8; // byte = 0
+                let pos_within_byte = (pos % 8); // pos_within_byte = 6
+
+                // either end of this byte or true end
+                let end_of_this_byte = ((byte + 1) * 8) - 1; // 7
+                let end_pos = end_of_this_byte.min(end); // end_pos = 7 because 7 < 8
+                let end_pos_within_byte = end_pos % 8; // 7
+
+                let num_bits_from_this_byte = end_pos - pos + 1;
+                let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
+                
+                let mask = format!("0b{}", "1".repeat(num_bits_from_this_byte as usize));
+
+                unpack += &formatdoc! {"
+                    raw->{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos}\n",
+                    name = sig.name,
+                    sig_pos = pos - bit
+                };
+
+                pos = end_of_this_byte + 1;
+            }
+
+            unpack += "\n";
         }
 
         unpack = unpack.trim().into();
