@@ -178,7 +178,8 @@ impl MessageCodegen for CANMessage {
         let args = formatdoc! {"
             const uint8_t * const data,
             const uint_fast8_t len"
-        }.indent(4);
+        }
+        .indent(4);
 
         /* length condition check */
         let length_cond = formatdoc! {"
@@ -238,7 +239,7 @@ impl MessageCodegen for CANMessage {
                 let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
 
                 let mask: u8 = !(!0 << num_bits_from_this_byte);
-                let mask = format!("0x{:02x}", mask);
+                let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
                     raw.{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",

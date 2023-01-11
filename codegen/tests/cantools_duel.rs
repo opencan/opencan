@@ -6,7 +6,7 @@ use libloading::{Library, Symbol};
 use opencan_core::{CANMessage, CANNetwork, TranslationLayer};
 use pyo3::{prelude::*, types::IntoPyDict};
 use tempfile::tempdir;
-use textwrap::indent;
+
 
 type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
@@ -42,7 +42,7 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
         .arg("-Wpedantic")
         .arg("-fPIC")
         .arg("-shared")
-        .arg(&c_file)
+        .arg(c_file)
         .arg("-o")
         .arg(&so)
         .output()?;
@@ -157,7 +157,7 @@ fn decode_very_basic() -> Result<()> {
     assert_eq!(get_raw(), 0);
 
     let ret = unsafe { decode(data.as_ptr(), data.len() as u8) };
-    assert_eq!(ret, true);
+    assert!(ret);
 
     assert_eq!(get_raw(), 0xF);
 
@@ -184,7 +184,7 @@ fn decode_very_basic_using_cantools() -> Result<()> {
     Python::with_gil(|py| -> Result<()> {
         let locals = [("cantools", py.import("cantools")?)].into_py_dict(py);
 
-        let py_msg = py.eval(&net_py, None, Some(&locals))?;
+        let py_msg = py.eval(&net_py, None, Some(locals))?;
 
         let data: &[u8] = &[0xAF];
         let sigs_dict = py_msg.call_method1("decode", (data,))?;

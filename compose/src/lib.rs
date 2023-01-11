@@ -24,7 +24,7 @@ pub fn compose_entry(args: Args) -> Result<CANNetwork> {
 
 pub fn compose_entry_str(input: &str) -> Result<CANNetwork> {
     let de: YDesc =
-        serde_yaml::from_str(&input).context(format!("Failed to parse specifications.",))?;
+        serde_yaml::from_str(input).context("Failed to parse specifications.".to_string())?;
 
     let net = match de.into_network() {
         Err(e) => {
