@@ -210,7 +210,6 @@ impl MessageCodegen for CANMessage {
             // todo: assumes big-endian.
             // step through each of the bit-byte boundaries
 
-            // AUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGH FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
             // say the signal is 3 bits wide and starts at position 6.
             // then, select bits from each raw data byte as needed.
             //
