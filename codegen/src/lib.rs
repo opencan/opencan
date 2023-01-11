@@ -226,13 +226,11 @@ impl MessageCodegen for CANMessage {
             let mut pos = bit;
             let end = sigbit.end();
             while pos <= end {
-                let byte = pos / 8; // byte = 0
-                let pos_within_byte = (pos % 8); // pos_within_byte = 6
+                let byte = pos / 8;
 
-                // either end of this byte or true end
-                let end_of_this_byte = ((byte + 1) * 8) - 1; // 7
-                let end_pos = end_of_this_byte.min(end); // end_pos = 7 because 7 < 8
-                let end_pos_within_byte = end_pos % 8; // 7
+                let end_of_this_byte = ((byte + 1) * 8) - 1;
+                let end_pos = end_of_this_byte.min(end); // either end of this byte or final end of signal
+                let end_pos_within_byte = end_pos % 8;
 
                 let num_bits_from_this_byte = end_pos - pos + 1;
                 let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
@@ -245,7 +243,7 @@ impl MessageCodegen for CANMessage {
                     sig_pos = pos - bit
                 };
 
-                pos = end_of_this_byte + 1;
+                pos = end_pos + 1;
             }
 
             unpack += "\n";
