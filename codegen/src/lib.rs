@@ -210,7 +210,7 @@ impl MessageCodegen for CANMessage {
             // todo: assumes big-endian.
             // step through each of the bit-byte boundaries
 
-            // AUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGH FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK 
+            // AUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUGH FUCK FUCK FUCK FUCK FUCK FUCK FUCK FUCK
             // say the signal is 3 bits wide and starts at position 6.
             // then, select bits from each raw data byte as needed.
             //
@@ -219,22 +219,26 @@ impl MessageCodegen for CANMessage {
             //                       ^------------------------------- byte
             //                               ^----------------------- mask of bits to select from this byte
             //                                     ^------^---------- ending offset of range within this byte
-            //                                                  ^---- current offset within the signal 
+            //                                                  ^---- current offset within the signal
 
-            assert!(sigbit.end() < u8::MAX.into(), "Too many bits for me :P, please fix for CAN FD");
+            assert!(
+                sigbit.end() < u8::MAX.into(),
+                "Too many bits for me :P, please fix for CAN FD"
+            );
 
             let mut pos = bit;
-            let end = sigbit.end();
-            while pos <= end {
+            let sig_end = sigbit.end();
+            while pos <= sig_end {
                 let byte = pos / 8;
 
                 let end_of_this_byte = ((byte + 1) * 8) - 1;
-                let end_pos = end_of_this_byte.min(end); // either end of this byte or final end of signal
+                let end_pos = end_of_this_byte.min(sig_end); // either end of this byte or final end of signal
                 let end_pos_within_byte = end_pos % 8;
 
                 let num_bits_from_this_byte = end_pos - pos + 1;
                 let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
-                
+
+                // todo: emit mask as hex, not 0b
                 let mask = format!("0b{}", "1".repeat(num_bits_from_this_byte as usize));
 
                 unpack += &formatdoc! {"
