@@ -12,9 +12,9 @@ pub struct Args {
     pub in_file: String,
 }
 
-pub struct Codegen {
+pub struct Codegen<'n> {
     args: Args,
-    net: CANNetwork,
+    net: &'n CANNetwork,
     time: chrono::DateTime<chrono::Utc>,
 }
 
@@ -364,11 +364,11 @@ impl SignalCodegen for CANSignal {
     }
 }
 
-impl Codegen {
+impl<'n> Codegen<'n> {
     const DECODE_FN_PTR_TYPEDEF: &str = "decode_fn_ptr";
     const ID_TO_DECODE_FN: &str = "CANRX_id_to_decode_fn";
 
-    pub fn new(args: Args, net: CANNetwork) -> Self {
+    pub fn new(args: Args, net: &'n CANNetwork) -> Self {
         Self {
             args,
             net,

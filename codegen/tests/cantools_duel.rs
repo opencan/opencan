@@ -1,12 +1,11 @@
 use std::{ffi::c_int, path::Path, process::Command};
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 use indoc::formatdoc;
 use libloading::{Library, Symbol};
 use opencan_core::{CANMessage, CANNetwork, TranslationLayer};
 use pyo3::{prelude::*, types::IntoPyDict};
 use tempfile::tempdir;
-
 
 type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
@@ -110,7 +109,7 @@ fn message_id_lookup() -> Result<()> {
         node: node.into(),
         in_file: "".into(),
     };
-    let c_content = opencan_codegen::Codegen::new(args, net).network_to_c()?;
+    let c_content = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
 
     // Compile
     println!("{c_content}");
@@ -147,7 +146,7 @@ fn decode_very_basic() -> Result<()> {
         node: "TEST".into(),
         in_file: "".into(),
     };
-    let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
+    let c = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
     let lib = c_string_to_so(c)?;
 
     let decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_decode_TEST_TestMessage")? };
@@ -194,6 +193,88 @@ fn decode_very_basic_using_cantools() -> Result<()> {
 
         Ok(())
     })?;
+
+    Ok(())
+}
+
+trait Decoder {
+    // todo: how to express this?
+    // fn new<'a>(net: &'a CANNetwork, node: &str) -> Result<Self>
+    //     where Self: Sized;
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>>;
+}
+
+struct CodegenDecoder<'n> {
+    net: &'n CANNetwork,
+    lib: Library,
+}
+
+impl<'n> CodegenDecoder<'n> {
+    fn new(net: &'n CANNetwork, node: &str) -> Result<CodegenDecoder<'n>> {
+        let args = opencan_codegen::Args {
+            node: node.into(),
+            in_file: "".into(),
+        };
+
+        let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
+        let lib = c_string_to_so(c)?;
+
+        Ok(Self { net, lib })
+    }
+}
+
+impl<'n> Decoder for CodegenDecoder<'n> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>> {
+        let decode_fn_name = format!("CANRX_decode_{msg}");
+        let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
+
+        let ret = unsafe { decode(data.as_ptr(), data.len() as u8) };
+        if !ret {
+            return Err(anyhow!(
+                "Generated decode function failed to decode `{msg}`."
+            ));
+        }
+
+        let mut sigvals = vec![];
+
+        for sigbit in &self
+            .net
+            .message_by_name(msg)
+            .context("Message doesn't exist")?
+            .signals
+        {
+            let raw_fn_name = format!("CANRX_getRaw_{}", sigbit.sig.name);
+            let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name.as_bytes())? };
+
+            sigvals.push((sigbit.sig.name.clone(), raw_fn()));
+        }
+
+        Ok(sigvals)
+    }
+}
+
+#[test]
+fn test_decode_with_trait() -> Result<()> {
+    let desc = formatdoc! {"
+        nodes:
+            TEST:
+                messages:
+                    TestMessage:
+                        id: 0x10
+                        signals:
+                            testSignal:
+                                width: 4
+    "};
+    let net = opencan_compose::compose_entry_str(&desc)?;
+    let decoder = CodegenDecoder::new(&net, "TEST")?;
+
+    let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
+
+    assert!(v.len() == 1); // one signal
+
+    let (sig, val) = &v[0];
+    assert_eq!(sig, "TEST_testSignal");
+    assert_eq!(*val, 0xA);
 
     Ok(())
 }
