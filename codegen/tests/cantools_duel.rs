@@ -39,6 +39,7 @@ fn c_to_so(c_file: &Path) -> Result<Library> {
         .arg("-Wextra")
         // .arg("-Werror")
         .arg("-Wpedantic")
+        .arg("-fPIC")
         .arg("-shared")
         .arg(&c_file)
         .arg("-o")
