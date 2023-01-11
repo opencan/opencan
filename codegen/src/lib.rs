@@ -226,7 +226,8 @@ impl MessageCodegen for CANMessage {
             {unpack}
 
             {set_global}"
-        }.indent(4);
+        }
+        .indent(4);
 
         formatdoc! {"
             {comment}
@@ -331,9 +332,8 @@ impl Codegen {
     pub fn network_to_c(&self) -> Result<String> {
         let mut output = String::new();
 
-        let node_msgs = self
-            .net
-            .messages_by_node(&self.args.node)
+        self.net
+            .node_by_name(&self.args.node)
             .context(format!("Node `{}` not found in network.", self.args.node))?;
 
         output += &formatdoc! {"
@@ -345,7 +345,7 @@ impl Codegen {
             pre_defs = Self::internal_prelude_defs(),
         };
 
-        for msg in node_msgs {
+        for msg in self.sorted_messages() {
             output += "\n";
             output += &formatdoc! {"
                 /*********************************************************/
@@ -420,7 +420,7 @@ impl Codegen {
     fn rx_id_to_decode_fn(&self) -> String {
         let mut cases = String::new();
 
-        for msg in self.net.messages_by_node(&self.args.node).unwrap() {
+        for msg in self.sorted_messages() {
             cases += &formatdoc! {"
                 case 0x{:X}: return {};
                 ",
@@ -443,5 +443,14 @@ impl Codegen {
             name = Self::ID_TO_DECODE_FN,
             cases = cases.trim().indent(8),
         }
+    }
+
+    /// Get messages for our node sorted by ID
+    fn sorted_messages(&self) -> Vec<&CANMessage> {
+        let mut messages = self.net.messages_by_node(&self.args.node).unwrap();
+
+        messages.sort_by(|m1, m2| m1.id.cmp(&m2.id));
+
+        messages
     }
 }
