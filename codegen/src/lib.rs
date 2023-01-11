@@ -178,7 +178,7 @@ impl MessageCodegen for CANMessage {
         let args = formatdoc! {"
             const uint8_t * const data,
             const uint_fast8_t len"
-        };
+        }.indent(4);
 
         /* length condition check */
         let length_cond = formatdoc! {"
