@@ -3,9 +3,10 @@ use std::{ffi::c_int, path::Path, process::Command};
 use anyhow::{anyhow, Result};
 use indoc::formatdoc;
 use libloading::{Library, Symbol};
-use opencan_core::{CANMessage, CANNetwork};
-use pyo3::prelude::*;
+use opencan_core::{CANMessage, CANNetwork, TranslationLayer};
+use pyo3::{prelude::*, types::IntoPyDict};
 use tempfile::tempdir;
+use textwrap::indent;
 
 type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
@@ -159,6 +160,40 @@ fn decode_very_basic() -> Result<()> {
     assert_eq!(ret, true);
 
     assert_eq!(get_raw(), 0xF);
+
+    Ok(())
+}
+
+#[test]
+fn decode_very_basic_using_cantools() -> Result<()> {
+    let desc = formatdoc! {"
+        nodes:
+            TEST:
+                messages:
+                    TestMessage:
+                        id: 0x10
+                        signals:
+                            testSignal:
+                                width: 4
+    "};
+
+    let net = opencan_compose::compose_entry_str(&desc)?;
+
+    let net_py = opencan_core::CantoolsDecoder::dump_network(&net);
+
+    Python::with_gil(|py| -> Result<()> {
+        let locals = [("cantools", py.import("cantools")?)].into_py_dict(py);
+
+        let py_msg = py.eval(&net_py, None, Some(&locals))?;
+
+        let data: &[u8] = &[0xAF];
+        let sigs_dict = py_msg.call_method1("decode", (data,))?;
+
+        let sig_val: u8 = sigs_dict.get_item("TEST_testSignal")?.extract()?;
+        assert_eq!(sig_val, 0xF);
+
+        Ok(())
+    })?;
 
     Ok(())
 }

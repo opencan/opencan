@@ -70,8 +70,8 @@ impl TranslationLayer for CantoolsDecoder {
             s.start(),
             s.sig.width,
             option_to_py(&s.sig.description),
-            option_to_py(&s.sig.scale),
-            s.sig.offset.map_or(0.0, |o| o),
+            s.sig.scale.unwrap_or(1.0),
+            s.sig.offset.unwrap_or(0.0),
             indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8))
         )
     }
