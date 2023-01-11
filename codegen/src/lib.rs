@@ -237,8 +237,8 @@ impl MessageCodegen for CANMessage {
                 let num_bits_from_this_byte = end_pos - pos + 1;
                 let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
 
-                // todo: emit mask as hex, not 0b
-                let mask = format!("0b{}", "1".repeat(num_bits_from_this_byte as usize));
+                let mask: u8 = !(!0 << num_bits_from_this_byte);
+                let mask = format!("0x{:02x}", mask);
 
                 unpack += &formatdoc! {"
                     raw.{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
