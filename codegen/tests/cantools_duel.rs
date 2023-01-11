@@ -22,7 +22,7 @@ fn check_python_env() -> Result<()> {
 
         let cantools_ver: String = cantools.getattr("__version__")?.extract()?;
         let cantools_semver = semver::Version::parse(&cantools_ver)?;
-        assert!(semver::VersionReq::parse("37.0")?.matches(&cantools_semver));
+        assert!(semver::VersionReq::parse(">=37.0")?.matches(&cantools_semver));
 
         Ok(())
     })
