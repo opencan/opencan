@@ -1,10 +1,13 @@
 use std::{ffi::c_int, path::Path, process::Command};
 
 use anyhow::{anyhow, Result};
+use indoc::formatdoc;
 use libloading::{Library, Symbol};
 use opencan_core::{CANMessage, CANNetwork};
 use pyo3::prelude::*;
 use tempdir::TempDir;
+
+type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
 #[test]
 fn check_python_env() -> Result<()> {
@@ -79,7 +82,7 @@ fn check_cc_works() -> Result<()> {
 }
 
 #[test]
-fn test_message_id_lookup() -> Result<()> {
+fn message_id_lookup() -> Result<()> {
     // Make a CAN network with some messages
     let mut net = CANNetwork::new();
     let node = "TEST";
@@ -112,8 +115,6 @@ fn test_message_id_lookup() -> Result<()> {
     let lib = c_string_to_so(c_content)?;
 
     // Look up symbols
-    type DecodeFn = unsafe fn();
-
     let decode_fn_name = |msg: &CANMessage| format!("CANRX_decode_{}", msg.name);
 
     let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(decode_fn_name(&msg1).as_bytes())? };
@@ -123,5 +124,40 @@ fn test_message_id_lookup() -> Result<()> {
     assert_eq!(lookup(msg1.id), Some(*msg1_decode));
     assert_eq!(lookup(msg2.id), Some(*msg2_decode));
     assert_eq!(lookup(0x99), None);
+    Ok(())
+}
+
+#[test]
+fn decode_very_basic() -> Result<()> {
+    let desc = formatdoc! {"
+        nodes:
+            TEST:
+                messages:
+                    TestMessage:
+                        id: 0x10
+                        signals:
+                            testSignal:
+                                width: 4
+    "};
+
+    let net = opencan_compose::compose_entry_str(&desc)?;
+    let args = opencan_codegen::Args {
+        node: "TEST".into(),
+        in_file: "".into(),
+    };
+    let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
+    let lib = c_string_to_so(c)?;
+
+    let decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_decode_TEST_TestMessage")? };
+    let get_raw: Symbol<fn() -> u8> = unsafe { lib.get(b"CANRX_getRaw_TEST_testSignal")? };
+
+    let data: &[u8] = &[0xAF];
+    assert_eq!(get_raw(), 0);
+
+    let ret = unsafe { decode(data.as_ptr(), data.len() as u8) };
+    assert_eq!(ret, true);
+
+    assert_eq!(get_raw(), 0xF);
+
     Ok(())
 }

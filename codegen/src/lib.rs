@@ -242,7 +242,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0b{}", "1".repeat(num_bits_from_this_byte as usize));
 
                 unpack += &formatdoc! {"
-                    raw->{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos}\n",
+                    raw.{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
                     name = sig.name,
                     sig_pos = pos - bit
                 };
@@ -270,7 +270,9 @@ impl MessageCodegen for CANMessage {
 
             {unpack}
 
-            {set_global}"
+            {set_global}
+
+            return true;"
         }
         .indent(4);
 

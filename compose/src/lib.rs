@@ -16,10 +16,15 @@ pub struct Args {
 pub fn compose_entry(args: Args) -> Result<CANNetwork> {
     let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
-    let de: YDesc = serde_yaml::from_str(&input).context(format!(
-        "Failed to parse specification file `{}`",
-        &args.in_file
-    ))?;
+    compose_entry_str(&input).context(format!(
+        "Failed to ingest specifications file {}",
+        args.in_file
+    ))
+}
+
+pub fn compose_entry_str(input: &str) -> Result<CANNetwork> {
+    let de: YDesc =
+        serde_yaml::from_str(&input).context(format!("Failed to parse specifications.",))?;
 
     let net = match de.into_network() {
         Err(e) => {
