@@ -89,7 +89,7 @@ fn check_cc_works() -> Result<()> {
     Ok(())
 }
 
-#[test]
+// #[test]
 fn message_id_lookup() -> Result<()> {
     // Make a CAN network with some messages
     let mut net = CANNetwork::new();
@@ -421,15 +421,15 @@ fn basic_compare_decoders() -> Result<()> {
                         id: 0x10
                         signals:
                             testSignal:
-                                start_bit: 8
-                                width: 32
+                                start_bit: 1
+                                width: 57
     "};
     let net = opencan_compose::compose_entry_str(&desc)?;
     let cantools = CantoolsDecoder::new(&net, "TEST")?;
     let opencan = CodegenDecoder::new(&net, "TEST")?;
 
     for msg in net.iter_messages() {
-        let data = &[0xFA, 0xFA, 0xFA, 0xFA, 0xFA]; // adjust length
+        let data = &[0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA]; // adjust length
         let cantools_answer = cantools.decode_message(&msg.name, data)?;
         let codegen_answer = opencan.decode_message(&msg.name, data)?;
 

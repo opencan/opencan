@@ -246,8 +246,9 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
-                    raw.{name} |= ((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
+                    raw.{name} |= ({rawty})((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
                     name = sig.name,
+                    rawty = sig.c_ty_raw(),
                     sig_pos = pos - bit
                 };
 

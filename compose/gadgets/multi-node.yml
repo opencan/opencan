@@ -25,3 +25,10 @@ nodes:
             enumerated_values:
               - HUMAN_CONTROL: auto
               - DBW_GO: auto
+      WideAss:
+        id: 0x22
+        cycletime_ms: 10
+
+        signals:
+          wideMf:
+            width: 40
