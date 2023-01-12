@@ -1,4 +1,4 @@
-use std::{ffi::c_int, path::Path, process::Command};
+use std::{ffi::c_int, path::Path, process::Command, collections::HashMap};
 
 use anyhow::{anyhow, Context, Result};
 use indoc::formatdoc;
@@ -223,7 +223,7 @@ impl<'n> CodegenDecoder<'n> {
     }
 }
 
-impl<'n> Decoder for CodegenDecoder<'n> {
+impl Decoder for CodegenDecoder<'_> {
     fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>> {
         let decode_fn_name = format!("CANRX_decode_{msg}");
         let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
@@ -249,6 +249,8 @@ impl<'n> Decoder for CodegenDecoder<'n> {
             sigvals.push((sigbit.sig.name.clone(), raw_fn()));
         }
 
+        sigvals.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
+
         Ok(sigvals)
     }
 }
@@ -267,6 +269,73 @@ fn test_decode_with_trait() -> Result<()> {
     "};
     let net = opencan_compose::compose_entry_str(&desc)?;
     let decoder = CodegenDecoder::new(&net, "TEST")?;
+
+    let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
+
+    assert!(v.len() == 1); // one signal
+
+    let (sig, val) = &v[0];
+    assert_eq!(sig, "TEST_testSignal");
+    assert_eq!(*val, 0xA);
+
+    Ok(())
+}
+
+struct CantoolsDecoder<'n> {
+    net: &'n CANNetwork,
+    node: String,
+}
+
+impl<'n> CantoolsDecoder<'n> {
+    fn new(net: &'n CANNetwork, node: &str) -> Result<CantoolsDecoder<'n>> {
+        Ok(Self {
+            net,
+            node: node.into(),
+        })
+    }
+}
+
+impl Decoder for CantoolsDecoder<'_> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>> {
+        // pretty much stateless.
+
+        Python::with_gil(|py| -> Result<_> {
+            // import cantools
+            let locals = [("cantools", py.import("cantools")?)].into_py_dict(py);
+
+            // translate message to Python object
+            let net_msg = self.net.message_by_name(msg).context("Message doesn't exist")?;
+
+            let py_msg_code = opencan_core::CantoolsDecoder::dump_message(net_msg);
+            let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
+
+            // decode signals
+            let sigs_dict = py_msg.call_method1("decode", (data,))?;
+
+            let sigs_map: HashMap<String, u8> = sigs_dict.extract()?;
+
+            let mut sigs_vec: Vec<(String, u8)> = sigs_map.into_iter().collect();
+            sigs_vec.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
+
+            Ok(sigs_vec)
+        })
+    }
+}
+
+#[test]
+fn test_decode_with_trait_cantools() -> Result<()> {
+    let desc = formatdoc! {"
+        nodes:
+            TEST:
+                messages:
+                    TestMessage:
+                        id: 0x10
+                        signals:
+                            testSignal:
+                                width: 4
+    "};
+    let net = opencan_compose::compose_entry_str(&desc)?;
+    let decoder = CantoolsDecoder::new(&net, "TEST")?;
 
     let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
 
