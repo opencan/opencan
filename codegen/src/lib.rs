@@ -238,7 +238,11 @@ impl MessageCodegen for CANMessage {
                 let num_bits_from_this_byte = end_pos - pos + 1;
                 let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
 
-                let mask: u8 = !(!0 << num_bits_from_this_byte);
+                let mask: u8 = if num_bits_from_this_byte == 8 {
+                    0xFF
+                } else {
+                    !(!0 << num_bits_from_this_byte)
+                };
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
@@ -312,7 +316,7 @@ impl MessageCodegen for CANMessage {
     }
 }
 
-trait SignalCodegen {
+pub trait SignalCodegen {
     fn c_ty_raw(&self) -> CSignalTy;
     fn c_ty_decoded(&self) -> CSignalTy;
 

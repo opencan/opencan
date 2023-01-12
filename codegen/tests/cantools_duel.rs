@@ -1,8 +1,15 @@
-use std::{ffi::c_int, path::Path, process::Command, collections::HashMap};
+use std::{
+    collections::HashMap,
+    ffi::{c_float, c_int},
+    iter::zip,
+    path::Path,
+    process::Command,
+};
 
 use anyhow::{anyhow, Context, Result};
 use indoc::formatdoc;
 use libloading::{Library, Symbol};
+use opencan_codegen::SignalCodegen;
 use opencan_core::{CANMessage, CANNetwork, TranslationLayer};
 use pyo3::{prelude::*, types::IntoPyDict};
 use tempfile::tempdir;
@@ -197,11 +204,20 @@ fn decode_very_basic_using_cantools() -> Result<()> {
     Ok(())
 }
 
+#[derive(Debug, PartialEq)]
+enum SignalValue {
+    U8(u8),
+    U16(u16),
+    U32(u32),
+    U64(u64),
+    Float(c_float),
+}
+
 trait Decoder {
     // todo: how to express this?
     // fn new<'a>(net: &'a CANNetwork, node: &str) -> Result<Self>
     //     where Self: Sized;
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>>;
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>>;
 }
 
 struct CodegenDecoder<'n> {
@@ -224,7 +240,7 @@ impl<'n> CodegenDecoder<'n> {
 }
 
 impl Decoder for CodegenDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>> {
         let decode_fn_name = format!("CANRX_decode_{msg}");
         let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
 
@@ -244,9 +260,32 @@ impl Decoder for CodegenDecoder<'_> {
             .signals
         {
             let raw_fn_name = format!("CANRX_getRaw_{}", sigbit.sig.name);
-            let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name.as_bytes())? };
+            let raw_fn_name = raw_fn_name.as_bytes();
 
-            sigvals.push((sigbit.sig.name.clone(), raw_fn()));
+            let val = match sigbit.sig.c_ty_decoded() {
+                opencan_codegen::CSignalTy::U8 => {
+                    let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::U8(raw_fn())
+                }
+                opencan_codegen::CSignalTy::U16 => {
+                    let raw_fn: Symbol<fn() -> u16> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::U16(raw_fn())
+                }
+                opencan_codegen::CSignalTy::U32 => {
+                    let raw_fn: Symbol<fn() -> u32> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::U32(raw_fn())
+                }
+                opencan_codegen::CSignalTy::U64 => {
+                    let raw_fn: Symbol<fn() -> u64> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::U64(raw_fn())
+                }
+                opencan_codegen::CSignalTy::Float => {
+                    let raw_fn: Symbol<fn() -> c_float> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::Float(raw_fn())
+                }
+            };
+
+            sigvals.push((sigbit.sig.name.clone(), val));
         }
 
         sigvals.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
@@ -276,7 +315,7 @@ fn test_decode_with_trait() -> Result<()> {
 
     let (sig, val) = &v[0];
     assert_eq!(sig, "TEST_testSignal");
-    assert_eq!(*val, 0xA);
+    assert_eq!(*val, SignalValue::U8(0xA));
 
     Ok(())
 }
@@ -296,7 +335,7 @@ impl<'n> CantoolsDecoder<'n> {
 }
 
 impl Decoder for CantoolsDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, u8)>> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>> {
         // pretty much stateless.
 
         Python::with_gil(|py| -> Result<_> {
@@ -304,7 +343,10 @@ impl Decoder for CantoolsDecoder<'_> {
             let locals = [("cantools", py.import("cantools")?)].into_py_dict(py);
 
             // translate message to Python object
-            let net_msg = self.net.message_by_name(msg).context("Message doesn't exist")?;
+            let net_msg = self
+                .net
+                .message_by_name(msg)
+                .context("Message doesn't exist")?;
 
             let py_msg_code = opencan_core::CantoolsDecoder::dump_message(net_msg);
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
@@ -312,12 +354,33 @@ impl Decoder for CantoolsDecoder<'_> {
             // decode signals
             let sigs_dict = py_msg.call_method1("decode", (data,))?;
 
-            let sigs_map: HashMap<String, u8> = sigs_dict.extract()?;
+            let sigs_map: HashMap<String, &PyAny> = sigs_dict.extract()?;
 
-            let mut sigs_vec: Vec<(String, u8)> = sigs_map.into_iter().collect();
-            sigs_vec.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
+            let mut sigvals = vec![];
 
-            Ok(sigs_vec)
+            for sigbit in &net_msg.signals {
+                let val = match sigbit.sig.c_ty_decoded() {
+                    opencan_codegen::CSignalTy::U8 => {
+                        SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    }
+                    opencan_codegen::CSignalTy::U16 => {
+                        SignalValue::U16(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    }
+                    opencan_codegen::CSignalTy::U32 => {
+                        SignalValue::U32(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    }
+                    opencan_codegen::CSignalTy::U64 => {
+                        SignalValue::U64(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    }
+                    opencan_codegen::CSignalTy::Float => {
+                        SignalValue::Float(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    }
+                };
+
+                sigvals.push((sigbit.sig.name.clone(), val));
+            }
+
+            Ok(sigvals)
         })
     }
 }
@@ -343,7 +406,39 @@ fn test_decode_with_trait_cantools() -> Result<()> {
 
     let (sig, val) = &v[0];
     assert_eq!(sig, "TEST_testSignal");
-    assert_eq!(*val, 0xA);
+    assert_eq!(*val, SignalValue::U8(0xA));
+
+    Ok(())
+}
+
+#[test]
+fn basic_compare_decoders() -> Result<()> {
+    let desc = formatdoc! {"
+        nodes:
+            TEST:
+                messages:
+                    TestMessage:
+                        id: 0x10
+                        signals:
+                            testSignal:
+                                start_bit: 8
+                                width: 32
+    "};
+    let net = opencan_compose::compose_entry_str(&desc)?;
+    let cantools = CantoolsDecoder::new(&net, "TEST")?;
+    let opencan = CodegenDecoder::new(&net, "TEST")?;
+
+    for msg in net.iter_messages() {
+        let data = &[0xFA, 0xFA, 0xFA, 0xFA, 0xFA]; // adjust length
+        let cantools_answer = cantools.decode_message(&msg.name, data)?;
+        let codegen_answer = opencan.decode_message(&msg.name, data)?;
+
+        assert_eq!(cantools_answer.len(), codegen_answer.len());
+
+        for (ct_sig, cg_sig) in zip(cantools_answer, codegen_answer) {
+            assert_eq!(ct_sig, cg_sig);
+        }
+    }
 
     Ok(())
 }
