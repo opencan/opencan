@@ -3,7 +3,7 @@
 messages:
   NodeStatus:
     id: 0xE0
-    cycletime_ms: 100
+    cycletime: 100
 
     signals:
       sysStatus:

@@ -3,7 +3,7 @@ nodes:
     messages:
       VelCmd:
         id: 0x20
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           throttlePercent:
@@ -17,7 +17,7 @@ nodes:
             width: 7
       SystemCmd:
         id: 0x21
-        cycletime_ms: 10
+        cycletime: 10
 
         signals:
           systemCommand:
@@ -27,7 +27,7 @@ nodes:
               - DBW_GO: auto
       WideAss:
         id: 0x22
-        cycletime_ms: 10
+        cycletime: 10
 
         signals:
           wideMf:

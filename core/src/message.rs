@@ -38,8 +38,9 @@ pub struct CANMessage {
     pub name: String,
     pub id: u32,
 
+    /// Message cycle time in milliseconds.
     #[builder(default)]
-    pub cycletime_ms: Option<u32>,
+    pub cycletime: Option<u32>,
 
     #[builder(setter(into, strip_option), default)]
     pub tx_node: Option<String>,

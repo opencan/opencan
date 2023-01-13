@@ -1,7 +1,7 @@
 messages:
   BRAKE_BrakeData:
     id: 0x100
-    cycletime_ms: 5
+    cycletime: 5
 
     signals:
       brakePressure:

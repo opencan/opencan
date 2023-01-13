@@ -46,7 +46,7 @@ impl TranslationLayer for CantoolsDecoder {
             msg.name,
             msg.id,
             msg.length,
-            option_to_py(&msg.cycletime_ms),
+            option_to_py(&msg.cycletime),
             indent(&signals.join("\n"), &" ".repeat(8))
         )
     }

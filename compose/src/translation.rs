@@ -55,7 +55,7 @@ impl YMessage {
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
             .id(self.id)
-            .cycletime_ms(self.cycletime_ms)
+            .cycletime(self.cycletime)
             .tx_node(node_name);
 
         for (sig_name, sdesc) in self.signals {

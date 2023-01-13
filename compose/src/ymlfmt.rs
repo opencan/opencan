@@ -39,7 +39,7 @@ pub struct YSignal {
 pub struct YMessage {
     pub id: u32,
 
-    pub cycletime_ms: Option<u32>,
+    pub cycletime: Option<u32>,
 
     #[serde(with = "tuple_vec_map")]
     pub signals: Vec<(String, YSignal)>,

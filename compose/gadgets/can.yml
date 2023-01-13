@@ -15,7 +15,7 @@ nodes:
     messages:
       NodeStatus:
         id: 0xE0
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           sysStatus:
@@ -43,7 +43,7 @@ nodes:
 
       NodeInfo:
         id: 0xD0
-        cycletime_ms: 1000
+        cycletime: 1000
 
         signals:
           gitHash:
@@ -62,7 +62,7 @@ nodes:
     messages:
       AccelData:
         id: 0x10
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           throttleACmd:
@@ -86,7 +86,7 @@ nodes:
     messages:
       BrakeData:
           id: 0x11
-          cycletime_ms: 100
+          cycletime: 100
 
           signals:
             frequency:
@@ -111,7 +111,7 @@ nodes:
     messages:
       EncoderData:
         id: 0x13
-        cycletime_ms: 10
+        cycletime: 10
 
         signals:
           encoderLeft:
@@ -132,7 +132,7 @@ nodes:
     messages:
       EncoderData:
         id: 0x14
-        cycletime_ms: 10
+        cycletime: 10
 
         signals:
           encoderLeft:
@@ -153,7 +153,7 @@ nodes:
     messages:
       ParkingBrakeData:
         id: 0x15
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           pbSet:
@@ -172,7 +172,7 @@ nodes:
     messages:
       SteeringData:
         id: 0x16
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           angle:
@@ -193,7 +193,7 @@ nodes:
 
       SteeringCmd:
         id: 0x21
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           angle:
@@ -208,7 +208,7 @@ nodes:
     messages:
       VelCmd:
         id: 0x20
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           throttlePercent:
@@ -224,7 +224,7 @@ nodes:
 
       ESTOP:
         id: 0x41F
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           src:
@@ -246,7 +246,7 @@ nodes:
 
       Active:
         id: 0x420
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           active:
@@ -255,7 +255,7 @@ nodes:
 
       Enable:
         id: 0x421
-        cycletime_ms: 100
+        cycletime: 100
 
         signals:
           enable:
@@ -266,7 +266,7 @@ nodes:
     messages:
       AbsoluteEncoder:
         id: 0x1E5
-        cycletime_ms: 10
+        cycletime: 10
 
         signals:
           foo:
