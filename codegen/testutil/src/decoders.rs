@@ -2,7 +2,10 @@ use std::{collections::HashMap, ffi::c_float};
 
 use anyhow::{anyhow, Context, Result};
 use libloading::{Library, Symbol};
-use opencan_codegen::SignalCodegen;
+use opencan_codegen::signal::{
+    SignalCodegen,
+    CSignalTy as CodegenCSignalTy,
+};
 use opencan_core::{CANNetwork, TranslationLayer};
 use pyo3::{prelude::*, types::IntoPyDict};
 
@@ -66,23 +69,23 @@ impl Decoder for CodegenDecoder<'_> {
             let raw_fn_name = raw_fn_name.as_bytes();
 
             let val = match sigbit.sig.c_ty_decoded() {
-                opencan_codegen::CSignalTy::U8 => {
+                CodegenCSignalTy::U8 => {
                     let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U8(raw_fn())
                 }
-                opencan_codegen::CSignalTy::U16 => {
+                CodegenCSignalTy::U16 => {
                     let raw_fn: Symbol<fn() -> u16> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U16(raw_fn())
                 }
-                opencan_codegen::CSignalTy::U32 => {
+                CodegenCSignalTy::U32 => {
                     let raw_fn: Symbol<fn() -> u32> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U32(raw_fn())
                 }
-                opencan_codegen::CSignalTy::U64 => {
+                CodegenCSignalTy::U64 => {
                     let raw_fn: Symbol<fn() -> u64> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U64(raw_fn())
                 }
-                opencan_codegen::CSignalTy::Float => {
+                CodegenCSignalTy::Float => {
                     let raw_fn: Symbol<fn() -> c_float> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::Float(raw_fn())
                 }
@@ -133,19 +136,19 @@ impl Decoder for CantoolsDecoder<'_> {
 
             for sigbit in &net_msg.signals {
                 let val = match sigbit.sig.c_ty_decoded() {
-                    opencan_codegen::CSignalTy::U8 => {
+                    CodegenCSignalTy::U8 => {
                         SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
-                    opencan_codegen::CSignalTy::U16 => {
+                    CodegenCSignalTy::U16 => {
                         SignalValue::U16(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
-                    opencan_codegen::CSignalTy::U32 => {
+                    CodegenCSignalTy::U32 => {
                         SignalValue::U32(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
-                    opencan_codegen::CSignalTy::U64 => {
+                    CodegenCSignalTy::U64 => {
                         SignalValue::U64(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
-                    opencan_codegen::CSignalTy::Float => {
+                    CodegenCSignalTy::Float => {
                         SignalValue::Float(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
                 };

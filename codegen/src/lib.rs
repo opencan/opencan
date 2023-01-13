@@ -4,10 +4,10 @@ use indoc::formatdoc;
 use opencan_core::{CANMessage, CANNetwork};
 use textwrap::indent;
 
-mod message;
+pub mod message;
 use message::*;
 
-mod signal;
+pub mod signal;
 
 #[derive(Parser)]
 pub struct Args {
