@@ -2,10 +2,7 @@ use std::{collections::HashMap, ffi::c_float};
 
 use anyhow::{anyhow, Context, Result};
 use libloading::{Library, Symbol};
-use opencan_codegen::signal::{
-    SignalCodegen,
-    CSignalTy as CodegenCSignalTy,
-};
+use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
 use opencan_core::{CANNetwork, TranslationLayer};
 use pyo3::{prelude::*, types::IntoPyDict};
 
