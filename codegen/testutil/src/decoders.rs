@@ -125,7 +125,7 @@ impl Decoder for CantoolsDecoder<'_> {
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
 
             // decode signals
-            let sigs_dict = py_msg.call_method1("decode", (data,))?;
+            let sigs_dict = py_msg.call_method1("decode", (data, false, false))?;
 
             let sigs_map: HashMap<String, &PyAny> = sigs_dict.extract()?;
 
