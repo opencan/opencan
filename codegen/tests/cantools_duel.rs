@@ -1,6 +1,6 @@
 use std::iter::zip;
 
-use anyhow::{Result, Context};
+use anyhow::{Context, Result};
 use indoc::formatdoc;
 use libloading::Symbol;
 use testutil::{decoders::*, util::*};
@@ -417,7 +417,10 @@ fn basic_compare_decoders() -> Result<()> {
     for node in net.iter_nodes() {
         eprintln!("---- Node: {}", node.name);
         let opencan = CodegenDecoder::new(&net, &node.name)?;
-        for msg in net.messages_by_node(&node.name).context("Expected node to exist")? {
+        for msg in net
+            .messages_by_node(&node.name)
+            .context("Expected node to exist")?
+        {
             eprintln!("------ message: {}", msg.name);
 
             // let data = &[0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA, 0xFA]; // adjust length
