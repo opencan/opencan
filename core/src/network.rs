@@ -115,6 +115,10 @@ impl CANNetwork {
         self.messages.iter()
     }
 
+    pub fn iter_nodes(&self) -> std::slice::Iter<CANNode> {
+        self.nodes.iter()
+    }
+
     pub fn messages_by_node(&self, name: &str) -> Option<Vec<&CANMessage>> {
         let &node_idx = self.nodes_by_name.get(name)?;
         let node = &self.nodes[node_idx];

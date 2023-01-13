@@ -65,7 +65,7 @@ impl Decoder for CodegenDecoder<'_> {
             let raw_fn_name = format!("CANRX_getRaw_{}", sigbit.sig.name);
             let raw_fn_name = raw_fn_name.as_bytes();
 
-            let val = match sigbit.sig.c_ty_decoded() {
+            let val = match sigbit.sig.c_ty_raw() {
                 CodegenCSignalTy::U8 => {
                     let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U8(raw_fn())
@@ -132,7 +132,7 @@ impl Decoder for CantoolsDecoder<'_> {
             let mut sigvals = vec![];
 
             for sigbit in &net_msg.signals {
-                let val = match sigbit.sig.c_ty_decoded() {
+                let val = match sigbit.sig.c_ty_raw() {
                     CodegenCSignalTy::U8 => {
                         SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
@@ -152,6 +152,8 @@ impl Decoder for CantoolsDecoder<'_> {
 
                 sigvals.push((sigbit.sig.name.clone(), val));
             }
+
+            sigvals.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
 
             Ok(sigvals)
         })

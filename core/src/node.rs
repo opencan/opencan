@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct CANNode {
-    name: String,
+    pub name: String,
 
     // index into parent CANNetwork messages vec
     pub(crate) messages: HashMap<String, usize>,
