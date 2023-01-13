@@ -82,10 +82,7 @@ impl Decoder for CodegenDecoder<'_> {
                     let raw_fn: Symbol<fn() -> u64> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U64(raw_fn())
                 }
-                CodegenCSignalTy::Float => {
-                    let raw_fn: Symbol<fn() -> c_float> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::Float(raw_fn())
-                }
+                t => panic!("Unexpected signal type `{t}` for raw codegen decode"),
             };
 
             sigvals.push((sigbit.sig.name.clone(), val));
@@ -145,9 +142,7 @@ impl Decoder for CantoolsDecoder<'_> {
                     CodegenCSignalTy::U64 => {
                         SignalValue::U64(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
-                    CodegenCSignalTy::Float => {
-                        SignalValue::Float(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
+                    t => panic!("Unexpected signal type `{t}` for raw cantools decode"),
                 };
 
                 sigvals.push((sigbit.sig.name.clone(), val));
