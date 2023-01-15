@@ -7,6 +7,7 @@ use thiserror::Error;
 use crate::ymlfmt::*;
 
 fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
+    // len should be one because every `- VALUE: val` pair is its own dict
     assert_eq!(map.len(), 1);
     map.into_iter().next().unwrap()
 }
@@ -69,7 +70,6 @@ impl YMessage {
             let (sig_name, sdesc) = unmap(s);
 
             let start_bit = sdesc.start_bit;
-
             let full_sig_name = format!("{node_name}_{sig_name}");
 
             let sig = sdesc.into_signal(&full_sig_name).context(format!(
@@ -99,9 +99,7 @@ impl YSignal {
             .scale(self.scale);
 
         for h in self.enumerated_values {
-            // len should be one because every `- VALUE: val` pair is its own dict
-            assert!(h.iter().len() == 1);
-            let e = h.into_iter().next().unwrap();
+            let e = unmap(h);
 
             new_sig = match e.1 {
                 YEnumeratedValue::Auto(s) => {
