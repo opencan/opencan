@@ -1,8 +1,15 @@
+use std::collections::HashMap;
+
 use anyhow::{Context, Result};
 use opencan_core::*;
 use thiserror::Error;
 
 use crate::ymlfmt::*;
+
+fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
+    assert_eq!(map.len(), 1);
+    map.into_iter().next().unwrap()
+}
 
 #[derive(Error, Debug)]
 enum CANCompositionError {
@@ -58,7 +65,9 @@ impl YMessage {
             .cycletime(self.cycletime)
             .tx_node(node_name);
 
-        for (sig_name, sdesc) in self.signals {
+        for s in self.signals {
+            let (sig_name, sdesc) = unmap(s);
+
             let start_bit = sdesc.start_bit;
 
             let full_sig_name = format!("{node_name}_{sig_name}");

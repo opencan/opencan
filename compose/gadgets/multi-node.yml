@@ -6,29 +6,29 @@ nodes:
         cycletime: 100
 
         signals:
-          throttlePercent:
-            description: Throttle percentage.
-            unit: percent
-            width: 7
-            scale: 0.01
-          brakePercent:
-            description: Brake percentage.
-            unit: percent
-            width: 7
+          - throttlePercent:
+              description: Throttle percentage.
+              unit: percent
+              width: 7
+              scale: 0.01
+          - brakePercent:
+              description: Brake percentage.
+              unit: percent
+              width: 7
       SystemCmd:
         id: 0x21
         cycletime: 10
 
         signals:
-          systemCommand:
-            description: What do!?
-            enumerated_values:
-              - HUMAN_CONTROL: auto
-              - DBW_GO: auto
+          - systemCommand:
+              description: What do!?
+              enumerated_values:
+                - HUMAN_CONTROL: auto
+                - DBW_GO: auto
       WideAss:
         id: 0x22
         cycletime: 10
 
         signals:
-          wideMf:
-            width: 40
+          - wideMf:
+              width: 40
