@@ -196,7 +196,7 @@ nodes:
         cycletime: 100
 
         signals:
-          angle:
+          angleCmd:
             description: Absolute steering angle in radians.
             # minimum: -0.471238898
             # maximum: 0.471238898

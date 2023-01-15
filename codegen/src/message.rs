@@ -203,13 +203,64 @@ impl MessageCodegen for CANMessage {
             unpack += "\n";
         }
 
-        unpack = unpack.trim().into();
+        let unpack = unpack.trim();
+
+        /* decode */
+        // We need to take each of the raw signals we just unpacked
+        // and apply some set of transformations to them.
+        //
+        // Currently, signals are either their raw type if they have no scale
+        // or offset, or they're CSignalTy::Float if they have a scale or offset.
+        //
+        // We're not accounting for enumerated values yet, which we may or may not
+        // do at all in this function.
+        // todo for later bounds checks: a facility for signals being strictly enumerated?
+        // todo  -> that is, ensure a signal can only be one of its enumerated values
+
+        let decode_start = formatdoc! {"
+            /*  Decode signals  */
+            {decty} dec = {{0}};",
+            decty = self.struct_ty()
+        };
+
+        let mut decode = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            decode += &format!("// Decode signal `{}`\n", sig.name);
+
+            if let CSignalTy::Float = sig.c_ty_decoded() {
+                let scale = sig.scale.map_or("".into(), |s| format!(" * {s}f"));
+                let offset = sig.offset.map_or("".into(), |o| format!(" + {o}f"));
+
+                decode += &formatdoc! {"
+                    dec.{name} = (({float_ty})(raw.{name}){scale}){offset};\n",
+                    float_ty = CSignalTy::Float,
+                    name = sig.name,
+                };
+            } else {
+                // Just copy the raw signal.
+                decode += &formatdoc! {"
+                    dec.{name} = raw.{name};\n",
+                    name = sig.name,
+                };
+
+                assert!(sig.offset.is_none());
+                assert!(sig.scale.is_none());
+            }
+
+            decode += "\n";
+        }
+
+        let decode = decode.trim();
 
         /* set global variables */
         let set_global = formatdoc! {"
             /* Set global data. */
-            {global_raw} = raw;",
-            global_raw = self.global_raw_struct_ident()
+            {global_raw} = raw;
+            {global_dec} = dec;",
+            global_raw = self.global_raw_struct_ident(),
+            global_dec = self.global_struct_ident(),
         };
 
         /* stitch it all together */
@@ -219,6 +270,10 @@ impl MessageCodegen for CANMessage {
             {unpack_start}
 
             {unpack}
+
+            {decode_start}
+
+            {decode}
 
             {set_global}
 
