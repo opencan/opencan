@@ -1,20 +1,20 @@
 use anyhow::Result;
-use indoc::formatdoc;
 use testutil::decoders::*;
+
+const TEST_DESC: &str = "
+nodes:
+- TEST:
+    messages:
+    - TestMessage:
+        id: 0x10
+        signals:
+        - testSignal:
+            width: 4
+";
 
 #[test]
 fn test_decode_with_trait() -> Result<()> {
-    let desc = formatdoc! {"
-        nodes:
-            TEST:
-                messages:
-                    TestMessage:
-                        id: 0x10
-                        signals:
-                            testSignal:
-                                width: 4
-    "};
-    let net = opencan_compose::compose_entry_str(&desc)?;
+    let net = opencan_compose::compose_entry_str(TEST_DESC)?;
     let decoder = CodegenDecoder::new(&net, "TEST")?;
 
     let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
@@ -30,17 +30,7 @@ fn test_decode_with_trait() -> Result<()> {
 
 #[test]
 fn test_decode_with_trait_cantools() -> Result<()> {
-    let desc = formatdoc! {"
-        nodes:
-            TEST:
-                messages:
-                    TestMessage:
-                        id: 0x10
-                        signals:
-                            testSignal:
-                                width: 4
-    "};
-    let net = opencan_compose::compose_entry_str(&desc)?;
+    let net = opencan_compose::compose_entry_str(TEST_DESC)?;
     let decoder = CantoolsDecoder::new(&net)?;
 
     let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
