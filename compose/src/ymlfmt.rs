@@ -1,3 +1,5 @@
+//! YAML format specification as Rust structs deserialized by serde.
+
 use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};

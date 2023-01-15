@@ -1,3 +1,9 @@
+//! Translation of `opencan_compose` format types ([`YDesc`], [`YNode`], ...) into
+//! [`opencan_core`] types.
+//!
+//! We build signals/messages/nodes and ultimately hand back a [`CANNetwork`].
+//! Errors originating inside `opencan_core` are bubbled up.
+
 use std::collections::HashMap;
 
 use anyhow::{Context, Result};
@@ -6,12 +12,22 @@ use thiserror::Error;
 
 use crate::ymlfmt::*;
 
+/// Small helper for turning single-length maps into a tuple.
+///
+/// Serde deserializes:
+/// - signalName:
+///     (parameter)
+///
+/// As a `map<String, YSignal>` with length 1. We then typically have a vector
+/// of these, because it's both a sequence element and we still want to have
+/// the `':'` after it.
 fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
     // len should be one because every `- VALUE: val` pair is its own dict
     assert_eq!(map.len(), 1);
     map.into_iter().next().unwrap()
 }
 
+/// Errors during network composition.
 #[derive(Error, Debug)]
 enum CANCompositionError {
     #[error("Invalid directive `{0}` for enumerated value `{1}`.")]
@@ -19,6 +35,7 @@ enum CANCompositionError {
 }
 
 impl YDesc {
+    /// Make a `CANNetwork` from a `YDesc` (top-level yml description).
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
 
@@ -32,6 +49,7 @@ impl YDesc {
         Ok(net)
     }
 
+    /// Add a `YNode` to given `CANNetwork`.
     fn add_node(net: &mut CANNetwork, node_name: &str, ndesc: YNode) -> Result<()> {
         net.add_node(node_name)?;
 
@@ -46,6 +64,7 @@ impl YDesc {
 }
 
 impl YNode {
+    /// Make a `Vec<CANMessage>` from a `YNode`.
     fn into_messages(self, name: &str) -> Result<Vec<CANMessage>> {
         let mut msgs = Vec::new();
 
@@ -63,13 +82,16 @@ impl YNode {
 }
 
 impl YMessage {
+    /// Make a `CANMessage` from a `YMessage`.
     fn into_message(self, msg_name: &str, node_name: &str) -> Result<CANMessage> {
+        // First, make a CANMessageBuilder.
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
             .id(self.id)
             .cycletime(self.cycletime)
             .tx_node(node_name);
 
+        // For each signal, make the YSignal into a CANSignal, and add it to the message.
         for s in self.signals {
             let (sig_name, sdesc) = unmap(s);
 
@@ -89,6 +111,7 @@ impl YMessage {
             ))?;
         }
 
+        // Build message and return
         can_msg
             .build()
             .context(format!("Could not build message `{msg_name}`"))
@@ -96,17 +119,22 @@ impl YMessage {
 }
 
 impl YSignal {
+    /// Turn a `YSignal` into a `CANSignal`.
     fn into_signal(self, sig_name: &str) -> Result<CANSignal> {
+        // First, make a CANSignalBuilder.
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
             .description(self.description.clone())
             .scale(self.scale);
 
+        // Translate each enumerated value
         for h in self.enumerated_values {
             let e = unmap(h);
 
             new_sig = match e.1 {
                 YEnumeratedValue::Auto(s) => {
+                    // Check that the string after the enumerated value is actually "auto",
+                    // since serde hasn't done that for us yet
                     if s != "auto" {
                         return Err(
                             CANCompositionError::InvalidEnumeratedValueDirective(s, e.0).into()
@@ -118,11 +146,13 @@ impl YSignal {
             }
         }
 
+        // Either specify the width or infer it
         new_sig = match self.width {
             Some(w) => new_sig.width(w),
             None => new_sig.infer_width_strict()?,
         };
 
+        // Build and return
         new_sig
             .build()
             .context(format!("Could not build signal `{sig_name}`"))

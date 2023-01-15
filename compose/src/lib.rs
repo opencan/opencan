@@ -1,6 +1,8 @@
+//! Composition of [`CANNetwork`]s from YAML definition files.
+
 use anyhow::{Context, Result};
 use clap::Parser;
-use opencan_core::{CANNetwork, CantoolsDecoder, TranslationLayer};
+use opencan_core::CANNetwork;
 
 mod ymlfmt;
 use ymlfmt::*;
@@ -13,19 +15,22 @@ pub struct Args {
     pub in_file: String,
 }
 
-pub fn compose_entry(args: Args) -> Result<CANNetwork> {
+/// Compose YAML definitions into a `CANNetwork` given opencan_compose::Args.
+pub fn compose(args: Args) -> Result<CANNetwork> {
     let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
-    compose_entry_str(&input).context(format!(
+    compose_str(&input).context(format!(
         "Failed to ingest specifications file {}",
         args.in_file
     ))
 }
 
-pub fn compose_entry_str(input: &str) -> Result<CANNetwork> {
+/// Compose YAML definitions from a `&str` directly.
+pub fn compose_str(input: &str) -> Result<CANNetwork> {
     let de: YDesc =
         serde_yaml::from_str(input).context("Failed to parse specifications.".to_string())?;
 
+    // We manually print out the error causes so we can use our own formatting rather than anyhow's.
     let net = match de.into_network() {
         Err(e) => {
             eprintln!("Failed to compose network.\n");
@@ -39,7 +44,5 @@ pub fn compose_entry_str(input: &str) -> Result<CANNetwork> {
         Ok(net) => net,
     };
 
-    println!("{}", serde_json::to_string_pretty(&net)?);
-    println!("{}", CantoolsDecoder::dump_network(&net));
     Ok(net)
 }

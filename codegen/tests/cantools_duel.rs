@@ -24,7 +24,7 @@ fn message_id_lookup() -> Result<()> {
                       width: 1
     "};
 
-    let net = opencan_compose::compose_entry_str(&desc)?;
+    let net = opencan_compose::compose_str(&desc)?;
 
     // Do codegen
     let args = opencan_codegen::Args {
@@ -411,7 +411,7 @@ fn basic_compare_decoders() -> Result<()> {
 
     "};
 
-    let net = opencan_compose::compose_entry_str(&desc)?;
+    let net = opencan_compose::compose_str(&desc)?;
     let cantools = CantoolsDecoder::new(&net)?;
 
     for node in net.iter_nodes() {

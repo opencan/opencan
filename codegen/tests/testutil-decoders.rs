@@ -14,7 +14,7 @@ nodes:
 
 #[test]
 fn test_decode_with_trait() -> Result<()> {
-    let net = opencan_compose::compose_entry_str(TEST_DESC)?;
+    let net = opencan_compose::compose_str(TEST_DESC)?;
     let decoder = CodegenDecoder::new(&net, "TEST")?;
 
     let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;
@@ -30,7 +30,7 @@ fn test_decode_with_trait() -> Result<()> {
 
 #[test]
 fn test_decode_with_trait_cantools() -> Result<()> {
-    let net = opencan_compose::compose_entry_str(TEST_DESC)?;
+    let net = opencan_compose::compose_str(TEST_DESC)?;
     let decoder = CantoolsDecoder::new(&net)?;
 
     let v = decoder.decode_message("TEST_TestMessage", &[0xFA])?;

@@ -20,9 +20,9 @@ fn main() -> Result<()> {
 
     // ugly ahh code
     match args.subcommand {
-        Command::Compose(a) => opencan_compose::compose_entry(a).map(|_| ()),
+        Command::Compose(a) => opencan_compose::compose(a).map(|_| ()),
         Command::Codegen(a) => {
-            let net = opencan_compose::compose_entry(opencan_compose::Args {
+            let net = opencan_compose::compose(opencan_compose::Args {
                 in_file: a.in_file.clone(),
             })?;
             let gen = Codegen::new(a, &net);
