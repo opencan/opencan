@@ -22,7 +22,9 @@ impl YDesc {
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
 
-        for (node_name, ndesc) in self.nodes {
+        for n in self.nodes {
+            let (node_name, ndesc) = unmap(n);
+
             Self::add_node(&mut net, &node_name, ndesc)
                 .context(format!("Could not build node `{node_name}`"))?;
         }
@@ -47,11 +49,13 @@ impl YNode {
     fn into_messages(self, name: &str) -> Result<Vec<CANMessage>> {
         let mut msgs = Vec::new();
 
-        for (msg_name, mdesc) in self.messages {
-            let appended_name = format!("{name}_{msg_name}");
-            let m = mdesc.into_message(&appended_name, name)?;
+        for m in self.messages {
+            let (msg_name, mdesc) = unmap(m);
 
-            msgs.push(m);
+            let appended_name = format!("{name}_{msg_name}");
+            let msg = mdesc.into_message(&appended_name, name)?;
+
+            msgs.push(msg);
         }
 
         Ok(msgs)

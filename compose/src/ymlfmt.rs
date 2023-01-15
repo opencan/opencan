@@ -41,18 +41,15 @@ pub struct YMessage {
 
     pub cycletime: Option<u32>,
 
-    // #[serde(with = "tuple_vec_map")]
     pub signals: Vec<HashMap<String, YSignal>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct YNode {
-    #[serde(with = "tuple_vec_map")]
-    pub messages: Vec<(String, YMessage)>,
+    pub messages: Vec<HashMap<String, YMessage>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct YDesc {
-    #[serde(with = "tuple_vec_map")]
-    pub nodes: Vec<(String, YNode)>,
+    pub nodes: Vec<HashMap<String, YNode>>,
 }

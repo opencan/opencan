@@ -500,7 +500,6 @@ dependencies = [
  "indoc",
  "opencan-core",
  "serde",
- "serde-tuple-vec-map",
  "serde_json",
  "serde_yaml",
  "thiserror",
@@ -713,15 +712,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bb7d1f0d3021d347a83e556fc4683dea2ea09d87bccdf88ff5c12545d89d5efb"
 dependencies = [
  "serde_derive",
-]
-
-[[package]]
-name = "serde-tuple-vec-map"
-version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a04d0ebe0de77d7d445bb729a895dcb0a288854b267ca85f030ce51cdc578c82"
-dependencies = [
- "serde",
 ]
 
 [[package]]
