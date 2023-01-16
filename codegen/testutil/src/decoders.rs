@@ -44,7 +44,7 @@ impl<'n> CodegenDecoder<'n> {
 
 impl Decoder for CodegenDecoder<'_> {
     fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>> {
-        let decode_fn_name = format!("CANRX_decode_{msg}");
+        let decode_fn_name = format!("CANRX_doRx_{msg}");
         let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
 
         let ret = unsafe { decode(data.as_ptr(), data.len() as u8) };

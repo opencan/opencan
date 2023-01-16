@@ -84,7 +84,7 @@ impl<'n> Codegen<'n> {
 
                 {getters}
 
-                /*** Decode Function ***/
+                /*** RX Processing Function ***/
 
                 {decode_fn}
                 ",
@@ -137,6 +137,8 @@ impl<'n> Codegen<'n> {
         }
     }
 
+    /// Message ID to decode function pointer mapping.
+    // todo: extended vs standard IDs?
     fn rx_id_to_decode_fn(&self) -> String {
         let mut cases = String::new();
 
@@ -145,7 +147,7 @@ impl<'n> Codegen<'n> {
                 case 0x{:X}: return {};
                 ",
                 msg.id,
-                msg.decode_fn_name()
+                msg.rx_fn_name()
             };
         }
 

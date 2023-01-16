@@ -27,11 +27,18 @@ impl Display for CSignalTy {
 }
 
 pub trait SignalCodegen {
+    /// C type for this signal's raw value.
     fn c_ty_raw(&self) -> CSignalTy;
+    /// C type for this signal's decoded value.
     fn c_ty_decoded(&self) -> CSignalTy;
 
+    /// Name of the C getter function for this signal's decoded value.
     fn getter_fn_name(&self) -> String;
+    /// Name of the C getter function for this signal's raw value.
     fn raw_getter_fn_name(&self) -> String;
+
+    /// Conversion expression from raw signal to decoded signal.
+    fn decoding_expression(&self, raw_rvalue: &str) -> String;
 }
 
 impl SignalCodegen for CANSignal {
@@ -75,5 +82,31 @@ impl SignalCodegen for CANSignal {
 
     fn raw_getter_fn_name(&self) -> String {
         format!("CANRX_getRaw_{}", self.name)
+    }
+
+    fn decoding_expression(&self, raw_rvalue: &str) -> String {
+        // Currently, signals are either their raw type if they have no scale
+        // or offset, or they're CSignalTy::Float if they have a scale or offset.
+        //
+        // We're not accounting for enumerated values yet, which we may or may not
+        // do at all in this function.
+
+        if let CSignalTy::Float = self.c_ty_decoded() {
+            let scale = self.scale.map_or("".into(), |s| format!(" * {s}f"));
+            let offset = self.offset.map_or("".into(), |o| format!(" + {o}f"));
+
+            format!(
+                "(({float_ty})({raw_rvalue}){scale}){offset}",
+                float_ty = CSignalTy::Float
+            )
+        } else {
+            // Just copy the raw signal.
+
+            // For now,, these should be None according to the logic in .c_ty_decoded()
+            assert!(self.offset.is_none());
+            assert!(self.scale.is_none());
+
+            format!("{raw_rvalue}")
+        }
     }
 }

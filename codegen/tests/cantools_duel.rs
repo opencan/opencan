@@ -38,8 +38,8 @@ fn message_id_lookup() -> Result<()> {
     let lib = c_string_to_so(c_content)?;
 
     // Look up symbols
-    let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_decode_TEST_Message1")? };
-    let msg2_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_decode_TEST_Message2")? };
+    let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TEST_Message1")? };
+    let msg2_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TEST_Message2")? };
     let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { lib.get(b"CANRX_id_to_decode_fn")? };
 
     assert_eq!(lookup(0x10), Some(*msg1_decode));

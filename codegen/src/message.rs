@@ -4,17 +4,25 @@ use opencan_core::CANMessage;
 use crate::{signal::*, Indent};
 
 pub trait MessageCodegen {
+    /// C type for this message's unpacked + decoded data struct.
     fn struct_ty(&self) -> String;
+    /// Definition of this message's unpacked + decoded data struct.
     fn struct_def(&self) -> String;
+    /// Identifier for the global unpacked + decoded data struct of type [`.struct_ty()`](Self::struct_ty()).
     fn global_struct_ident(&self) -> String;
 
+    /// C type for this message's unpacked raw data struct.
     fn raw_struct_ty(&self) -> String;
+    /// Definition of this message's unpacked raw data struct.
     fn raw_struct_def(&self) -> String;
+    /// Identifier for the global unpacked raw data struct of type [`.raw_struct_ty()`](Self::raw_struct_ty()).
     fn global_raw_struct_ident(&self) -> String;
 
-    fn decode_fn_name(&self) -> String;
+    /// Name of the RX handler function for this message.
+    fn rx_fn_name(&self) -> String;
+    /// Definition of the RX handler function for this message.
     fn decode_fn_def(&self) -> String;
-
+    /// Definitions of the signal getter functions for this message.
     fn getter_fn_defs(&self) -> String;
 }
 
@@ -24,10 +32,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn struct_def(&self) -> String {
-        let mut top = String::new();
         let mut inner = String::new(); // struct contents
-
-        top += &format!("{} {{", self.struct_ty());
 
         for sigbit in &self.signals {
             inner += "\n";
@@ -49,10 +54,13 @@ impl MessageCodegen for CANMessage {
             };
         }
 
-        top += &inner.indent(4);
-        top += "};";
-
-        top
+        formatdoc! {"
+            {} {{
+            {}
+            }};",
+            self.struct_ty(),
+            inner.indent(4)
+        }
     }
 
     fn global_struct_ident(&self) -> String {
@@ -64,10 +72,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn raw_struct_def(&self) -> String {
-        let mut top = String::new();
         let mut inner = String::new(); // struct contents
-
-        top += &format!("{} {{", self.raw_struct_ty());
 
         for sigbit in &self.signals {
             inner += "\n";
@@ -89,18 +94,21 @@ impl MessageCodegen for CANMessage {
             };
         }
 
-        top += &inner.indent(4);
-        top += "};";
-
-        top
+        formatdoc! {"
+            {} {{
+            {}
+            }};",
+            self.raw_struct_ty(),
+            inner.indent(4)
+        }
     }
 
     fn global_raw_struct_ident(&self) -> String {
         format!("CANRX_MessageRaw_{}", self.name)
     }
 
-    fn decode_fn_name(&self) -> String {
-        format!("CANRX_decode_{}", self.name)
+    fn rx_fn_name(&self) -> String {
+        format!("CANRX_doRx_{}", self.name)
     }
 
     fn decode_fn_def(&self) -> String {
@@ -209,11 +217,6 @@ impl MessageCodegen for CANMessage {
         // We need to take each of the raw signals we just unpacked
         // and apply some set of transformations to them.
         //
-        // Currently, signals are either their raw type if they have no scale
-        // or offset, or they're CSignalTy::Float if they have a scale or offset.
-        //
-        // We're not accounting for enumerated values yet, which we may or may not
-        // do at all in this function.
         // todo for later bounds checks: a facility for signals being strictly enumerated?
         // todo  -> that is, ensure a signal can only be one of its enumerated values
 
@@ -227,29 +230,14 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
-            decode += &format!("// Decode signal `{}`\n", sig.name);
+            decode += &formatdoc! {"
+                // Decode signal `{name}`
+                dec.{name} = {};
 
-            if let CSignalTy::Float = sig.c_ty_decoded() {
-                let scale = sig.scale.map_or("".into(), |s| format!(" * {s}f"));
-                let offset = sig.offset.map_or("".into(), |o| format!(" + {o}f"));
-
-                decode += &formatdoc! {"
-                    dec.{name} = (({float_ty})(raw.{name}){scale}){offset};\n",
-                    float_ty = CSignalTy::Float,
-                    name = sig.name,
-                };
-            } else {
-                // Just copy the raw signal.
-                decode += &formatdoc! {"
-                    dec.{name} = raw.{name};\n",
-                    name = sig.name,
-                };
-
-                assert!(sig.offset.is_none());
-                assert!(sig.scale.is_none());
-            }
-
-            decode += "\n";
+                ",
+                sig.decoding_expression(&format!("raw.{}", sig.name)),
+                name = sig.name,
+            };
         }
 
         let decode = decode.trim();
@@ -286,7 +274,7 @@ impl MessageCodegen for CANMessage {
             bool {}(\n{args})\n{{
             {body}
             }}",
-            self.decode_fn_name(),
+            self.rx_fn_name(),
         }
     }
 
