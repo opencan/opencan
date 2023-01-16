@@ -3,33 +3,42 @@ use serde::{Deserialize, Serialize};
 
 use crate::error::*;
 
+/// A validated description of a CAN signal.
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANSignal {
+    /// Name of this signal.
     #[builder(setter(into))]
     pub name: String,
 
+    /// Width of this signal in bits.
     pub width: u32,
 
+    /// Description for this signal.
     #[builder(default)]
     pub description: Option<String>,
 
+    /// Numerical offset for this signal.
     #[builder(default)]
     pub offset: Option<f32>,
 
+    /// Numerical scale for this signal.
     #[builder(default)]
     pub scale: Option<f32>,
 
+    /// Bijective (bidirectional) map of enumerated values for this signal.
     #[builder(setter(custom), field(type = "bimap::BiMap<String, u64>"))]
     pub enumerated_values: bimap::BiMap<String, u64>,
 
+    // annoying hack
     #[serde(skip)]
     #[builder(setter(custom), field(type = "Option<u64>"))]
     _highest_enumerated_value: Option<u64>,
 }
 
 impl CANSignalBuilder {
+    /// Make a [`CANSignal`] from this builder.
     pub fn build(self) -> Result<CANSignal, CANConstructionError> {
         let s = self.__build()?;
         if s.width == 0 {
@@ -63,7 +72,8 @@ impl CANSignalBuilder {
         }
     }
 
-    /// Infer the width of the signal, but return a SignalWidthAlreadySpecified
+    /// Infer the width of the signal, but return a
+    /// [`SignalWidthAlreadySpecified`](CANConstructionError::SignalWidthAlreadySpecified)
     /// error if the signal width was already specified.
     pub fn infer_width_strict(self) -> Result<Self, CANConstructionError> {
         if self.width.is_some() {
@@ -73,12 +83,17 @@ impl CANSignalBuilder {
         self.infer_width()
     }
 
+    /// Add an enumerated value name and automatically choose an available
+    /// raw value for it.
+    // todo: describe inference semantics in more depth; maybe make them smarter
+    // todo: guarantee the behavior as part of the API or?
     pub fn add_enumerated_value_inferred(self, name: String) -> Result<Self, CANConstructionError> {
         let val = self._highest_enumerated_value.map_or(0, |v| v + 1);
 
         self.add_enumerated_value(name, val)
     }
 
+    /// Add an enumerated value name with a given raw value.
     pub fn add_enumerated_value(
         mut self,
         name: String,

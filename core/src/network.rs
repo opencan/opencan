@@ -12,7 +12,7 @@ pub struct CANNetwork {
     nodes: Vec<CANNode>,
 
     /// Owning Vec of all CANMessage in this network.
-    pub(crate) messages: Vec<CANMessage>,
+    messages: Vec<CANMessage>,
 
     /// index into .messages
     #[serde(skip)]
@@ -34,6 +34,7 @@ impl Default for CANNetwork {
 }
 
 impl CANNetwork {
+    /// Create a new (empty) network.
     pub fn new() -> Self {
         Self {
             nodes: Vec::new(),
@@ -46,19 +47,23 @@ impl CANNetwork {
         }
     }
 
+    /// Get message in this network by name.
     pub fn message_by_name(&self, name: &str) -> Option<&CANMessage> {
         let &idx = self.messages_by_name.get(name)?;
         Some(&self.messages[idx])
     }
 
+    /// Get message in this network by ID.
     pub fn message_by_id(&self, id: &u32) -> Option<&CANMessage> {
         let &idx = self.messages_by_id.get(id)?;
         Some(&self.messages[idx])
     }
 
     /// Insert a message into the network.
-    /// Checks for message ID and name uniqueness.
-    /// If a node is specified, it must already exist in the network.
+    ///
+    /// Notes:
+    ///     - Checks for message ID and name uniqueness.
+    ///     - If a node is specified, it must already exist in the network.
     pub fn insert_msg(&mut self, msg: CANMessage) -> Result<(), CANConstructionError> {
         if self.messages_by_name.contains_key(&msg.name) {
             return Err(CANConstructionError::MessageNameAlreadyExists(msg.name));
@@ -90,7 +95,9 @@ impl CANNetwork {
     }
 
     /// Add a new node to the network.
-    /// Checks for node name uniqueness.
+    ///
+    /// Notes:
+    ///     - Checks for node name uniqueness.
     pub fn add_node(&mut self, name: &str) -> Result<(), CANConstructionError> {
         if self.nodes_by_name.contains_key(name) {
             return Err(CANConstructionError::NodeAlreadyExists(name.into()));
@@ -105,21 +112,25 @@ impl CANNetwork {
         Ok(())
     }
 
+    /// Get a node in this network by name.
     pub fn node_by_name(&self, name: &str) -> Option<&CANNode> {
         let &idx = self.nodes_by_name.get(name)?;
 
         Some(&self.nodes[idx])
     }
 
+    /// Iterate over messages in this network.
     pub fn iter_messages(&self) -> std::slice::Iter<CANMessage> {
         self.messages.iter()
     }
 
+    /// Iterate over nodes in this network.
     pub fn iter_nodes(&self) -> std::slice::Iter<CANNode> {
         self.nodes.iter()
     }
 
-    pub fn messages_by_node(&self, name: &str) -> Option<Vec<&CANMessage>> {
+    /// Get messages transmitted by given node. Returns `None` if node does not exist.
+    pub fn tx_messages_by_node(&self, name: &str) -> Option<Vec<&CANMessage>> {
         let &node_idx = self.nodes_by_name.get(name)?;
         let node = &self.nodes[node_idx];
 

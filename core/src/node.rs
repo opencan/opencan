@@ -2,15 +2,18 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+/// A validated description of a CAN node.
 #[derive(Serialize, Deserialize)]
 pub struct CANNode {
+    /// Name of this node.
     pub name: String,
 
-    // index into parent CANNetwork messages vec
+    /// index into parent CANNetwork messages vec
     pub(crate) messages: HashMap<String, usize>,
 }
 
 impl CANNode {
+    /// Get a new `Self`.
     pub fn new(name: String) -> Self {
         CANNode {
             name,

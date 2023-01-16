@@ -3,9 +3,11 @@ use std::fmt::Display;
 use indoc::formatdoc;
 use textwrap::indent;
 
+use super::TranslationLayer;
 use crate::*;
 
-pub struct CantoolsDecoder;
+/// Translation to `cantools` Python code.
+pub struct CantoolsTranslator;
 
 fn option_to_py<T: Display>(opt: &Option<T>) -> String {
     match opt {
@@ -14,10 +16,10 @@ fn option_to_py<T: Display>(opt: &Option<T>) -> String {
     }
 }
 
-impl TranslationLayer for CantoolsDecoder {
+impl TranslationLayer for CantoolsTranslator {
     fn dump_network(net: &CANNetwork) -> String {
         let mut messages = Vec::new();
-        for msg in &net.messages {
+        for msg in net.iter_messages() {
             messages.push(Self::dump_message(msg));
         }
 
@@ -77,7 +79,7 @@ impl TranslationLayer for CantoolsDecoder {
     }
 }
 
-impl CantoolsDecoder {
+impl CantoolsTranslator {
     fn signal_py_choices(s: &CANSignal) -> String {
         let mut ch: Vec<(&String, &u64)> = s.enumerated_values.iter().collect();
 

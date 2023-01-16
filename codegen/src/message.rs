@@ -43,7 +43,7 @@ impl MessageCodegen for CANMessage {
                 ",
                 name = sigbit.sig.name,
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
-                start = sigbit.bit,
+                start = sigbit.start(),
                 width = sigbit.sig.width,
                 sigty = sigbit.sig.c_ty_decoded(),
             };
@@ -83,7 +83,7 @@ impl MessageCodegen for CANMessage {
                 ",
                 name = sigbit.sig.name,
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
-                start = sigbit.bit,
+                start = sigbit.start(),
                 width = sigbit.sig.width,
                 sigty = sigbit.sig.c_ty_raw(),
             };
@@ -146,7 +146,7 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
-            let bit = sigbit.bit;
+            let bit = sigbit.start();
 
             unpack += &format!(
                 "// Unpack `{}`, start bit {}, width {}\n",

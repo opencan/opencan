@@ -1,3 +1,5 @@
+//! OpenCAN core types and tools.
+
 #![forbid(unsafe_code)]
 
 mod signal;
@@ -7,7 +9,6 @@ mod message;
 pub use message::*;
 
 mod node;
-// no public exports for node
 
 mod network;
 pub use network::*;
@@ -15,11 +16,5 @@ pub use network::*;
 mod error;
 pub use error::*;
 
-mod display;
-pub use display::*;
-
-mod translation;
-pub use translation::*;
-
-mod cantools;
-pub use cantools::*;
+pub mod translation;
+pub use translation::TranslationLayer as Translation;

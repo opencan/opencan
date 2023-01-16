@@ -10,6 +10,7 @@ fn maybe_space_name<T: Display>(opt: &Option<T>) -> String {
     }
 }
 
+/// Error returned from routines that construct CAN messages, signals, etc.
 #[derive(Debug, Error)]
 pub enum CANConstructionError {
     #[error("Signal with name `{0}` already exists in this message.")]

@@ -9,58 +9,69 @@ use crate::signal::*;
 
 const MAX_MESSAGE_BIT: u32 = 63;
 
+/// [`CANSignal`] with its position (start bit) in its message.
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CANSignalWithPosition {
-    // todo: make it pub(crate) and have APIs expose tuple (bit, sig)?
-    pub bit: u32,
+    bit: u32,
     pub sig: CANSignal,
 }
 
 impl CANSignalWithPosition {
+    /// Start bit of signal.
     pub fn start(&self) -> u32 {
         self.bit
     }
 
+    /// Last bit of signal.
     pub fn end(&self) -> u32 {
         self.start() + self.sig.width - 1
     }
 
-    pub fn name_clone(&self) -> String {
+    fn name_clone(&self) -> String {
         self.sig.name.clone()
     }
 }
 
+/// A validated description of a CAN message.
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {
+    /// Message name.
     #[builder(setter(into))]
     pub name: String,
+
+    /// Message ID.
+    // todo - extended/non-extended as enum
     pub id: u32,
 
     /// Message cycle time in milliseconds.
     #[builder(default)]
     pub cycletime: Option<u32>,
 
+    /// Message length in bytes.
+    #[builder(setter(custom), field(type = "u32"))]
+    pub length: u32,
+
+    /// Transmitting node.
     #[builder(setter(into, strip_option), default)]
     pub tx_node: Option<String>,
 
-    // skip builder because we will provide add_signals() instead
+    /// Signals with positions in this message ordered by start bit.
     #[builder(setter(custom), field(type = "Vec<CANSignalWithPosition>"))]
     pub signals: Vec<CANSignalWithPosition>,
 
     #[builder(setter(custom), field(type = "HashMap<String, usize>"))]
     #[serde(skip)]
-    pub sig_map: HashMap<String, usize>,
-
-    #[builder(setter(custom), field(type = "u32"))]
-    pub length: u32,
+    sig_map: HashMap<String, usize>,
 }
 
 impl CANMessageBuilder {
-    /// Create a new CAN message.
-    /// Message names must be at least one character long and must contain
-    /// only ASCII letters, numbers, and underscores.
+    /// Make a [`CANMessage`] from this builder.
+    ///
+    /// Notes:
+    ///     - Message names must be at least one character long and must contain
+    ///       only ASCII letters, numbers, and underscores.
     // todo: check message ID validity and choose extended or non-extended
     pub fn build(mut self) -> Result<CANMessage, CANConstructionError> {
         // set message length in bytes
@@ -77,7 +88,7 @@ impl CANMessageBuilder {
         Ok(msg)
     }
 
-    /// Add single signal to message.
+    /// Add a single signal with the next available start bit.
     /// See [`add_signal_fixed()`][CANMessageBuilder::add_signal_fixed()] for more details.
     pub fn add_signal(self, sig: CANSignal) -> Result<Self, CANConstructionError> {
         let bit = self.signals.last().map_or(0, |s| s.end() + 1);
@@ -85,7 +96,7 @@ impl CANMessageBuilder {
         self.add_signal_fixed(bit, sig)
     }
 
-    /// Add single signal to message with signal position (start bit) specified.
+    /// Add a single signal with start bit specified.
     ///
     /// Checks:
     ///  - signal name does not repeat ([`SignalNameAlreadyExists`][CANConstructionError::SignalNameAlreadyExists])
@@ -141,10 +152,9 @@ impl CANMessageBuilder {
         Ok(self)
     }
 
-    /// Add multiple signals to message, placing each signal's start position
-    /// after the previous signal ends.
+    /// Add multiple signals, laying out start bits so signals are back-to-back.
     ///
-    /// Convenience wrapper for [`add_signal()`][CANMessageBuilder::add_signal].
+    /// Convenience wrapper for [`add_signal()`][Self::add_signal].
     pub fn add_signals(
         mut self,
         sigs: impl IntoIterator<Item = CANSignal>,
@@ -156,9 +166,9 @@ impl CANMessageBuilder {
         Ok(self)
     }
 
-    /// Add multiple signals to message with signal positions (start bits) specified.
+    /// Add multiple signals with start bits specified.
     ///
-    /// Convenience wrapper for [`add_signal_fixed()`][CANMessageBuilder::add_signal_fixed].
+    /// Convenience wrapper for [`add_signal_fixed()`][Self::add_signal_fixed].
     pub fn add_signals_fixed(
         mut self,
         sigs: impl IntoIterator<Item = (u32, CANSignal)>,
@@ -170,6 +180,8 @@ impl CANMessageBuilder {
         Ok(self)
     }
 
+    /// Check validity of message name - it should not be empty and should
+    /// contain a limited set of characters - `[a-zA-Z0-9_]`.
     fn check_name_validity(name: &str) -> Result<(), CANConstructionError> {
         if name.is_empty() {
             return Err(CANConstructionError::MessageNameEmpty);
@@ -187,15 +199,20 @@ impl CANMessageBuilder {
 }
 
 impl CANMessage {
+    /// Get a [builder](CANMessageBuilder).
+    ///
+    /// Call [.build()](CANMessageBuilder::build) to build into a [`CANMessage]`.
     pub fn builder() -> CANMessageBuilder {
         CANMessageBuilder::default()
     }
 
+    /// Get a [signal](CANSignalWithPosition) from this message by name.
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let &idx = self.sig_map.get(name)?;
         Some(&self.signals[idx])
     }
 
+    /// Get transmitting node.
     pub fn tx_node(&self) -> Option<&str> {
         self.tx_node.as_deref()
     }

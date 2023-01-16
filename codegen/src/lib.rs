@@ -167,7 +167,7 @@ impl<'n> Codegen<'n> {
 
     /// Get messages for our node sorted by ID
     fn sorted_messages(&self) -> Vec<&CANMessage> {
-        let mut messages = self.net.messages_by_node(&self.args.node).unwrap();
+        let mut messages = self.net.tx_messages_by_node(&self.args.node).unwrap();
 
         messages.sort_by(|m1, m2| m1.id.cmp(&m2.id));
 

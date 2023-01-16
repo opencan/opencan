@@ -418,7 +418,7 @@ fn basic_compare_decoders() -> Result<()> {
         eprintln!("---- Node: {}", node.name);
         let opencan = CodegenDecoder::new(&net, &node.name)?;
         for msg in net
-            .messages_by_node(&node.name)
+            .tx_messages_by_node(&node.name)
             .context("Expected node to exist")?
         {
             eprintln!("------ message: {}", msg.name);

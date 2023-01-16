@@ -3,7 +3,7 @@ use std::{collections::HashMap, ffi::c_float};
 use anyhow::{anyhow, Context, Result};
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
-use opencan_core::{CANNetwork, TranslationLayer};
+use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
 use pyo3::{prelude::*, types::IntoPyDict};
 
 use crate::util::*;
@@ -118,7 +118,7 @@ impl Decoder for CantoolsDecoder<'_> {
                 .message_by_name(msg)
                 .context("Message doesn't exist")?;
 
-            let py_msg_code = opencan_core::CantoolsDecoder::dump_message(net_msg);
+            let py_msg_code = CantoolsTranslator::dump_message(net_msg);
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
 
             // decode signals
