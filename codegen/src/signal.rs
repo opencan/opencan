@@ -106,7 +106,7 @@ impl SignalCodegen for CANSignal {
             assert!(self.offset.is_none());
             assert!(self.scale.is_none());
 
-            format!("{raw_rvalue}")
+            raw_rvalue.into()
         }
     }
 }
