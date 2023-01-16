@@ -23,8 +23,8 @@ nodes:
           - systemCommand:
               description: What do!?
               enumerated_values:
-                - HUMAN_CONTROL: auto
-                - DBW_GO: auto
+                - HUMAN_CONTROL: 8
+                - DBW_GO
     - WideAss:
         id: 0x22
         cycletime: 10

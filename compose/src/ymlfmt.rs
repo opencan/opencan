@@ -4,18 +4,33 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+/// Small helper for turning single-length maps into a tuple.
+///
+/// Serde deserializes:
+/// - signalName:
+///     (parameter)
+///
+/// As a `map<String, YSignal>` with length 1. We then typically have a vector
+/// of these, because it's both a sequence element and we still want to have
+/// the `':'` after it.
+pub(crate) fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
+    // len should be one because every `- VALUE: val` pair is its own dict
+    assert_eq!(map.len(), 1);
+    map.into_iter().next().unwrap()
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum YEnumeratedValue {
     Auto(String),
-    Exact(u64),
+    Exact(HashMap<String, u64>),
 }
 
 impl std::fmt::Debug for YEnumeratedValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Auto(arg0) => write!(f, "{arg0}"),
-            Self::Exact(arg0) => write!(f, "{arg0}"),
+            Self::Auto(_) => write!(f, "(auto)"),
+            Self::Exact(map) => write!(f, "{}", unmap(map.clone()).0),
         }
     }
 }
@@ -33,7 +48,7 @@ pub struct YSignal {
     pub unit: Option<String>,
 
     #[serde(default)]
-    pub enumerated_values: Vec<HashMap<String, YEnumeratedValue>>,
+    pub enumerated_values: Vec<YEnumeratedValue>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

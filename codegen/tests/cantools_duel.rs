@@ -90,10 +90,10 @@ fn basic_compare_decoders() -> Result<()> {
               - sysStatus:
                   description: Status of the node.
                   enumerated_values:
-                    - IDLE: auto
-                    - UNHEALTHY: auto
-                    - ACTIVE: auto
-                    - ESTOP: auto
+                    - IDLE
+                    - UNHEALTHY
+                    - ACTIVE
+                    - ESTOP
 
               - counter:
                   description: Counter for fun.
@@ -102,9 +102,9 @@ fn basic_compare_decoders() -> Result<()> {
               - resetReason:
                   description: Reset reason.
                   enumerated_values:
-                    - POWERON: auto
-                    - WATCHDOG_RESET: auto
-                    - UNKNOWN: auto
+                    - POWERON
+                    - WATCHDOG_RESET
+                    - UNKNOWN
 
               - esp32ResetReasonCode:
                   description: ESP32 reset reason code (enum RESET_REASON)
@@ -300,18 +300,18 @@ fn basic_compare_decoders() -> Result<()> {
                   description: ESTOP source.
                   width: 8
                   enumerated_values:
-                    - NODE: auto
-                    - NODESD: auto
-                    - SAFED: auto
+                    - NODE
+                    - NODESD
+                    - SAFED
 
               - reason:
                   description: ESTOP reason.
                   width: 8
                   enumerated_values:
-                    - FAIL: auto
-                    - TIMEOUT: auto
-                    - INVALID_STATE: auto
-                    - LIMIT_EXCEEDED: auto
+                    - FAIL
+                    - TIMEOUT
+                    - INVALID_STATE
+                    - LIMIT_EXCEEDED
 
         - Active:
             id: 0x420

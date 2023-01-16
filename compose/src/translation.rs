@@ -4,35 +4,10 @@
 //! We build signals/messages/nodes and ultimately hand back a [`CANNetwork`].
 //! Errors originating inside `opencan_core` are bubbled up.
 
-use std::collections::HashMap;
-
 use anyhow::{Context, Result};
 use opencan_core::*;
-use thiserror::Error;
 
 use crate::ymlfmt::*;
-
-/// Small helper for turning single-length maps into a tuple.
-///
-/// Serde deserializes:
-/// - signalName:
-///     (parameter)
-///
-/// As a `map<String, YSignal>` with length 1. We then typically have a vector
-/// of these, because it's both a sequence element and we still want to have
-/// the `':'` after it.
-fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
-    // len should be one because every `- VALUE: val` pair is its own dict
-    assert_eq!(map.len(), 1);
-    map.into_iter().next().unwrap()
-}
-
-/// Errors during network composition.
-#[derive(Error, Debug)]
-enum CANCompositionError {
-    #[error("Invalid directive `{0}` for enumerated value `{1}`.")]
-    InvalidEnumeratedValueDirective(String, String),
-}
 
 impl YDesc {
     /// Make a `CANNetwork` from a `YDesc` (top-level yml description).
@@ -129,21 +104,13 @@ impl YSignal {
 
         // Translate each enumerated value
         for h in self.enumerated_values {
-            let e = unmap(h);
-
-            new_sig = match e.1 {
-                YEnumeratedValue::Auto(s) => {
-                    // Check that the string after the enumerated value is actually "auto",
-                    // since serde hasn't done that for us yet
-                    if s != "auto" {
-                        return Err(
-                            CANCompositionError::InvalidEnumeratedValueDirective(s, e.0).into()
-                        );
-                    }
-                    new_sig.add_enumerated_value_inferred(e.0)?
+            new_sig = match h {
+                YEnumeratedValue::Auto(s) => new_sig.add_enumerated_value_inferred(s)?,
+                YEnumeratedValue::Exact(map) => {
+                    let (name, val) = unmap(map);
+                    new_sig.add_enumerated_value(name, val)?
                 }
-                YEnumeratedValue::Exact(v) => new_sig.add_enumerated_value(e.0, v)?,
-            }
+            };
         }
 
         // Either specify the width or infer it

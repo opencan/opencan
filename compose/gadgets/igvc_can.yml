@@ -9,10 +9,10 @@ messages:
       sysStatus:
         description: Status of the node.
         enumerated_values:
-          - IDLE: auto
-          - UNHEALTHY: auto
-          - ACTIVE: auto
-          - ESTOP: auto
+          - IDLE
+          - UNHEALTHY
+          - ACTIVE
+          - ESTOP
       counter:
         scale: 2
         description: Counter for fun.
@@ -20,9 +20,9 @@ messages:
       resetReason:
         description: Reset reason.
         enumerated_values:
-          - POWERON: auto
-          - WATCHDOG_RESET: auto
-          - UNKNOWN: auto
+          - POWERON
+          - WATCHDOG_RESET
+          - UNKNOWN
       esp32ResetReasonCode:
         description: ESP32 reset reason code (enum RESET_REASON)
         width: 5

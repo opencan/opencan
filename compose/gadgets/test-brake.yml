@@ -17,5 +17,5 @@ messages:
         scale: 0.01
         unit: "%"
         enumerated_values:
-          - SNA: auto
+          - SNA
           - SATURATED: 1

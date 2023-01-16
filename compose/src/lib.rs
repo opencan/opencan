@@ -44,5 +44,7 @@ pub fn compose_str(input: &str) -> Result<CANNetwork> {
         Ok(net) => net,
     };
 
+    eprintln!("{}", serde_json::to_string_pretty(&net).unwrap());
+
     Ok(net)
 }
