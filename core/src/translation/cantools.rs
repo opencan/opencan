@@ -83,7 +83,7 @@ impl CantoolsTranslator {
     fn signal_py_choices(s: &CANSignal) -> String {
         let mut ch: Vec<(&String, &u64)> = s.enumerated_values.iter().collect();
 
-        ch.sort_by(|a, b| a.1.cmp(b.1));
+        ch.sort_by_key(|e| e.1);
 
         ch.iter()
             .map(|(s, v)| format!("'{s}': {v},"))

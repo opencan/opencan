@@ -97,7 +97,7 @@ impl SignalCodegen for CANSignal {
 
         // sort enumerated values since they're in random order in the map
         let mut evs: Vec<_> = self.enumerated_values.iter().collect();
-        evs.sort_by_cached_key(|ev| ev.1);
+        evs.sort_by_key(|ev| ev.1);
 
         // collect C enum values
         let mut inner = String::new();
