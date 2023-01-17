@@ -20,8 +20,13 @@ pub trait MessageCodegen {
 
     /// Name of the RX handler function for this message.
     fn rx_fn_name(&self) -> String;
+    /// Declaration of the RX handler function for this message.
+    fn rx_fn_decl(&self) -> String;
     /// Definition of the RX handler function for this message.
-    fn decode_fn_def(&self) -> String;
+    fn rx_fn_def(&self) -> String;
+
+    /// Declarations of the signal getter functions for this message.
+    fn getter_fn_decls(&self) -> String;
     /// Definitions of the signal getter functions for this message.
     fn getter_fn_defs(&self) -> String;
 }
@@ -111,7 +116,17 @@ impl MessageCodegen for CANMessage {
         format!("CANRX_doRx_{}", self.name)
     }
 
-    fn decode_fn_def(&self) -> String {
+    fn rx_fn_decl(&self) -> String {
+        formatdoc! {"
+            bool {}(
+                const uint8_t * data,
+                uint_fast8_t len
+            );",
+            self.rx_fn_name()
+        }
+    }
+
+    fn rx_fn_def(&self) -> String {
         /* function comment */
         let comment = formatdoc! {"
             /**
@@ -145,7 +160,7 @@ impl MessageCodegen for CANMessage {
 
         /* unpacking */
         let unpack_start = formatdoc! {"
-            /*  Unpack signals  */
+            /* ------- Unpack signals ------- */
             {rawty} raw = {{0}};",
             rawty = self.raw_struct_ty()
         };
@@ -221,7 +236,7 @@ impl MessageCodegen for CANMessage {
         // todo  -> that is, ensure a signal can only be one of its enumerated values
 
         let decode_start = formatdoc! {"
-            /*  Decode signals  */
+            /* ------- Decode signals ------- */
             {decty} dec = {{0}};",
             decty = self.struct_ty()
         };
@@ -231,7 +246,7 @@ impl MessageCodegen for CANMessage {
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
             decode += &formatdoc! {"
-                // Decode signal `{name}`
+                // Decode `{name}`
                 dec.{name} = {};
 
                 ",
@@ -259,6 +274,7 @@ impl MessageCodegen for CANMessage {
 
             {unpack}
 
+
             {decode_start}
 
             {decode}
@@ -278,19 +294,42 @@ impl MessageCodegen for CANMessage {
         }
     }
 
+    fn getter_fn_decls(&self) -> String {
+        let mut getters = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+
+            getters += &formatdoc! {"
+                {sigty_dec} {fn_name}(void);
+                {sigty_raw} {fn_name_raw}(void);
+
+                ",
+                sigty_dec = sig.c_ty_decoded(),
+                sigty_raw = sig.c_ty_raw(),
+                fn_name = sig.getter_fn_name(),
+                fn_name_raw = sig.raw_getter_fn_name(),
+            }
+        }
+
+        getters.trim().into()
+    }
+
     fn getter_fn_defs(&self) -> String {
         let mut getters = String::new();
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
-            getters += &formatdoc! {"\n
+            getters += &formatdoc! {"
                 {sigty_dec} {fn_name}(void) {{
                     return {global_decoded}.{name};
                 }}
 
                 {sigty_raw} {fn_name_raw}(void) {{
                     return {global_raw}.{name};
-                }}",
+                }}
+
+                ",
                 name = sig.name,
                 sigty_dec = sig.c_ty_decoded(),
                 sigty_raw = sig.c_ty_raw(),

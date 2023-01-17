@@ -86,31 +86,39 @@ impl<'n> Codegen<'n> {
 
                 /*** Signal Getters ***/
 
-                // todo: decl
+                {getters}
 
                 /*** RX Processing Function ***/
 
-                // todo: decl
+                {rx_decl}
                 ",
                 name = msg.name,
                 mstruct_raw = msg.raw_struct_def(),
                 mstruct = msg.struct_def(),
+                getters = msg.getter_fn_decls(),
+                rx_decl = msg.rx_fn_decl(),
             }
         }
+
+        let messages = messages.trim();
 
         formatdoc! {"
             {greet}
 
             {std_incl}
 
+            /*********************************************************/
+            /* ID-to-Decode-Function Lookup */
+            /*********************************************************/
+
             typedef bool (*{decode_fn_ptr})(const uint8_t * const data, const uint_fast8_t len);
+            {decode_fn_ptr} {decode_fn_name}(uint32_t id);
 
             {messages}
-
-            // todo: id fn decl
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             decode_fn_ptr = Self::DECODE_FN_PTR_TYPEDEF,
+            decode_fn_name = Self::ID_TO_DECODE_FN,
             std_incl = Self::common_std_includes(),
         }
     }
@@ -144,9 +152,11 @@ impl<'n> Codegen<'n> {
                 mstruct_name = msg.struct_ty(),
                 global_ident = msg.global_struct_ident(),
                 getters = msg.getter_fn_defs(),
-                decode_fn = msg.decode_fn_def(),
+                decode_fn = msg.rx_fn_def(),
             }
         }
+
+        let messages = messages.trim();
 
         formatdoc! {"
             {greet}
@@ -156,9 +166,13 @@ impl<'n> Codegen<'n> {
             #include \"{callbacks_h}\"
             #include \"{rx_h}\"
 
-            {messages}
+            /*********************************************************/
+            /* ID-to-Decode-Function Lookup */
+            /*********************************************************/
 
             {id_to_fn}
+
+            {messages}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             callbacks_h = CodegenOutput::CALLBACKS_HEADER_NAME,
@@ -231,8 +245,7 @@ impl<'n> Codegen<'n> {
                     default:
                         return NULL;
                 }}
-            }}
-            ",
+            }}",
             dec_ptr = Self::DECODE_FN_PTR_TYPEDEF,
             name = Self::ID_TO_DECODE_FN,
             cases = cases.trim().indent(8),
