@@ -102,7 +102,7 @@ impl CANMessageBuilder {
     ///  - signal name does not repeat ([`SignalNameAlreadyExists`][CANConstructionError::SignalNameAlreadyExists])
     ///  - signals are specified in order([`MessageSignalOutOfOrder`][CANConstructionError::MessageSignalsOutOfOrder])
     ///  - signals in message do not overlap ([`SignalsOverlap`][CANConstructionError::SignalsOverlap])
-    ///  - signal does not extend past end of message (['SignalWillNotFitInMessage`][CANConstructionError::SignalWillNotFitInMessage])
+    ///  - signal does not extend past end of message ([`SignalWillNotFitInMessage`][CANConstructionError::SignalWillNotFitInMessage])
     pub fn add_signal_fixed(
         mut self,
         bit: u32,
