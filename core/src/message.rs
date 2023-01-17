@@ -18,12 +18,12 @@ pub struct CANSignalWithPosition {
 
 impl CANSignalWithPosition {
     /// Start bit of signal.
-    pub fn start(&self) -> u32 {
+    pub const fn start(&self) -> u32 {
         self.bit
     }
 
     /// Last bit of signal.
-    pub fn end(&self) -> u32 {
+    pub const fn end(&self) -> u32 {
         self.start() + self.sig.width - 1
     }
 

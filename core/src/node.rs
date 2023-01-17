@@ -15,7 +15,7 @@ pub struct CANNode {
 impl CANNode {
     /// Get a new `Self`.
     pub fn new(name: String) -> Self {
-        CANNode {
+        Self {
             name,
             messages: HashMap::new(),
         }
