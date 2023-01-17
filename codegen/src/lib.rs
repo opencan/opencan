@@ -101,14 +101,17 @@ impl<'n> Codegen<'n> {
         formatdoc! {"
             {greet}
 
-            {pre_defs}
+            {std_incl}
+
+            typedef bool (*{decode_fn_ptr})(const uint8_t * const data, const uint_fast8_t len);
 
             {messages}
 
             // todo: id fn decl
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
-            pre_defs = Self::internal_prelude_defs(),
+            decode_fn_ptr = Self::DECODE_FN_PTR_TYPEDEF,
+            std_incl = Self::common_std_includes(),
         }
     }
 
@@ -148,16 +151,19 @@ impl<'n> Codegen<'n> {
         formatdoc! {"
             {greet}
 
-            {pre_defs}
+            {std_incl}
 
-            #include \"opencan_rx.h\"
+            #include \"{callbacks_h}\"
+            #include \"{rx_h}\"
 
             {messages}
 
             {id_to_fn}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
-            pre_defs = Self::internal_prelude_defs(),
+            callbacks_h = CodegenOutput::CALLBACKS_HEADER_NAME,
+            rx_h = CodegenOutput::RX_H_NAME,
+            std_incl = Self::common_std_includes(),
             id_to_fn = self.rx_id_to_decode_fn(),
         }
     }
@@ -175,18 +181,11 @@ impl<'n> Codegen<'n> {
         }
     }
 
-    fn internal_prelude_defs() -> String {
+    fn common_std_includes() -> String {
         formatdoc! {"
             #include <stdbool.h>
             #include <stddef.h>
-            #include <stdint.h>
-
-            #include \"{}\"
-
-            typedef bool (*{})(const uint8_t * const data, const uint_fast8_t len);
-            ",
-            CodegenOutput::CALLBACKS_HEADER_NAME,
-            Self::DECODE_FN_PTR_TYPEDEF,
+            #include <stdint.h>",
         }
     }
 
