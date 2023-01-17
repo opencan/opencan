@@ -25,6 +25,15 @@ pub trait MessageCodegen {
     /// Definition of the RX handler function for this message.
     fn rx_fn_def(&self) -> String;
 
+    /// Name of the TX handler function for this message.
+    fn tx_fn_name(&self) -> String;
+    /// Declaration of the TX handler function for this messsage.
+    fn tx_fn_decl(&self) -> String;
+    /// Definition of the TX handler function for this message.
+    fn tx_fn_def(&self) -> String;
+    /// Name of the TX user populate callback for this message.
+    fn tx_populate_fn_name(&self) -> String;
+
     /// Declarations of the signal getter functions for this message.
     fn getter_fn_decls(&self) -> String;
     /// Definitions of the signal getter functions for this message.
@@ -294,6 +303,27 @@ impl MessageCodegen for CANMessage {
             }}",
             self.rx_fn_name(),
         }
+    }
+
+    fn tx_fn_name(&self) -> String {
+        format!("CANTX_doTx_{}", self.name)
+    }
+
+    fn tx_fn_decl(&self) -> String {
+        format!("void {}(void)", self.tx_fn_name())
+    }
+
+    fn tx_fn_def(&self) -> String {
+        formatdoc! {"
+            bool {}(void)\n{{
+
+            }}",
+            self.tx_fn_name()
+        }
+    }
+
+    fn tx_populate_fn_name(&self) -> String {
+        format!("CANTX_populate_{}", self.name)
     }
 
     fn getter_fn_decls(&self) -> String {

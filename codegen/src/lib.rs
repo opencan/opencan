@@ -20,6 +20,8 @@ pub struct CodegenOutput {
     pub callbacks_h: String,
     pub rx_c: String,
     pub rx_h: String,
+    pub tx_c: String,
+    pub tx_h: String,
 }
 
 pub struct Codegen<'n> {
@@ -65,6 +67,8 @@ impl<'n> Codegen<'n> {
             callbacks_h: self.callbacks_h(),
             rx_c: self.rx_c(),
             rx_h: self.rx_h(),
+            tx_c: self.tx_c(),
+            tx_h: self.tx_h(),
         })
     }
 
@@ -187,6 +191,33 @@ impl<'n> Codegen<'n> {
         }
     }
 
+    fn tx_h(&self) -> String {
+        formatdoc! {"
+            {greet}
+
+            #ifndef OPENCAN_TX_H
+            #define OPENCAN_TX_H
+
+            #endif
+            ",
+            greet = self.internal_prelude_greeting(CodegenOutput::TX_H_NAME)
+        }
+    }
+
+    fn tx_c(&self) -> String {
+        formatdoc! {"
+            {greet}
+
+            {std_incl}
+
+            #include \"{tx_h}\"
+            ",
+            greet = self.internal_prelude_greeting(CodegenOutput::TX_C_NAME),
+            std_incl = Self::common_std_includes(),
+            tx_h = CodegenOutput::TX_H_NAME,
+        }
+    }
+
     fn callbacks_h(&self) -> String {
         formatdoc! {"
             {}
@@ -271,19 +302,23 @@ impl CodegenOutput {
     const CALLBACKS_HEADER_NAME: &str = "opencan_callbacks.h";
     const RX_C_NAME: &str = "opencan_rx.c";
     const RX_H_NAME: &str = "opencan_rx.h";
+    const TX_C_NAME: &str = "opencan_tx.c";
+    const TX_H_NAME: &str = "opencan_tx.h";
 
     pub fn as_list(&self) -> Vec<(&str, &str)> {
         [self.as_list_c(), self.as_list_h()].concat()
     }
 
     pub fn as_list_c(&self) -> Vec<(&str, &str)> {
-        vec![(Self::RX_C_NAME, &self.rx_c)]
+        vec![(Self::RX_C_NAME, &self.rx_c),
+             (Self::TX_C_NAME, &self.tx_c)]
     }
 
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
         vec![
             (Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
             (Self::RX_H_NAME, &self.rx_h),
+            (Self::TX_H_NAME, &self.tx_h)
         ]
     }
 }
