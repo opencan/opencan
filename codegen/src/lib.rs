@@ -45,8 +45,8 @@ impl Indent for &str {
 }
 
 impl<'n> Codegen<'n> {
-    const DECODE_FN_PTR_TYPEDEF: &str = "decode_fn_ptr";
-    const ID_TO_DECODE_FN: &str = "CANRX_id_to_decode_fn";
+    const RX_FN_PTR_TYPEDEF: &str = "rx_fn_ptr";
+    const ID_TO_RX_FN_NAME: &str = "CANRX_id_to_rx_fn";
 
     pub fn new(args: Args, net: &'n CANNetwork) -> Self {
         Self {
@@ -113,17 +113,17 @@ impl<'n> Codegen<'n> {
             {std_incl}
 
             /*********************************************************/
-            /* ID-to-Decode-Function Lookup */
+            /* ID-to-Rx-Function Lookup */
             /*********************************************************/
 
-            typedef bool (*{decode_fn_ptr})(const uint8_t * const data, const uint_fast8_t len);
-            {decode_fn_ptr} {decode_fn_name}(uint32_t id);
+            typedef bool (*{rx_fn_ptr})(const uint8_t * const data, const uint_fast8_t len);
+            {rx_fn_ptr} {rx_fn_name}(uint32_t id);
 
             {messages}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
-            decode_fn_ptr = Self::DECODE_FN_PTR_TYPEDEF,
-            decode_fn_name = Self::ID_TO_DECODE_FN,
+            rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
+            rx_fn_name = Self::ID_TO_RX_FN_NAME,
             std_incl = Self::common_std_includes(),
         }
     }
@@ -172,7 +172,7 @@ impl<'n> Codegen<'n> {
             #include \"{rx_h}\"
 
             /*********************************************************/
-            /* ID-to-Decode-Function Lookup */
+            /* ID-to-Rx-Function Lookup */
             /*********************************************************/
 
             {id_to_fn}
@@ -251,8 +251,8 @@ impl<'n> Codegen<'n> {
                         return NULL;
                 }}
             }}",
-            dec_ptr = Self::DECODE_FN_PTR_TYPEDEF,
-            name = Self::ID_TO_DECODE_FN,
+            dec_ptr = Self::RX_FN_PTR_TYPEDEF,
+            name = Self::ID_TO_RX_FN_NAME,
             cases = cases.trim().indent(8),
         }
     }

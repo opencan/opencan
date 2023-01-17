@@ -38,7 +38,7 @@ fn message_id_lookup() -> Result<()> {
     // Look up symbols
     let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TEST_Message1")? };
     let msg2_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TEST_Message2")? };
-    let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { lib.get(b"CANRX_id_to_decode_fn")? };
+    let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { lib.get(b"CANRX_id_to_rx_fn")? };
 
     assert_eq!(lookup(0x10), Some(*msg1_decode));
     assert_eq!(lookup(0x11), Some(*msg2_decode));
