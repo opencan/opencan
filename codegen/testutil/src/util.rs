@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use libloading::Library;
 use tempfile::tempdir;
 
-pub fn c_to_so(c_file: &[impl AsRef<Path>]) -> Result<Library> {
+pub fn c_to_so(files: &[impl AsRef<Path>]) -> Result<Library> {
     let temp_dir = tempdir()?;
 
     let dir = temp_dir.path();
@@ -21,7 +21,12 @@ pub fn c_to_so(c_file: &[impl AsRef<Path>]) -> Result<Library> {
         .arg("-o")
         .arg(&so);
 
-    for f in c_file {
+    // only pass .c files to compiler
+    let c_files = files
+        .iter()
+        .filter(|f| f.as_ref().extension().unwrap() == "c");
+
+    for f in c_files {
         c.arg(f.as_ref());
     }
 
