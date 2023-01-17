@@ -31,11 +31,10 @@ fn message_id_lookup() -> Result<()> {
         node: "TEST".into(),
         in_file: "".into(),
     };
-    let c_content = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
+    let c = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
 
     // Compile
-    println!("{c_content}");
-    let lib = c_string_to_so(c_content)?;
+    let lib = c_strings_to_so(c.as_list_c())?;
 
     // Look up symbols
     let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TEST_Message1")? };

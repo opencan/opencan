@@ -36,7 +36,7 @@ impl<'n> CodegenDecoder<'n> {
         };
 
         let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
-        let lib = c_string_to_so(c)?;
+        let lib = c_strings_to_so(c.as_list_c())?;
 
         Ok(Self { net, lib })
     }

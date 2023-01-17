@@ -15,6 +15,12 @@ pub struct Args {
     pub in_file: String,
 }
 
+#[non_exhaustive]
+pub struct CodegenOutput {
+    pub callbacks_h: String,
+    pub rx_c: String,
+}
+
 pub struct Codegen<'n> {
     args: Args,
     net: &'n CANNetwork,
@@ -45,29 +51,27 @@ impl<'n> Codegen<'n> {
         Self {
             args,
             net,
-            time: chrono::Utc::now(),
+            time: chrono::Utc::now(), // date recorded now
         }
     }
 
-    pub fn network_to_c(&self) -> Result<String> {
-        let mut output = String::new();
-
+    pub fn network_to_c(self) -> Result<CodegenOutput> {
         self.net
             .node_by_name(&self.args.node)
             .context(format!("Node `{}` not found in network.", self.args.node))?;
 
-        output += &formatdoc! {"
-            {greet}
+        Ok(CodegenOutput {
+            callbacks_h: Self::callbacks_h(),
+            rx_c: self.rx_c(),
+        })
+    }
 
-            {pre_defs}
-            ",
-            greet = self.internal_prelude_greeting(),
-            pre_defs = Self::internal_prelude_defs(),
-        };
+    fn rx_c(&self) -> String {
+        let mut messages = String::new();
 
         for msg in self.sorted_messages() {
-            output += "\n";
-            output += &formatdoc! {"
+            messages += "\n";
+            messages += &formatdoc! {"
                 /*********************************************************/
                 /* Message: {name} */
                 /*********************************************************/
@@ -100,10 +104,29 @@ impl<'n> Codegen<'n> {
             }
         }
 
-        output += "\n";
-        output += &self.rx_id_to_decode_fn();
+        formatdoc! {"
+            {greet}
 
-        Ok(output)
+            {pre_defs}
+
+            {messages}
+
+            {id_to_fn}
+            ",
+            greet = self.internal_prelude_greeting(),
+            pre_defs = Self::internal_prelude_defs(),
+            id_to_fn = self.rx_id_to_decode_fn(),
+        }
+    }
+
+    fn callbacks_h() -> String {
+        formatdoc! {"
+            #ifndef OPENCAN_CALLBACKS_H
+            #define OPENCAN_CALLBACKS_H
+
+            #endif
+            "
+        }
     }
 
     fn internal_prelude_defs() -> String {
@@ -174,5 +197,22 @@ impl<'n> Codegen<'n> {
         messages.sort_by(|m1, m2| m1.id.cmp(&m2.id));
 
         messages
+    }
+}
+
+impl CodegenOutput {
+    const CALLBACKS_HEADER_NAME: &str = "callbacks.h";
+    const RX_C_NAME: &str = "rx.c";
+
+    pub fn as_list(&self) -> Vec<(&str, &str)> {
+        [self.as_list_c(), self.as_list_h()].concat()
+    }
+
+    pub fn as_list_c(&self) -> Vec<(&str, &str)> {
+        vec![(Self::RX_C_NAME, &self.rx_c)]
+    }
+
+    pub fn as_list_h(&self) -> Vec<(&str, &str)> {
+        vec![(Self::CALLBACKS_HEADER_NAME, &self.callbacks_h)]
     }
 }

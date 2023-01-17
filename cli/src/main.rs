@@ -27,7 +27,7 @@ fn main() -> Result<()> {
             })?;
             let gen = Codegen::new(a, &net);
             let out = gen.network_to_c()?;
-            println!("{out}");
+            println!("HEADER:\n{}\n\nRX_C:{}", out.callbacks_h, out.rx_c);
             Ok(())
         }
     }
