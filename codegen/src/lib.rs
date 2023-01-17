@@ -19,6 +19,7 @@ pub struct Args {
 pub struct CodegenOutput {
     pub callbacks_h: String,
     pub rx_c: String,
+    pub rx_h: String,
 }
 
 pub struct Codegen<'n> {
@@ -63,7 +64,52 @@ impl<'n> Codegen<'n> {
         Ok(CodegenOutput {
             callbacks_h: self.callbacks_h(),
             rx_c: self.rx_c(),
+            rx_h: self.rx_h(),
         })
+    }
+
+    fn rx_h(&self) -> String {
+        let mut messages = String::new();
+
+        for msg in self.sorted_messages() {
+            messages += "\n";
+            messages += &formatdoc! {"
+                /*********************************************************/
+                /* Message: {name} */
+                /*********************************************************/
+
+                /*** Message Structs ***/
+
+                {mstruct_raw}
+
+                {mstruct}
+
+                /*** Signal Getters ***/
+
+                // todo: decl
+
+                /*** RX Processing Function ***/
+
+                // todo: decl
+                ",
+                name = msg.name,
+                mstruct_raw = msg.raw_struct_def(),
+                mstruct = msg.struct_def(),
+            }
+        }
+
+        formatdoc! {"
+            {greet}
+
+            {pre_defs}
+
+            {messages}
+
+            // todo: id fn decl
+            ",
+            greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
+            pre_defs = Self::internal_prelude_defs(),
+        }
     }
 
     fn rx_c(&self) -> String {
@@ -78,10 +124,7 @@ impl<'n> Codegen<'n> {
 
                 /*** Message Structs ***/
 
-                {mstruct_raw}
                 static {mstruct_raw_name} {global_ident_raw};
-
-                {mstruct}
                 static {mstruct_name} {global_ident};
 
                 /*** Signal Getters ***/
@@ -93,10 +136,8 @@ impl<'n> Codegen<'n> {
                 {decode_fn}
                 ",
                 name = msg.name,
-                mstruct_raw = msg.raw_struct_def(),
                 mstruct_raw_name = msg.raw_struct_ty(),
                 global_ident_raw = msg.global_raw_struct_ident(),
-                mstruct = msg.struct_def(),
                 mstruct_name = msg.struct_ty(),
                 global_ident = msg.global_struct_ident(),
                 getters = msg.getter_fn_defs(),
@@ -108,6 +149,8 @@ impl<'n> Codegen<'n> {
             {greet}
 
             {pre_defs}
+
+            #include \"opencan_rx.h\"
 
             {messages}
 
@@ -210,6 +253,7 @@ impl<'n> Codegen<'n> {
 impl CodegenOutput {
     const CALLBACKS_HEADER_NAME: &str = "opencan_callbacks.h";
     const RX_C_NAME: &str = "opencan_rx.c";
+    const RX_H_NAME: &str = "opencan_rx.h";
 
     pub fn as_list(&self) -> Vec<(&str, &str)> {
         [self.as_list_c(), self.as_list_h()].concat()
@@ -220,6 +264,7 @@ impl CodegenOutput {
     }
 
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
-        vec![(Self::CALLBACKS_HEADER_NAME, &self.callbacks_h)]
+        vec![(Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
+             (Self::RX_H_NAME, &self.rx_h)]
     }
 }
