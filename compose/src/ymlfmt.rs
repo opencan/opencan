@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 /// As a `map<String, YSignal>` with length 1. We then typically have a vector
 /// of these, because it's both a sequence element and we still want to have
 /// the `':'` after it.
-pub(crate) fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
+pub fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
     // len should be one because every `- VALUE: val` pair is its own dict
     assert_eq!(map.len(), 1);
     map.into_iter().next().unwrap()

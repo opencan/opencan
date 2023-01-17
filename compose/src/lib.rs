@@ -12,17 +12,27 @@ mod translation;
 #[derive(Parser)]
 #[command(version)]
 pub struct Args {
+    /// Input .yml file
     pub in_file: String,
+    /// Dump composed network as JSON to stdout
+    #[clap(long, short, action)]
+    pub dump_json: bool,
 }
 
 /// Compose YAML definitions into a `CANNetwork` given opencan_compose::Args.
 pub fn compose(args: Args) -> Result<CANNetwork> {
     let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
-    compose_str(&input).context(format!(
+    let net = compose_str(&input).context(format!(
         "Failed to ingest specifications file {}",
         args.in_file
-    ))
+    ))?;
+
+    if args.dump_json {
+        println!("{}", serde_json::to_string_pretty(&net).unwrap());
+    }
+
+    Ok(net)
 }
 
 /// Compose YAML definitions from a `&str` directly.
@@ -43,8 +53,6 @@ pub fn compose_str(input: &str) -> Result<CANNetwork> {
 
         Ok(net) => net,
     };
-
-    eprintln!("{}", serde_json::to_string_pretty(&net).unwrap());
 
     Ok(net)
 }
