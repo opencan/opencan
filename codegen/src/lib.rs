@@ -276,7 +276,9 @@ impl CodegenOutput {
     }
 
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
-        vec![(Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
-             (Self::RX_H_NAME, &self.rx_h)]
+        vec![
+            (Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
+            (Self::RX_H_NAME, &self.rx_h),
+        ]
     }
 }
