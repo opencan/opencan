@@ -30,10 +30,7 @@ pub struct CodegenDecoder<'n> {
 
 impl<'n> CodegenDecoder<'n> {
     pub fn new(net: &'n CANNetwork, node: &str) -> Result<CodegenDecoder<'n>> {
-        let args = opencan_codegen::Args {
-            node: node.into(),
-            in_file: "".into(),
-        };
+        let args = opencan_codegen::Args { node: node.into() };
 
         let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
         let lib = c_strings_to_so(c.as_list())?;

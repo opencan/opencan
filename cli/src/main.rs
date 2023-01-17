@@ -15,7 +15,15 @@ struct PrimaryArgs {
 enum Command {
     /// Compose a CAN network using a definitions file
     Compose(opencan_compose::Args),
-    Codegen(opencan_codegen::Args),
+    Codegen {
+        /// Input .yml file
+        in_file: String,
+        /// Output directory (created if it doesn't exist yet)
+        output_path: String,
+        /// Codegen arguments
+        #[clap(flatten)]
+        cg_args: opencan_codegen::Args,
+    },
 }
 
 fn main() -> Result<()> {
@@ -24,13 +32,15 @@ fn main() -> Result<()> {
     // ugly ahh code
     match args.subcommand {
         Command::Compose(a) => opencan_compose::compose(a).map(|_| ()),
-        Command::Codegen(a) => {
-            let net = opencan_compose::compose(opencan_compose::Args {
-                in_file: a.in_file.clone(),
-            })?;
-            let gen = Codegen::new(a, &net);
+        Command::Codegen {
+            cg_args,
+            in_file,
+            output_path,
+        } => {
+            let net = opencan_compose::compose(opencan_compose::Args { in_file })?;
+            let gen = Codegen::new(cg_args, &net);
             let out = gen.network_to_c()?;
-            save_codegen_files(&out, "./codegenoutput")?;
+            save_codegen_files(&out, output_path)?;
             Ok(())
         }
     }

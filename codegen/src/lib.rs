@@ -9,10 +9,10 @@ use message::*;
 
 pub mod signal;
 
-#[derive(Parser)]
+#[derive(Clone, Parser)]
 pub struct Args {
+    /// Node in the network to generate for
     pub node: String,
-    pub in_file: String,
 }
 
 #[non_exhaustive]
