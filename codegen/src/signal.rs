@@ -1,6 +1,9 @@
 use std::fmt::Display;
 
+use indoc::formatdoc;
 use opencan_core::CANSignal;
+
+use crate::Indent;
 
 pub enum CSignalTy {
     U8,
@@ -8,6 +11,7 @@ pub enum CSignalTy {
     U32,
     U64,
     Float,
+    Enum(String),
 }
 
 impl Display for CSignalTy {
@@ -21,6 +25,7 @@ impl Display for CSignalTy {
                 Self::U32 => "uint32_t",
                 Self::U64 => "uint64_t",
                 Self::Float => "float", // todo: use a typedef?
+                Self::Enum(s) => s,
             }
         )
     }
@@ -31,6 +36,9 @@ pub trait SignalCodegen {
     fn c_ty_raw(&self) -> CSignalTy;
     /// C type for this signal's decoded value.
     fn c_ty_decoded(&self) -> CSignalTy;
+
+    /// C enumeration for this signal's enumerated values, if any.
+    fn c_enum(&self) -> Option<String>;
 
     /// Name of the C getter function for this signal's decoded value.
     fn getter_fn_name(&self) -> String;
@@ -61,19 +69,49 @@ impl SignalCodegen for CANSignal {
     /// gives the type for the entire _representable_ decoded range, not just
     /// what's within the minimum/maximum additional bounds.
     fn c_ty_decoded(&self) -> CSignalTy {
-        // todo: complete integer signal bounds support
-        // should we make this implicit or explicit... hmmm...
-        // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
-        // -> otoh, saying force_integer: yes or force_float: yes all the time is annnoying
+        // todo: support for both enumerated and continuous decoded getters
+        if !self.enumerated_values.is_empty() {
+            CSignalTy::Enum(format!("enum CAN_{}", self.name))
+            //
+        } else if self.scale.is_none() && self.offset.is_none() {
+            //
+            // todo: complete integer signal bounds support
+            // should we make this implicit or explicit... hmmm...
+            // making it implicit (i.e. say 1 instead of 1.0) might be obtuse / ambiguous
+            // -> otoh, saying force_integer: yes or force_float: yes all the time is annnoying
 
-        // I think I lean implicit. The problem is then it becomes a nightmare in Rust code....
+            // I think I lean implicit. The problem is then it becomes a nightmare in Rust code....
 
-        // for now, if the signal has no offset or scale, then return its raw type, else float.
-        if self.scale.is_none() && self.offset.is_none() {
+            // for now, if the signal has no offset or scale, then return its raw type, else float.
+            //
             self.c_ty_raw()
         } else {
             CSignalTy::Float
         }
+    }
+
+    fn c_enum(&self) -> Option<String> {
+        let CSignalTy::Enum(ty) = self.c_ty_decoded() else {
+            return None; // decoded type is not an enum
+        };
+
+        // sort enumerated values since they're in random order in the map
+        let mut evs: Vec<_> = self.enumerated_values.iter().collect();
+        evs.sort_by_cached_key(|ev| ev.1);
+
+        // collect C enum values
+        let mut inner = String::new();
+        for e in evs {
+            inner += &format!("CAN_{}_{} = {},\n", self.name.to_uppercase(), e.0, e.1);
+        }
+
+        Some(formatdoc! {"
+            {} {{
+            {}
+            }};",
+            ty,
+            inner.trim().indent(4)
+        })
     }
 
     fn getter_fn_name(&self) -> String {

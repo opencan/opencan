@@ -29,6 +29,8 @@ pub trait MessageCodegen {
     fn getter_fn_decls(&self) -> String;
     /// Definitions of the signal getter functions for this message.
     fn getter_fn_defs(&self) -> String;
+    /// Enumerations for all signals that have them in this message.
+    fn signal_enums(&self) -> String;
 }
 
 impl MessageCodegen for CANMessage {
@@ -341,5 +343,23 @@ impl MessageCodegen for CANMessage {
         }
 
         getters.trim().into()
+    }
+
+    fn signal_enums(&self) -> String {
+        let mut out = String::new();
+        let mut some = false;
+
+        for sigbit in &self.signals {
+            if let Some(e) = sigbit.sig.c_enum() {
+                out += &format!("{e}\n\n");
+                some = true;
+            }
+        }
+
+        if some {
+            out.trim().into()
+        } else {
+            "// (none for this message)".into()
+        }
     }
 }

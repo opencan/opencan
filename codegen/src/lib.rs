@@ -78,6 +78,10 @@ impl<'n> Codegen<'n> {
                 /* Message: {name} */
                 /*********************************************************/
 
+                /*** Signal Enums ***/
+
+                {enums}
+
                 /*** Message Structs ***/
 
                 {mstruct_raw}
@@ -96,6 +100,7 @@ impl<'n> Codegen<'n> {
                 mstruct_raw = msg.raw_struct_def(),
                 mstruct = msg.struct_def(),
                 getters = msg.getter_fn_decls(),
+                enums = msg.signal_enums(),
                 rx_decl = msg.rx_fn_decl(),
             }
         }
