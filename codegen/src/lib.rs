@@ -114,6 +114,9 @@ impl<'n> Codegen<'n> {
         formatdoc! {"
             {greet}
 
+            #ifndef OPENCAN_RX_H
+            #define OPENCAN_RX_H
+
             {std_incl}
 
             /*********************************************************/
@@ -124,6 +127,8 @@ impl<'n> Codegen<'n> {
             {rx_fn_ptr} {rx_fn_name}(uint32_t id);
 
             {messages}
+
+            #endif
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
