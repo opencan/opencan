@@ -79,7 +79,7 @@ impl<'n> Codegen<'n> {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
-                /* Message: {name} */
+                /* RX Message: {name} */
                 /*********************************************************/
 
                 /*** Signal Enums ***/
@@ -144,7 +144,7 @@ impl<'n> Codegen<'n> {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
-                /* Message: {name} */
+                /* RX Message: {name} */
                 /*********************************************************/
 
                 /*** Message Structs ***/
@@ -158,7 +158,7 @@ impl<'n> Codegen<'n> {
 
                 /*** RX Processing Function ***/
 
-                {decode_fn}
+                {rx_def}
                 ",
                 name = msg.name,
                 mstruct_raw_name = msg.raw_struct_ty(),
@@ -166,7 +166,7 @@ impl<'n> Codegen<'n> {
                 mstruct_name = msg.struct_ty(),
                 global_ident = msg.global_struct_ident(),
                 getters = msg.getter_fn_defs(),
-                decode_fn = msg.rx_fn_def(),
+                rx_def = msg.rx_fn_def(),
             }
         }
 
@@ -197,25 +197,85 @@ impl<'n> Codegen<'n> {
     }
 
     fn tx_h(&self) -> String {
+        let mut messages = String::new();
+
+        for msg in self.sorted_tx_messages() {
+            messages += &formatdoc! {"
+                /*********************************************************/
+                /* TX Message: {name} */
+                /*********************************************************/
+
+                /*** Signal Enums ***/
+
+                {enums}
+
+                /*** Message Structs ***/
+
+                {mstruct_raw}
+
+                {mstruct}
+
+                /*** TX Processing Function ***/
+
+                {tx_decl};
+
+                ",
+                name = msg.name,
+                mstruct_raw = msg.raw_struct_def(),
+                mstruct = msg.struct_def(),
+                enums = msg.signal_enums(),
+                tx_decl = msg.tx_fn_decl(),
+            }
+        }
+
+        let messages = messages.trim();
+
         formatdoc! {"
             {greet}
 
             #ifndef OPENCAN_TX_H
             #define OPENCAN_TX_H
 
+            {std_incl}
+
+            {messages}
+
             #endif
             ",
+            std_incl = Self::common_std_includes(),
             greet = self.internal_prelude_greeting(CodegenOutput::TX_H_NAME)
         }
     }
 
     fn tx_c(&self) -> String {
+        let mut messages = String::new();
+
+        for msg in self.sorted_tx_messages() {
+            messages += &formatdoc! {"
+                /*********************************************************/
+                /* TX Message: {name} */
+                /*********************************************************/
+
+                /*** TX Processing Function ***/
+
+                {tx_def}
+
+                ",
+                name = msg.name,
+                tx_def = msg.tx_fn_def(),
+            }
+        }
+
+        let messages = messages.trim();
+
         formatdoc! {"
             {greet}
 
             {std_incl}
 
             #include \"{tx_h}\"
+
+            {messages}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::TX_C_NAME),
             std_incl = Self::common_std_includes(),
