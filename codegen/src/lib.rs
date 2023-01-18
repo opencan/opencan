@@ -123,7 +123,7 @@ impl<'n> Codegen<'n> {
             /* ID-to-Rx-Function Lookup */
             /*********************************************************/
 
-            typedef bool (*{rx_fn_ptr})(const uint8_t * const data, const uint_fast8_t len);
+            typedef bool (*{rx_fn_ptr})(const uint8_t * data, uint_fast8_t len);
             {rx_fn_ptr} {rx_fn_name}(uint32_t id);
 
             {messages}
