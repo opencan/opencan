@@ -84,7 +84,19 @@ impl CANNetwork {
             // After this point, we are making changes to the network and must
             // finish up or panic, not return in an inconsistent state.
 
-            self.nodes[node_idx].add_message(&msg.name, msg_idx);
+            self.nodes[node_idx].add_tx_message(&msg.name, msg_idx);
+        }
+
+        for node in &msg.rx_nodes {
+            let &node_idx = self
+                .nodes_by_name
+                .get(node)
+                .ok_or_else(|| CANConstructionError::NodeAlreadyExists(node.into()))?;
+
+            // After this point, we are making changes to the network and must
+            // finish up or panic, not return in an inconsistent state.
+
+            self.nodes[node_idx].add_rx_message(&msg.name, msg_idx);
         }
 
         self.messages_by_name.insert(msg.name.clone(), msg_idx);
@@ -135,7 +147,20 @@ impl CANNetwork {
         let node = &self.nodes[node_idx];
 
         Some(
-            node.messages
+            node.tx_messages
+                .iter()
+                .map(|(_, &v)| &self.messages[v])
+                .collect(),
+        )
+    }
+
+    /// Get messages recieved by given node. Returns `None` if node does not exist.
+    pub fn rx_messages_by_node(&self, name: &str) -> Option<Vec<&CANMessage>> {
+        let &node_idx = self.nodes_by_name.get(name)?;
+        let node = &self.nodes[node_idx];
+
+        Some(
+            node.rx_messages
                 .iter()
                 .map(|(_, &v)| &self.messages[v])
                 .collect(),

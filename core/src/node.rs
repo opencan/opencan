@@ -9,7 +9,10 @@ pub struct CANNode {
     pub name: String,
 
     /// index into parent CANNetwork messages vec
-    pub(crate) messages: HashMap<String, usize>,
+    pub(crate) tx_messages: HashMap<String, usize>,
+
+    /// index into parent CANNetwork messages vec
+    pub(crate) rx_messages: HashMap<String, usize>,
 }
 
 impl CANNode {
@@ -17,15 +20,24 @@ impl CANNode {
     pub fn new(name: String) -> Self {
         Self {
             name,
-            messages: HashMap::new(),
+            tx_messages: HashMap::new(),
+            rx_messages: HashMap::new(),
         }
     }
 
-    /// Add message to this node. Meant to be called by a CANNetwork impl only,
+    /// Add tx message to this node. Meant to be called by a CANNetwork impl only,
     /// and must ensure that this message name is unique across the network.
-    pub(crate) fn add_message(&mut self, name: &str, idx: usize) {
-        assert!(!self.messages.contains_key(name));
+    pub(crate) fn add_tx_message(&mut self, name: &str, idx: usize) {
+        assert!(!self.tx_messages.contains_key(name));
 
-        self.messages.insert(name.into(), idx);
+        self.tx_messages.insert(name.into(), idx);
+    }
+
+    /// Add rx message to this node. Meant to be called by a CANNetwork impl only,
+    /// and must ensure that this message name is unique across the network.
+    pub(crate) fn add_rx_message(&mut self, name: &str, idx: usize) {
+        assert!(!self.rx_messages.contains_key(name));
+
+        self.rx_messages.insert(name.into(), idx);
     }
 }

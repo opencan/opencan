@@ -75,7 +75,7 @@ impl<'n> Codegen<'n> {
     fn rx_h(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_messages() {
+        for msg in self.sorted_rx_messages() {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
@@ -135,7 +135,7 @@ impl<'n> Codegen<'n> {
     fn rx_c(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_messages() {
+        for msg in self.sorted_rx_messages() {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
@@ -264,7 +264,7 @@ impl<'n> Codegen<'n> {
     fn rx_id_to_decode_fn(&self) -> String {
         let mut cases = String::new();
 
-        for msg in self.sorted_messages() {
+        for msg in self.sorted_rx_messages() {
             cases += &formatdoc! {"
                 case 0x{:X}: return {};
                 ",
@@ -288,9 +288,18 @@ impl<'n> Codegen<'n> {
         }
     }
 
-    /// Get messages for our node sorted by ID
-    fn sorted_messages(&self) -> Vec<&CANMessage> {
+    /// Get tx messages for our node sorted by ID
+    fn sorted_tx_messages(&self) -> Vec<&CANMessage> {
         let mut messages = self.net.tx_messages_by_node(&self.args.node).unwrap();
+
+        messages.sort_by_key(|m| m.id);
+
+        messages
+    }
+
+    /// Get rx messages for our node sorted by ID
+    fn sorted_rx_messages(&self) -> Vec<&CANMessage> {
+        let mut messages = self.net.rx_messages_by_node(&self.args.node).unwrap();
 
         messages.sort_by_key(|m| m.id);
 
