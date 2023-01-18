@@ -169,6 +169,8 @@ nodes:
               width: 1
 
 - STEER:
+    rx:
+      - DBW_ESTOP
     messages:
     - SteeringData:
         id: 0x16

@@ -324,15 +324,14 @@ impl CodegenOutput {
     }
 
     pub fn as_list_c(&self) -> Vec<(&str, &str)> {
-        vec![(Self::RX_C_NAME, &self.rx_c),
-             (Self::TX_C_NAME, &self.tx_c)]
+        vec![(Self::RX_C_NAME, &self.rx_c), (Self::TX_C_NAME, &self.tx_c)]
     }
 
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
         vec![
             (Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
             (Self::RX_H_NAME, &self.rx_h),
-            (Self::TX_H_NAME, &self.tx_h)
+            (Self::TX_H_NAME, &self.tx_h),
         ]
     }
 }

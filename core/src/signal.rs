@@ -87,7 +87,7 @@ impl CANSignalBuilder {
     /// raw value for it.
     // todo: describe inference semantics in more depth; maybe make them smarter
     // todo: guarantee the behavior as part of the API or?
-    pub fn add_enumerated_value_inferred(self, name: String) -> Result<Self, CANConstructionError> {
+    pub fn add_enumerated_value_inferred(self, name: &str) -> Result<Self, CANConstructionError> {
         let val = self._highest_enumerated_value.map_or(0, |v| v + 1);
 
         self.add_enumerated_value(name, val)
@@ -96,9 +96,11 @@ impl CANSignalBuilder {
     /// Add an enumerated value name with a given raw value.
     pub fn add_enumerated_value(
         mut self,
-        name: String,
+        name: &str,
         val: u64,
     ) -> Result<Self, CANConstructionError> {
+        let name = name.to_string();
+
         if let Some(&v) = self.enumerated_values.get_by_left(&name) {
             return Err(CANConstructionError::EnumeratedValueNameAlreadyExists(
                 name, v,

@@ -44,6 +44,9 @@ pub enum CANConstructionError {
     #[error("Message name is empty.")]
     MessageNameEmpty,
 
+    #[error("Message `{0}` does not exist.")]
+    MessageDoesNotExist(String),
+
     #[error("Node with name `{0}` already exists in network.")]
     NodeAlreadyExists(String),
 

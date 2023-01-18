@@ -19,6 +19,13 @@ pub fn unmap<T>(map: HashMap<String, T>) -> (String, T) {
     map.into_iter().next().unwrap()
 }
 
+/// Similar to above, but borrows
+pub fn unmap_ref<T>(map: &HashMap<String, T>) -> (&String, &T) {
+    // len should be one because every `- VALUE: val` pair is its own dict
+    assert_eq!(map.len(), 1);
+    map.iter().next().unwrap()
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum YEnumeratedValue {
@@ -64,6 +71,8 @@ pub struct YMessage {
 #[derive(Serialize, Deserialize, Debug)]
 pub struct YNode {
     pub messages: Vec<HashMap<String, YMessage>>,
+    #[serde(default)]
+    pub rx: Vec<String>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

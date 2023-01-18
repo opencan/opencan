@@ -87,18 +87,6 @@ impl CANNetwork {
             self.nodes[node_idx].add_tx_message(&msg.name, msg_idx);
         }
 
-        for node in &msg.rx_nodes {
-            let &node_idx = self
-                .nodes_by_name
-                .get(node)
-                .ok_or_else(|| CANConstructionError::NodeAlreadyExists(node.into()))?;
-
-            // After this point, we are making changes to the network and must
-            // finish up or panic, not return in an inconsistent state.
-
-            self.nodes[node_idx].add_rx_message(&msg.name, msg_idx);
-        }
-
         self.messages_by_name.insert(msg.name.clone(), msg_idx);
         self.messages_by_id.insert(msg.id, msg_idx);
 
@@ -165,6 +153,25 @@ impl CANNetwork {
                 .map(|(_, &v)| &self.messages[v])
                 .collect(),
         )
+    }
+
+    pub fn set_message_rx_by_node(
+        &mut self,
+        msg: &str,
+        node: &str,
+    ) -> Result<(), CANConstructionError> {
+        let Some(&msg_idx) = self.messages_by_name.get(msg) else {
+            return Err(CANConstructionError::MessageDoesNotExist(msg.into()));
+        };
+
+        let Some(&node_idx) = self.nodes_by_name.get(node) else {
+            return Err(CANConstructionError::NodeDoesNotExist(node.into()))
+        };
+        let node = &mut self.nodes[node_idx];
+
+        node.add_rx_message(msg, msg_idx);
+
+        Ok(())
     }
 }
 

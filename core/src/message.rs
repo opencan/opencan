@@ -57,10 +57,6 @@ pub struct CANMessage {
     #[builder(setter(into, strip_option), default)]
     pub tx_node: Option<String>,
 
-    /// Receiving nodes.
-    #[builder(setter(custom), field(type = "Vec<String>"))]
-    pub rx_nodes: Vec<String>,
-
     /// Signals with positions in this message ordered by start bit.
     #[builder(setter(custom), field(type = "Vec<CANSignalWithPosition>"))]
     pub signals: Vec<CANSignalWithPosition>,
@@ -182,12 +178,6 @@ impl CANMessageBuilder {
         }
 
         Ok(self)
-    }
-
-    pub fn rx_node(mut self, name: &str) -> Self {
-        self.rx_nodes.push(name.into());
-
-        self
     }
 
     /// Check validity of message name - it should not be empty and should
