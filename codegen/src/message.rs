@@ -42,6 +42,9 @@ pub trait MessageCodegen {
     fn getter_fn_defs(&self) -> String;
     /// Enumerations for all signals that have them in this message.
     fn signal_enums(&self) -> String;
+
+    /// Stub (empty) tx function for tests.
+    fn tx_stub(&self) -> String;
 }
 
 impl MessageCodegen for CANMessage {
@@ -495,6 +498,15 @@ impl MessageCodegen for CANMessage {
             out.trim().into()
         } else {
             "// (none for this message)".into()
+        }
+    }
+
+    fn tx_stub(&self) -> String {
+        formatdoc! {"
+            __attribute__((weak)) {} {{
+                (void)m;
+            }}",
+            self.tx_populate_fn_decl()
         }
     }
 }

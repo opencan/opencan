@@ -29,6 +29,7 @@ fn message_id_lookup() -> Result<()> {
     // Do codegen
     let args = opencan_codegen::Args {
         node: "TEST".into(),
+        tx_stubs: true,
     };
     let c = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
 

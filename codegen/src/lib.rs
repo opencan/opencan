@@ -13,6 +13,9 @@ pub mod signal;
 pub struct Args {
     /// Node in the network to generate for
     pub node: String,
+    /// Emit weak stub TX functions.
+    #[clap(long)]
+    pub tx_stubs: bool,
 }
 
 #[non_exhaustive]
@@ -268,6 +271,17 @@ impl<'n> Codegen<'n> {
                 ",
                 name = msg.name,
                 tx_def = msg.tx_fn_def(),
+            };
+
+            if self.args.tx_stubs {
+                messages += &formatdoc! {"
+                    /*** TX Stub Function ***/
+
+                    {tx_stub}
+
+                    ",
+                    tx_stub = msg.tx_stub(),
+                };
             }
         }
 
