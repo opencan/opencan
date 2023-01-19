@@ -215,6 +215,10 @@ impl<'n> Codegen<'n> {
 
                 {mstruct}
 
+                /*** User-provided Populate Function ***/
+
+                {pop_fn};
+
                 /*** TX Processing Function ***/
 
                 {tx_decl};
@@ -224,6 +228,7 @@ impl<'n> Codegen<'n> {
                 mstruct_raw = msg.raw_struct_def(),
                 mstruct = msg.struct_def(),
                 enums = msg.signal_enums(),
+                pop_fn = msg.tx_populate_fn_decl(),
                 tx_decl = msg.tx_fn_decl(),
             }
         }

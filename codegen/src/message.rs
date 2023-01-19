@@ -33,6 +33,8 @@ pub trait MessageCodegen {
     fn tx_fn_def(&self) -> String;
     /// Name of the TX user populate callback for this message.
     fn tx_populate_fn_name(&self) -> String;
+    /// Declaration of the TX user populate function for this message.
+    fn tx_populate_fn_decl(&self) -> String;
 
     /// Declarations of the signal getter functions for this message.
     fn getter_fn_decls(&self) -> String;
@@ -314,16 +316,51 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_def(&self) -> String {
+        /* encoding */
+        let mut encode = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            encode += &formatdoc! {"
+                // Encode `{name}`
+                raw.{name} = {};
+
+                ",
+                sig.encoding_expression(&format!("dec.{}", sig.name)),
+                name = sig.name,
+            };
+        }
+
+        let encode = encode.trim().indent(4);
+
         formatdoc! {"
-            bool {}(void)\n{{
+            bool {fn_name}(void)\n{{
+                /* Call user-provided populate function */
+                {dec_ty} dec;
+                {pop_fn}(&dec); // calls into user code!
+
+                /* ------- Encode signals ------- */
+                {raw_ty} raw = {{0}};
+
+            {encode}
+
                 return true;
             }}",
-            self.tx_fn_name()
+            fn_name = self.tx_fn_name(),
+            dec_ty = self.struct_ty(),
+            pop_fn = self.tx_populate_fn_name(),
+            raw_ty = self.raw_struct_ty(),
         }
     }
 
     fn tx_populate_fn_name(&self) -> String {
         format!("CANTX_populate_{}", self.name)
+    }
+
+    fn tx_populate_fn_decl(&self) -> String {
+        // include the const in the decl even though we normally wouldn't -
+        // user might copy the prototype.
+        format!("void {}({} * const m)", self.tx_populate_fn_name(), self.struct_ty())
     }
 
     fn getter_fn_decls(&self) -> String {

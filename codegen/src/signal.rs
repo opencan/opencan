@@ -47,6 +47,8 @@ pub trait SignalCodegen {
 
     /// Conversion expression from raw signal to decoded signal.
     fn decoding_expression(&self, raw_rvalue: &str) -> String;
+    /// Conversion expression from decoded signal to raw signal.
+    fn encoding_expression(&self, dec_rvalue: &str) -> String;
 }
 
 impl SignalCodegen for CANSignal {
@@ -145,6 +147,24 @@ impl SignalCodegen for CANSignal {
             assert!(self.scale.is_none());
 
             raw_rvalue.into()
+        }
+    }
+
+    // Similar logic and notes as above
+    fn encoding_expression(&self, dec_rvalue: &str) -> String {
+        if let CSignalTy::Float = self.c_ty_decoded() {
+            let scale = self.scale.map_or("".into(), |s| format!(" / {s}f"));
+            let offset = self.offset.map_or("".into(), |o| format!(" - {o}f"));
+
+            format!(
+                "({raw_ty})((({dec_rvalue}){scale}){offset})",
+                raw_ty = self.c_ty_raw()
+            )
+        } else {
+            assert!(self.offset.is_none());
+            assert!(self.scale.is_none());
+
+            dec_rvalue.into()
         }
     }
 }
