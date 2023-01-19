@@ -312,7 +312,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_decl(&self) -> String {
-        format!("bool {}(void)", self.tx_fn_name())
+        format!("bool {}(uint8_t *data_out, uint8_t *len_out)", self.tx_fn_name())
     }
 
     fn tx_fn_def(&self) -> String {
@@ -379,7 +379,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 pack += &formatdoc! {"
-                    data[{byte}] |= ((raw.{name} & ({mask} << {sig_pos})) >> {sig_pos}) << {mask_shift};\n",
+                    data_out[{byte}] |= ((raw.{name} & ({mask} << {sig_pos})) >> {sig_pos}) << {mask_shift};\n",
                     name = sig.name,
                     sig_pos = pos - bit
                 };
@@ -393,7 +393,8 @@ impl MessageCodegen for CANMessage {
         let pack = pack.trim().indent(4);
 
         formatdoc! {"
-            bool {fn_name}(void)\n{{
+            // todo: length condition check
+            bool {fn_name}(uint8_t * const data_out, uint8_t * const len_out)\n{{
                 /* Call user-provided populate function */
                 {dec_ty} dec;
                 {pop_fn}(&dec); // calls into user code!
@@ -404,9 +405,11 @@ impl MessageCodegen for CANMessage {
             {encode}
 
                 /* ------- Pack signals ------- */
-                uint8_t data[8];
 
             {pack}
+
+                // Write data length
+                *len_out = {length};
 
                 return true;
             }}",
@@ -414,6 +417,7 @@ impl MessageCodegen for CANMessage {
             dec_ty = self.struct_ty(),
             pop_fn = self.tx_populate_fn_name(),
             raw_ty = self.raw_struct_ty(),
+            length = self.length,
         }
     }
 
