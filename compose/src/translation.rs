@@ -15,7 +15,7 @@ impl YDesc {
         let mut net = CANNetwork::new();
 
         // unmap all nodes into tuples
-        let nodes: &Vec<_> = &self.nodes.iter().map(unmap_ref).collect();
+        let nodes: &Vec<_> = &self.nodes.iter().map(unmap).collect();
 
         // Add all the nodes to the network
         for (name, _) in nodes {
@@ -76,7 +76,7 @@ impl YNode {
         let mut msgs = Vec::new();
 
         for m in &self.messages {
-            let (msg_name, mdesc) = unmap_ref(m);
+            let (msg_name, mdesc) = unmap(m);
 
             let appended_name = format!("{name}_{msg_name}");
             let msg = mdesc.to_message(&appended_name, name)?;
@@ -100,7 +100,7 @@ impl YMessage {
 
         // For each signal, make the YSignal into a CANSignal, and add it to the message.
         for s in &self.signals {
-            let (sig_name, sdesc) = unmap_ref(s);
+            let (sig_name, sdesc) = unmap(s);
 
             let start_bit = sdesc.start_bit;
             let full_sig_name = format!("{node_name}_{sig_name}");
@@ -139,7 +139,7 @@ impl YSignal {
             new_sig = match h {
                 YEnumeratedValue::Auto(s) => new_sig.add_enumerated_value_inferred(s)?,
                 YEnumeratedValue::Exact(map) => {
-                    let (name, &val) = unmap_ref(map);
+                    let (name, &val) = unmap(map);
                     new_sig.add_enumerated_value(name, val)?
                 }
             };
