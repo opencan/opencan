@@ -333,6 +333,65 @@ impl MessageCodegen for CANMessage {
 
         let encode = encode.trim().indent(4);
 
+        /* packing */
+
+        // similar logic and comments as rx
+
+        // say the signal is 3 bits wide and starts at position 6.
+        // then, select bits from the signal to apply to each raw data byte as needed.
+        //
+        // data[0] |= ((raw->signal & (0b11 << 0)) >> 0) << 5;
+        // data[1] |= ((raw->signal & (0b1  << 2)) >> 2) << 0;
+
+        let mut pack = String::new();
+
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            let bit = sigbit.start();
+
+            pack += &format!(
+                "// Pack `{}`, start bit {}, width {}\n",
+                sig.name, bit, sig.width
+            );
+
+            assert!(
+                sigbit.end() < u8::MAX.into(),
+                "Too many bits for me :P, please fix for CAN FD"
+            );
+
+            let mut pos = bit;
+            let sig_end = sigbit.end();
+            while pos <= sig_end {
+                let byte = pos / 8;
+
+                let end_of_this_byte = ((byte + 1) * 8) - 1;
+                let end_pos = end_of_this_byte.min(sig_end); // either end of this byte or final end of signal
+                let end_pos_within_byte = end_pos % 8;
+
+                let num_bits_from_this_byte = end_pos - pos + 1;
+                let mask_shift = end_pos_within_byte + 1 - num_bits_from_this_byte;
+
+                let mask: u8 = if num_bits_from_this_byte == 8 {
+                    0xFF
+                } else {
+                    !(!0 << num_bits_from_this_byte)
+                };
+                let mask = format!("0x{mask:02x}");
+
+                pack += &formatdoc! {"
+                    data[{byte}] |= ((raw.{name} & ({mask} << {sig_pos})) >> {sig_pos}) << {mask_shift};\n",
+                    name = sig.name,
+                    sig_pos = pos - bit
+                };
+
+                pos = end_pos + 1;
+            }
+
+            pack += "\n";
+        }
+
+        let pack = pack.trim().indent(4);
+
         formatdoc! {"
             bool {fn_name}(void)\n{{
                 /* Call user-provided populate function */
@@ -343,6 +402,11 @@ impl MessageCodegen for CANMessage {
                 {raw_ty} raw = {{0}};
 
             {encode}
+
+                /* ------- Pack signals ------- */
+                uint8_t data[8];
+
+            {pack}
 
                 return true;
             }}",
