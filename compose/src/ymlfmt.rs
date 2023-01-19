@@ -92,6 +92,7 @@ impl Default for RxListOrDirective {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct YNode {
+    #[serde(default)]
     pub messages: Vec<HashMap<String, YMessage>>,
     #[serde(default)]
     pub rx: RxListOrDirective,

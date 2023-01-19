@@ -23,7 +23,6 @@ fn message_id_lookup() -> Result<()> {
                   - testSignal2:
                       width: 1
         - TESTRX:
-            messages:
             rx:
               - TESTTX_Message1
               - TESTTX_Message2
@@ -85,7 +84,6 @@ fn basic_compare_decoders() -> Result<()> {
 
     nodes:
     - ALLRX:
-        messages:
         rx: \"*\"
 
     - TEST:
