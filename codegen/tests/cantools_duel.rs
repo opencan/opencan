@@ -419,10 +419,10 @@ fn basic_compare_decoders() -> Result<()> {
 
     let net = opencan_compose::compose_str(&desc)?;
     let cantools = CantoolsDecoder::new(&net)?;
+    let opencan = CodegenDecoder::new(&net, "ALLRX")?;
 
     for node in net.iter_nodes() {
         eprintln!("---- Node: {}", node.name);
-        let opencan = CodegenDecoder::new(&net, "ALLRX")?;
         for msg in net
             .tx_messages_by_node(&node.name)
             .context("Expected node to exist")?
