@@ -30,9 +30,27 @@ impl YDesc {
 
         // Fill in rx for each node
         for (name, ndesc) in nodes {
-            for rx in &ndesc.rx {
-                net.set_message_rx_by_node(rx, name)
-                    .context(format!("Could not add rx message `{rx}` to node `{name}`"))?;
+            // the rx field is either a directive like `rx: "*"` or a list of messages
+            match &ndesc.rx {
+                RxListOrDirective::List(list) => {
+                    for rx in list {
+                        net.set_message_rx_by_node(rx, name)
+                            .context(format!("Could not add rx message `{rx}` to node `{name}`"))?;
+                    }
+                },
+                RxListOrDirective::Directive(d) => {
+                    match d {
+                        RxDirective::Everything => {
+                            // collect all the message names in the network
+                            let messages: Vec<String> = net.iter_messages().map(|m| m.name.clone()).collect();
+
+                            // add each message to the node
+                            for msg in &messages {
+                                net.set_message_rx_by_node(msg, name)?;
+                            }
+                        },
+                    }
+                },
             }
         }
 

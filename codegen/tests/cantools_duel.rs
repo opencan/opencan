@@ -84,6 +84,10 @@ fn basic_compare_decoders() -> Result<()> {
     #     - STEER
 
     nodes:
+    - ALLRX:
+        messages:
+        rx: \"*\"
+
     - TEST:
         messages:
         - NodeStatus:
@@ -420,7 +424,7 @@ fn basic_compare_decoders() -> Result<()> {
 
     for node in net.iter_nodes() {
         eprintln!("---- Node: {}", node.name);
-        let opencan = CodegenDecoder::new(&net, &node.name)?;
+        let opencan = CodegenDecoder::new(&net, "ALLRX")?;
         for msg in net
             .tx_messages_by_node(&node.name)
             .context("Expected node to exist")?

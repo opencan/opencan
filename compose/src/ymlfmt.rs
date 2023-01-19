@@ -69,10 +69,32 @@ pub struct YMessage {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub enum RxDirective {
+    /// Recieve all messages in the network
+    ///
+    ///   rx: "*"
+    #[serde(rename = "*")]
+    Everything,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum RxListOrDirective {
+    List(#[serde(default)] Vec<String>),
+    Directive(RxDirective),
+}
+
+impl Default for RxListOrDirective {
+    fn default() -> Self {
+        Self::List(Vec::new())
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct YNode {
     pub messages: Vec<HashMap<String, YMessage>>,
     #[serde(default)]
-    pub rx: Vec<String>,
+    pub rx: RxListOrDirective,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
