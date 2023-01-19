@@ -315,7 +315,10 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_decl(&self) -> String {
-        format!("bool {}(uint8_t *data_out, uint8_t *len_out)", self.tx_fn_name())
+        format!(
+            "bool {}(uint8_t *data_out, uint8_t *len_out)",
+            self.tx_fn_name()
+        )
     }
 
     fn tx_fn_def(&self) -> String {
@@ -431,7 +434,11 @@ impl MessageCodegen for CANMessage {
     fn tx_populate_fn_decl(&self) -> String {
         // include the const in the decl even though we normally wouldn't -
         // user might copy the prototype.
-        format!("void {}({} * const m)", self.tx_populate_fn_name(), self.struct_ty())
+        format!(
+            "void {}({} * const m)",
+            self.tx_populate_fn_name(),
+            self.struct_ty()
+        )
     }
 
     fn getter_fn_decls(&self) -> String {

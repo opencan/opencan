@@ -37,20 +37,21 @@ impl YDesc {
                         net.set_message_rx_by_node(rx, name)
                             .context(format!("Could not add rx message `{rx}` to node `{name}`"))?;
                     }
-                },
+                }
                 RxListOrDirective::Directive(d) => {
                     match d {
                         RxDirective::Everything => {
                             // collect all the message names in the network
-                            let messages: Vec<String> = net.iter_messages().map(|m| m.name.clone()).collect();
+                            let messages: Vec<String> =
+                                net.iter_messages().map(|m| m.name.clone()).collect();
 
                             // add each message to the node
                             for msg in &messages {
                                 net.set_message_rx_by_node(msg, name)?;
                             }
-                        },
+                        }
                     }
-                },
+                }
             }
         }
 
