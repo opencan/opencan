@@ -59,7 +59,7 @@ impl Decoder for CodegenDecoder<'_> {
         for sigbit in &self
             .net
             .message_by_name(msg)
-            .context(format!("Message `{}` doesn't exist", msg))?
+            .context(format!("Message `{msg}` doesn't exist"))?
             .signals
         {
             let raw_fn_name = format!("CANRX_getRaw_{}", sigbit.sig.name);
@@ -116,7 +116,7 @@ impl Decoder for CantoolsDecoder<'_> {
             let net_msg = self
                 .net
                 .message_by_name(msg)
-                .context(format!("Message `{}` doesn't exist", msg))?;
+                .context(format!("Message `{msg}` doesn't exist"))?;
 
             let py_msg_code = CantoolsTranslator::dump_message(net_msg);
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;

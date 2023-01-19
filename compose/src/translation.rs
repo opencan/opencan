@@ -15,16 +15,16 @@ impl YDesc {
         let mut net = CANNetwork::new();
 
         // unmap all nodes into tuples
-        let nodes: &Vec<_> = &self.nodes.iter().map(|n| unmap_ref(n)).collect();
+        let nodes: &Vec<_> = &self.nodes.iter().map(unmap_ref).collect();
 
         // Add all the nodes to the network
         for (name, _) in nodes {
-            net.add_node(&name)?;
+            net.add_node(name)?;
         }
 
         // Add all the messages in each node to the network
         for (name, ndesc) in nodes {
-            Self::add_node_msgs(&mut net, &name, ndesc)
+            Self::add_node_msgs(&mut net, name, ndesc)
                 .context(format!("Could not build node `{name}`"))?;
         }
 
@@ -60,7 +60,7 @@ impl YDesc {
 
     /// Add contents of a `YNode` to a given network (doesn't add node itself)
     fn add_node_msgs(net: &mut CANNetwork, node_name: &str, ndesc: &YNode) -> Result<()> {
-        let msgs = ndesc.into_messages(node_name)?;
+        let msgs = ndesc.to_messages(node_name)?;
 
         for msg in msgs {
             net.insert_msg(msg)?;
@@ -72,14 +72,14 @@ impl YDesc {
 
 impl YNode {
     /// Make a `Vec<CANMessage>` from a `YNode`.
-    fn into_messages(&self, name: &str) -> Result<Vec<CANMessage>> {
+    fn to_messages(&self, name: &str) -> Result<Vec<CANMessage>> {
         let mut msgs = Vec::new();
 
         for m in &self.messages {
             let (msg_name, mdesc) = unmap_ref(m);
 
             let appended_name = format!("{name}_{msg_name}");
-            let msg = mdesc.into_message(&appended_name, name)?;
+            let msg = mdesc.to_message(&appended_name, name)?;
 
             msgs.push(msg);
         }
@@ -90,7 +90,7 @@ impl YNode {
 
 impl YMessage {
     /// Make a `CANMessage` from a `YMessage`.
-    fn into_message(&self, msg_name: &str, node_name: &str) -> Result<CANMessage> {
+    fn to_message(&self, msg_name: &str, node_name: &str) -> Result<CANMessage> {
         // First, make a CANMessageBuilder.
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
@@ -105,7 +105,7 @@ impl YMessage {
             let start_bit = sdesc.start_bit;
             let full_sig_name = format!("{node_name}_{sig_name}");
 
-            let sig = sdesc.into_signal(&full_sig_name).context(format!(
+            let sig = sdesc.to_signal(&full_sig_name).context(format!(
                 "Could not create signal `{sig_name}` while composing message `{msg_name}`"
             ))?;
 
@@ -127,7 +127,7 @@ impl YMessage {
 
 impl YSignal {
     /// Turn a `YSignal` into a `CANSignal`.
-    fn into_signal(&self, sig_name: &str) -> Result<CANSignal> {
+    fn to_signal(&self, sig_name: &str) -> Result<CANSignal> {
         // First, make a CANSignalBuilder.
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
@@ -137,7 +137,7 @@ impl YSignal {
         // Translate each enumerated value
         for h in &self.enumerated_values {
             new_sig = match h {
-                YEnumeratedValue::Auto(s) => new_sig.add_enumerated_value_inferred(&s)?,
+                YEnumeratedValue::Auto(s) => new_sig.add_enumerated_value_inferred(s)?,
                 YEnumeratedValue::Exact(map) => {
                     let (name, &val) = unmap_ref(map);
                     new_sig.add_enumerated_value(name, val)?
