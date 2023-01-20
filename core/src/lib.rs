@@ -10,6 +10,9 @@ pub use message::*;
 
 mod node;
 
+mod template;
+pub use template::*;
+
 mod network;
 pub use network::*;
 

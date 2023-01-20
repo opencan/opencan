@@ -37,6 +37,9 @@ impl CANSignalWithPosition {
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {
+    #[builder(setter(custom), field(type = "Option<String>"))]
+    pub origin_template: Option<String>,
+
     /// Message name.
     #[builder(setter(into))]
     pub name: String,
@@ -46,7 +49,7 @@ pub struct CANMessage {
     pub id: u32,
 
     /// Message cycle time in milliseconds.
-    #[builder(default)]
+    #[builder(default, setter(strip_option))]
     pub cycletime: Option<u32>,
 
     /// Message length in bytes.
@@ -63,7 +66,23 @@ pub struct CANMessage {
 
     #[builder(setter(custom), field(type = "HashMap<String, usize>"))]
     #[serde(skip)]
-    sig_map: HashMap<String, usize>,
+    pub(crate) sig_map: HashMap<String, usize>,
+}
+
+// pain in the ass.. get rid of derive_builder maybe
+impl Clone for CANMessageBuilder {
+    fn clone(&self) -> Self {
+        Self {
+            origin_template: self.origin_template.clone(),
+            name: self.name.clone(),
+            id: self.id.clone(),
+            cycletime: self.cycletime.clone(),
+            length: self.length.clone(),
+            tx_node: self.tx_node.clone(),
+            signals: self.signals.clone(),
+            sig_map: self.sig_map.clone(),
+        }
+    }
 }
 
 impl CANMessageBuilder {
@@ -86,6 +105,11 @@ impl CANMessageBuilder {
         Self::check_name_validity(&msg.name)?;
 
         Ok(msg)
+    }
+
+    pub(crate) fn origin_template(mut self, template: &str) -> Self {
+        self.origin_template = Some(template.into());
+        self
     }
 
     /// Add a single signal with the next available start bit.

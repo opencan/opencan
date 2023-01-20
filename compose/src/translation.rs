@@ -95,8 +95,12 @@ impl YMessage {
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
             .id(self.id)
-            .cycletime(self.cycletime)
             .tx_node(node_name);
+
+        // cycletime
+        if let Some(c) = self.cycletime {
+            can_msg = can_msg.cycletime(c);
+        }
 
         // For each signal, make the YSignal into a CANSignal, and add it to the message.
         for s in &self.signals {
