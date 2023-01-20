@@ -298,7 +298,7 @@ impl<'n> Codegen<'n> {
             #include \"{tx_h}\"
             #include \"{callbacks_h}\"
 
-            // todo comment
+
             {tx_scheduler}
 
             {messages}
@@ -407,6 +407,10 @@ impl<'n> Codegen<'n> {
         let messages = messages.trim().indent(4);
 
         formatdoc! {"
+            /*********************************************************/
+            /* TX Scheduler */
+            /*********************************************************/
+
             void CANTX_scheduler_1kHz(void) {{
                 static uint32_t ms;
 
