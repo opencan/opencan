@@ -133,7 +133,7 @@ impl<'n> Codegen<'n> {
 
             #endif
             ",
-            greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
+            greet = self.internal_prelude_greeting(CodegenOutput::RX_H_NAME),
             rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
             rx_fn_name = Self::ID_TO_RX_FN_NAME,
             std_incl = Self::common_std_includes(),
