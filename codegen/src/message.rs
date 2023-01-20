@@ -49,10 +49,18 @@ pub trait MessageCodegen {
 
 impl MessageCodegen for CANMessage {
     fn struct_ty(&self) -> String {
-        format!("struct CAN_Message_{}", self.name)
+        if let Some(t) = &self.origin_template {
+            format!("struct CAN_TMessage_{t}")
+        } else {
+            format!("struct CAN_Message_{}", self.name)
+        }
     }
 
     fn struct_def(&self) -> String {
+        if let Some(t) = &self.origin_template {
+            return format!("// Struct `{}` definition provided by template `{t}`", self.struct_ty())
+        }
+
         let mut inner = String::new(); // struct contents
 
         for sigbit in &self.signals {
@@ -89,10 +97,18 @@ impl MessageCodegen for CANMessage {
     }
 
     fn raw_struct_ty(&self) -> String {
-        format!("struct CAN_MessageRaw_{}", self.name)
+        if let Some(t) = &self.origin_template {
+            format!("struct CAN_TMessageRaw_{t}")
+        } else {
+            format!("struct CAN_MessageRaw_{}", self.name)
+        }
     }
 
     fn raw_struct_def(&self) -> String {
+        if let Some(t) = &self.origin_template {
+            return format!("// Raw struct `{}` definition provided by template `{t}`", self.raw_struct_ty())
+        }
+
         let mut inner = String::new(); // struct contents
 
         for sigbit in &self.signals {
