@@ -192,7 +192,7 @@ impl<'n> Codegen<'n> {
             {messages}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
-            callbacks_h = CodegenOutput::CALLBACKS_HEADER_NAME,
+            callbacks_h = CodegenOutput::CALLBACKS_H_NAME,
             rx_h = CodegenOutput::RX_H_NAME,
             std_incl = Self::common_std_includes(),
             id_to_fn = self.rx_id_to_decode_fn(),
@@ -246,6 +246,9 @@ impl<'n> Codegen<'n> {
 
             {std_incl}
 
+            // todo comment
+            void CANTX_scheduler_1kHz(void);
+
             {messages}
 
             #endif
@@ -293,12 +296,18 @@ impl<'n> Codegen<'n> {
             {std_incl}
 
             #include \"{tx_h}\"
+            #include \"{callbacks_h}\"
+
+            // todo comment
+            {tx_scheduler}
 
             {messages}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::TX_C_NAME),
             std_incl = Self::common_std_includes(),
             tx_h = CodegenOutput::TX_H_NAME,
+            callbacks_h = CodegenOutput::CALLBACKS_H_NAME,
+            tx_scheduler = self.tx_scheduler(),
         }
     }
 
@@ -309,9 +318,14 @@ impl<'n> Codegen<'n> {
             #ifndef OPENCAN_CALLBACKS_H
             #define OPENCAN_CALLBACKS_H
 
+            {std_incl}
+
+            void CAN_callback_enqueue_tx_message(const uint8_t *data, uint8_t len, uint32_t id);
+
             #endif
             ",
-            self.internal_prelude_greeting(CodegenOutput::CALLBACKS_HEADER_NAME)
+            self.internal_prelude_greeting(CodegenOutput::CALLBACKS_H_NAME),
+            std_incl = Self::common_std_includes(),
         }
     }
 
@@ -372,6 +386,43 @@ impl<'n> Codegen<'n> {
         }
     }
 
+    /// Tx scheduler
+    fn tx_scheduler(&self) -> String {
+        let mut messages = String::new();
+
+        for msg in self.sorted_tx_messages() {
+            messages += &formatdoc! {"
+                if ((ms % {cycletime}) == 0) {{
+                    {tx_fn}(data, &length);
+                    CAN_callback_enqueue_tx_message(data, length, 0x{id:x});
+                }}
+
+                ",
+                cycletime = msg.cycletime.expect("message to have cycletime - handle this case"),
+                tx_fn = msg.tx_fn_name(),
+                id = msg.id,
+            };
+        }
+
+        let messages = messages.trim().indent(4);
+
+        formatdoc! {"
+            void CANTX_scheduler_1kHz(void) {{
+                static uint32_t ms;
+
+                ms++;
+
+                // todo: dangerous?
+                uint8_t data[8];
+
+                // todo: we kind of don't need this, we know the length already
+                uint8_t length;
+
+            {messages}
+            }}"
+        }
+    }
+
     /// Get tx messages for our node sorted by ID
     fn sorted_tx_messages(&self) -> Vec<&CANMessage> {
         let mut messages = self.net.tx_messages_by_node(&self.args.node).unwrap();
@@ -392,7 +443,7 @@ impl<'n> Codegen<'n> {
 }
 
 impl CodegenOutput {
-    const CALLBACKS_HEADER_NAME: &str = "opencan_callbacks.h";
+    const CALLBACKS_H_NAME: &str = "opencan_callbacks.h";
     const RX_C_NAME: &str = "opencan_rx.c";
     const RX_H_NAME: &str = "opencan_rx.h";
     const TX_C_NAME: &str = "opencan_tx.c";
@@ -408,7 +459,7 @@ impl CodegenOutput {
 
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
         vec![
-            (Self::CALLBACKS_HEADER_NAME, &self.callbacks_h),
+            (Self::CALLBACKS_H_NAME, &self.callbacks_h),
             (Self::RX_H_NAME, &self.rx_h),
             (Self::TX_H_NAME, &self.tx_h),
         ]
