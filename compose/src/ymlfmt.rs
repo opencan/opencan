@@ -56,9 +56,11 @@ pub struct YSignal {
 pub struct YMessage {
     pub id: u32,
 
+    pub from_template: Option<String>,
+
     pub cycletime: Option<u32>,
 
-    pub signals: Vec<HashMap<String, YSignal>>,
+    pub signals: Option<Vec<HashMap<String, YSignal>>>,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -92,6 +94,14 @@ pub struct YNode {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct YMessageTemplate {
+    pub cycletime: Option<u32>,
+    pub signals: Vec<HashMap<String, YSignal>>,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct YDesc {
     pub nodes: Vec<HashMap<String, YNode>>,
+    #[serde(default)]
+    pub message_templates: Vec<HashMap<String, YMessageTemplate>>,
 }

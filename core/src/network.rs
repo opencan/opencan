@@ -1,18 +1,22 @@
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Serialize;
 
 use crate::error::*;
 use crate::message::*;
 use crate::node::*;
+use crate::CANMessageTemplate;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize)]
 pub struct CANNetwork {
     /// Owning Vec of all CANNode in this network.
     nodes: Vec<CANNode>,
 
     /// Owning Vec of all CANMessage in this network.
     messages: Vec<CANMessage>,
+
+    /// Owning map of all CANMessageTemplate in this network.
+    message_templates: HashMap<String, CANMessageTemplate>,
 
     /// index into .messages
     #[serde(skip)]
@@ -39,6 +43,8 @@ impl CANNetwork {
         Self {
             nodes: Vec::new(),
             messages: Vec::new(),
+
+            message_templates: HashMap::new(),
 
             messages_by_name: HashMap::new(),
             messages_by_id: HashMap::new(),
@@ -172,6 +178,24 @@ impl CANNetwork {
         node.add_rx_message(msg, msg_idx);
 
         Ok(())
+    }
+
+    pub fn insert_template(
+        &mut self,
+        template: CANMessageTemplate,
+    ) -> Result<(), CANConstructionError> {
+        if let Some(t) = self
+            .message_templates
+            .insert(template.name().into(), template)
+        {
+            panic!("template `{t:?}` already exists in CANNetwork, needs error");
+        }
+
+        Ok(())
+    }
+
+    pub fn template_by_name(&self, name: &str) -> Option<&CANMessageTemplate> {
+        self.message_templates.get(name)
     }
 }
 

@@ -1,18 +1,22 @@
 use std::collections::HashMap;
 
+use serde::Serialize;
+
 use crate::*;
 
 /// A template of a CAN message.
 // newtyped to prevent misuse (e.g. adding more signals)
+#[derive(Serialize, Debug)]
 pub struct CANMessageTemplate(CANMessageTemplateBuilder);
 
 impl CANMessageTemplate {
-    pub(crate) fn instance(
+    pub fn instance(
         &self,
-        name: String,
+        name: &str,
         id: u32,
         cycletime: Option<u32>,
-        signal_prefix: String,
+        signal_prefix: &str,
+        tx_node: Option<&str>,
     ) -> Result<CANMessage, CANConstructionError> {
         let mut msg = self
             .0
@@ -25,6 +29,10 @@ impl CANMessageTemplate {
         if let Some(c) = cycletime {
             // todo check if we're overriding cycletime?
             msg = msg.cycletime(c);
+        }
+
+        if let Some(n) = tx_node {
+            msg = msg.tx_node(n);
         }
 
         let mut msg = msg.build()?;
@@ -41,8 +49,13 @@ impl CANMessageTemplate {
 
         Ok(msg)
     }
+
+    pub fn name(&self) -> &str {
+        &self.0.name
+    }
 }
 
+#[derive(Serialize, Debug)]
 pub struct CANMessageTemplateBuilder {
     name: String,
     msg_builder: CANMessageBuilder,

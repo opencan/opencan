@@ -10,7 +10,7 @@ use crate::signal::*;
 const MAX_MESSAGE_BIT: u32 = 63;
 
 /// [`CANSignal`] with its position (start bit) in its message.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct CANSignalWithPosition {
     bit: u32,
     pub sig: CANSignal,
@@ -33,7 +33,8 @@ impl CANSignalWithPosition {
 }
 
 /// A validated description of a CAN message.
-#[derive(Serialize, Deserialize, Clone, Builder)]
+#[derive(Serialize, Clone, Builder, Debug)]
+#[builder(derive(serde::Serialize, Clone, Debug))]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {
@@ -67,22 +68,6 @@ pub struct CANMessage {
     #[builder(setter(custom), field(type = "HashMap<String, usize>"))]
     #[serde(skip)]
     pub(crate) sig_map: HashMap<String, usize>,
-}
-
-// pain in the ass.. get rid of derive_builder maybe
-impl Clone for CANMessageBuilder {
-    fn clone(&self) -> Self {
-        Self {
-            origin_template: self.origin_template.clone(),
-            name: self.name.clone(),
-            id: self.id.clone(),
-            cycletime: self.cycletime.clone(),
-            length: self.length.clone(),
-            tx_node: self.tx_node.clone(),
-            signals: self.signals.clone(),
-            sig_map: self.sig_map.clone(),
-        }
-    }
 }
 
 impl CANMessageBuilder {
