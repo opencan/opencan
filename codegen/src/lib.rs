@@ -104,6 +104,10 @@ impl<'n> Codegen<'n> {
                 /* Message Template: {name} */
                 /*********************************************************/
 
+                /*** Template Signal Enums ***/
+
+                {enums}
+
                 /*** Template Message Structs ***/
 
                 {mstruct_raw}
@@ -111,6 +115,7 @@ impl<'n> Codegen<'n> {
                 {mstruct}
                 ",
                 name = template.name,
+                enums = template.signal_enums(),
                 mstruct_raw = template.raw_struct_def(),
                 mstruct = template.struct_def()
             };

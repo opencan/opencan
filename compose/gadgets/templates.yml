@@ -3,7 +3,10 @@ message_templates:
     cycletime: 100
     signals:
       - sysState:
-          width: 2
+          enumerated_values:
+            - A
+            - B
+            - C
 
 nodes:
 - TEST:

@@ -91,7 +91,7 @@ impl MessageCodegen for CANMessage {
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
                 start = sigbit.start(),
                 width = sigbit.sig.width,
-                sigty = sigbit.sig.c_ty_decoded(),
+                sigty = self.sig_ty_decoded(&sigbit.sig),
             };
         }
 
@@ -148,7 +148,7 @@ impl MessageCodegen for CANMessage {
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
                 start = sigbit.start(),
                 width = sigbit.sig.width,
-                sigty = sigbit.sig.c_ty_raw(),
+                sigty = self.sig_ty_raw(&sigbit.sig),
             };
         }
 
@@ -271,7 +271,7 @@ impl MessageCodegen for CANMessage {
                 unpack += &formatdoc! {"
                     raw.{name} |= ({rawty})((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
                     name = sig_name,
-                    rawty = sig.c_ty_raw(),
+                    rawty = self.sig_ty_raw(sig),
                     sig_pos = pos - bit
                 };
 
@@ -307,7 +307,7 @@ impl MessageCodegen for CANMessage {
                 dec.{name} = {};
 
                 ",
-                sig.decoding_expression(&format!("raw.{}", sig_name)),
+                self.decoding_expression(sig, &format!("raw.{sig_name}")),
                 name = sig_name,
             };
         }
@@ -375,7 +375,7 @@ impl MessageCodegen for CANMessage {
                 raw.{name} = {};
 
                 ",
-                sig.encoding_expression(&format!("dec.{}", sig_name)),
+                self.encoding_expression(sig, &format!("dec.{sig_name}")),
                 name = sig_name,
             };
         }
@@ -516,10 +516,10 @@ impl MessageCodegen for CANMessage {
                 {sigty_raw} {fn_name_raw}(void);
 
                 ",
-                sigty_dec = sig.c_ty_decoded(),
-                sigty_raw = sig.c_ty_raw(),
-                fn_name = sig.getter_fn_name(),
-                fn_name_raw = sig.raw_getter_fn_name(),
+                sigty_dec = self.sig_ty_decoded(sig),
+                sigty_raw = self.sig_ty_raw(sig),
+                fn_name = self.getter_fn_name(sig),
+                fn_name_raw = self.raw_getter_fn_name(sig),
             }
         }
 
@@ -542,12 +542,12 @@ impl MessageCodegen for CANMessage {
 
                 ",
                 name = self.normalize_struct_signal_name(&sig.name),
-                sigty_dec = sig.c_ty_decoded(),
-                sigty_raw = sig.c_ty_raw(),
+                sigty_dec = self.sig_ty_decoded(sig),
+                sigty_raw = self.sig_ty_raw(sig),
                 global_decoded = self.global_struct_ident(),
                 global_raw = self.global_raw_struct_ident(),
-                fn_name = sig.getter_fn_name(),
-                fn_name_raw = sig.raw_getter_fn_name(),
+                fn_name = self.getter_fn_name(sig),
+                fn_name_raw = self.raw_getter_fn_name(sig),
             }
         }
 
@@ -555,11 +555,15 @@ impl MessageCodegen for CANMessage {
     }
 
     fn signal_enums(&self) -> String {
+        if let CANMessageKind::FromTemplate(t) = self.kind() {
+            return format!("/*  Signal enums provied by template `{t}`  */");
+        }
+
         let mut out = String::new();
         let mut some = false;
 
         for sigbit in &self.signals {
-            if let Some(e) = sigbit.sig.c_enum() {
+            if let Some(e) = self.c_enum(&sigbit.sig) {
                 out += &format!("{e}\n\n");
                 some = true;
             }
