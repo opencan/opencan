@@ -473,14 +473,12 @@ impl<'n> Codegen<'n> {
         for msg in self.sorted_tx_messages() {
             messages += &formatdoc! {"
                 if ((ms % {cycletime}) == 0) {{
-                    {tx_fn}(data, &length);
-                    CAN_callback_enqueue_tx_message(data, length, 0x{id:x});
+                    {tx_fn}();
                 }}
 
                 ",
                 cycletime = msg.cycletime.expect("message to have cycletime - handle this case"),
                 tx_fn = msg.tx_fn_name(),
-                id = msg.id,
             };
         }
 
@@ -493,14 +491,7 @@ impl<'n> Codegen<'n> {
 
             void CANTX_scheduler_1kHz(void) {{
                 static uint32_t ms;
-
                 ms++;
-
-                // todo: dangerous?
-                uint8_t data[8];
-
-                // todo: we kind of don't need this, we know the length already
-                uint8_t length;
 
             {messages}
             }}"
