@@ -24,6 +24,30 @@ message_templates:
             description: EEPROM identity.
             width: 6
 
+- DBWNodeStatus:
+    cycletime: 100
+
+    signals:
+      - sysStatus:
+          description: Status of the node.
+          enumerated_values:
+            - IDLE
+            - UNHEALTHY
+            - ACTIVE
+            - ESTOP
+      - counter:
+          description: Counter for fun.
+          width: 8
+      - resetReason:
+          description: Reset reason.
+          enumerated_values:
+            - POWERON
+            - WATCHDOG_RESET
+            - UNKNOWN
+      - esp32ResetReasonCode:
+          description: ESP32 reset reason code (enum RESET_REASON)
+          width: 5
+
 - EncoderData:
     cycletime: 10
     signals:
@@ -41,43 +65,23 @@ nodes:
 - TEST:
     rx: "*"
     messages:
-    - NodeStatus:
-        id: 0xE0
-        cycletime: 100
-
-        signals:
-          - sysStatus:
-              description: Status of the node.
-              enumerated_values:
-                - IDLE
-                - UNHEALTHY
-                - ACTIVE
-                - ESTOP
-
-          - counter:
-              description: Counter for fun.
-              width: 8
-
-          - resetReason:
-              description: Reset reason.
-              enumerated_values:
-                - POWERON
-                - WATCHDOG_RESET
-                - UNKNOWN
-
-          - esp32ResetReasonCode:
-              description: ESP32 reset reason code (enum RESET_REASON)
-              width: 5
-
     - NodeInfo:
         from_template: DBWNodeInfo
         id: 0xD0
+
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE0
 
 - THROTTLE:
     messages:
     - NodeInfo:
         from_template: DBWNodeInfo
         id: 0xD1
+
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE1
 
     - AccelData:
         id: 0x10
@@ -106,6 +110,10 @@ nodes:
     - NodeInfo:
         from_template: DBWNodeInfo
         id: 0xD2
+
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE2
 
     - BrakeData:
           id: 0x11
@@ -136,6 +144,10 @@ nodes:
         from_template: DBWNodeInfo
         id: 0xD3
 
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE3
+
     - EncoderData:
         from_template: EncoderData
         id: 0x13
@@ -146,6 +158,10 @@ nodes:
         from_template: DBWNodeInfo
         id: 0xD4
 
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE4
+
     - EncoderData:
         from_template: EncoderData
         id: 0x14
@@ -155,6 +171,10 @@ nodes:
     - NodeInfo:
         from_template: DBWNodeInfo
         id: 0xD5
+
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE5
 
     - ParkingBrakeData:
         id: 0x15
@@ -180,6 +200,10 @@ nodes:
     - NodeInfo:
         from_template: DBWNodeInfo
         id: 0xD6
+
+    - NodeStatus:
+        from_template: DBWNodeStatus
+        id: 0xE6
 
     - SteeringData:
         id: 0x16
