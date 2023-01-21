@@ -135,9 +135,14 @@ impl<'n> Codegen<'n> {
         formatdoc! {"
             {greet}
 
+            #ifndef OPENCAN_TEMPLATES_H
+            #define OPENCAN_TEMPLATES_H
+
             {std_incl}
 
             {templates}
+
+            #endif
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::TEMPLATES_H_NAME),
             std_incl = Self::common_std_includes(),
