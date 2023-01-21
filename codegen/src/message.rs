@@ -67,7 +67,10 @@ impl MessageCodegen for CANMessage {
 
     fn struct_def(&self) -> String {
         if let CANMessageKind::FromTemplate(t) = self.kind() {
-            return format!("/*  Decoded struct `{}` provided by template `{t}`  */", self.struct_ty())
+            return format!(
+                "/*  Decoded struct `{}` provided by template `{t}`  */",
+                self.struct_ty()
+            );
         }
 
         let mut inner = String::new(); // struct contents
@@ -121,7 +124,10 @@ impl MessageCodegen for CANMessage {
 
     fn raw_struct_def(&self) -> String {
         if let CANMessageKind::FromTemplate(t) = self.kind() {
-            return format!("/*  Raw struct `{}` provided by template `{t}`  */", self.raw_struct_ty())
+            return format!(
+                "/*  Raw struct `{}` provided by template `{t}`  */",
+                self.raw_struct_ty()
+            );
         }
 
         let mut inner = String::new(); // struct contents
@@ -472,12 +478,18 @@ impl MessageCodegen for CANMessage {
                 format!("CANTX_populate_{}", self.name)
             }
             CANMessageKind::Template => {
-                panic!("Tried to generate populate function for template `{}`", self.name)
+                panic!(
+                    "Tried to generate populate function for template `{}`",
+                    self.name
+                )
             }
             CANMessageKind::FromTemplate(_) => {
                 // strip the node name
                 // todo: assumes node name is present in the message and is actually the prefix
-                let stripped = self.name.strip_prefix(self.tx_node.as_ref().unwrap()).unwrap();
+                let stripped = self
+                    .name
+                    .strip_prefix(self.tx_node.as_ref().unwrap())
+                    .unwrap();
                 format!("CANTX_populateTemplate{stripped}")
             }
         }

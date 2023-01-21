@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use anyhow::{Context, Result};
 use clap::Parser;
 use indoc::formatdoc;
-use opencan_core::{CANMessage, CANNetwork, CANMessageKind};
+use opencan_core::{CANMessage, CANMessageKind, CANNetwork};
 use textwrap::indent;
 
 pub mod message;
@@ -94,7 +94,10 @@ impl<'n> Codegen<'n> {
                 continue;
             }
 
-            let template = self.net.template_message_by_name(template_name).expect("template in network for FromTemplate message");
+            let template = self
+                .net
+                .template_message_by_name(template_name)
+                .expect("template in network for FromTemplate message");
 
             let def = formatdoc! {"
                 /*********************************************************/
