@@ -1,5 +1,5 @@
 use indoc::formatdoc;
-use opencan_core::CANMessage;
+use opencan_core::{CANMessage, CANMessageKind};
 
 use crate::{signal::*, Indent};
 
@@ -49,10 +49,24 @@ pub trait MessageCodegen {
 
 impl MessageCodegen for CANMessage {
     fn struct_ty(&self) -> String {
-        format!("struct CAN_Message_{}", self.name)
+        match self.kind() {
+            CANMessageKind::Independent => {
+                format!("struct CAN_Message_{}", self.name)
+            }
+            CANMessageKind::Template => {
+                format!("struct CAN_TMessage_{}", self.name)
+            }
+            CANMessageKind::FromTemplate(t) => {
+                format!("struct CAN_TMessage_{t}")
+            }
+        }
     }
 
     fn struct_def(&self) -> String {
+        if let CANMessageKind::FromTemplate(t) = self.kind() {
+            return format!("/*  Decoded struct `{}` provided by template `{t}`  */", self.struct_ty())
+        }
+
         let mut inner = String::new(); // struct contents
 
         for sigbit in &self.signals {
@@ -89,10 +103,24 @@ impl MessageCodegen for CANMessage {
     }
 
     fn raw_struct_ty(&self) -> String {
-        format!("struct CAN_MessageRaw_{}", self.name)
+        match self.kind() {
+            CANMessageKind::Independent => {
+                format!("struct CAN_MessageRaw_{}", self.name)
+            }
+            CANMessageKind::Template => {
+                format!("struct CAN_TMessageRaw_{}", self.name)
+            }
+            CANMessageKind::FromTemplate(t) => {
+                format!("struct CAN_TMessageRaw_{t}")
+            }
+        }
     }
 
     fn raw_struct_def(&self) -> String {
+        if let CANMessageKind::FromTemplate(t) = self.kind() {
+            return format!("/*  Raw struct `{}` provided by template `{t}`  */", self.raw_struct_ty())
+        }
+
         let mut inner = String::new(); // struct contents
 
         for sigbit in &self.signals {
@@ -187,6 +215,13 @@ impl MessageCodegen for CANMessage {
             let sig = &sigbit.sig;
             let bit = sigbit.start();
 
+            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
+                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
+                &sig.name.strip_prefix(&prefix).unwrap()
+            } else {
+                &sig.name
+            };
+
             unpack += &format!(
                 "// Unpack `{}`, start bit {}, width {}\n",
                 sig.name, bit, sig.width
@@ -231,7 +266,7 @@ impl MessageCodegen for CANMessage {
 
                 unpack += &formatdoc! {"
                     raw.{name} |= ({rawty})((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
-                    name = sig.name,
+                    name = sig_name,
                     rawty = sig.c_ty_raw(),
                     sig_pos = pos - bit
                 };
@@ -261,13 +296,19 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
+            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
+                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
+                &sig.name.strip_prefix(&prefix).unwrap()
+            } else {
+                &sig.name
+            };
             decode += &formatdoc! {"
                 // Decode `{name}`
                 dec.{name} = {};
 
                 ",
-                sig.decoding_expression(&format!("raw.{}", sig.name)),
-                name = sig.name,
+                sig.decoding_expression(&format!("raw.{}", sig_name)),
+                name = sig_name,
             };
         }
 
@@ -327,13 +368,19 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
+            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
+                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
+                &sig.name.strip_prefix(&prefix).unwrap()
+            } else {
+                &sig.name
+            };
             encode += &formatdoc! {"
                 // Encode `{name}`
                 raw.{name} = {};
 
                 ",
-                sig.encoding_expression(&format!("dec.{}", sig.name)),
-                name = sig.name,
+                sig.encoding_expression(&format!("dec.{}", sig_name)),
+                name = sig_name,
             };
         }
 
@@ -355,9 +402,16 @@ impl MessageCodegen for CANMessage {
             let sig = &sigbit.sig;
             let bit = sigbit.start();
 
+            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
+                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
+                &sig.name.strip_prefix(&prefix).unwrap()
+            } else {
+                &sig.name
+            };
+
             pack += &format!(
                 "// Pack `{}`, start bit {}, width {}\n",
-                sig.name, bit, sig.width
+                sig_name, bit, sig.width
             );
 
             assert!(
@@ -386,7 +440,7 @@ impl MessageCodegen for CANMessage {
 
                 pack += &formatdoc! {"
                     data_out[{byte}] |= ((raw.{name} & ({mask} << {sig_pos})) >> {sig_pos}) << {mask_shift};\n",
-                    name = sig.name,
+                    name = sig_name,
                     sig_pos = pos - bit
                 };
 
@@ -428,7 +482,20 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_populate_fn_name(&self) -> String {
-        format!("CANTX_populate_{}", self.name)
+        match self.kind() {
+            CANMessageKind::Independent => {
+                format!("CANTX_populate_{}", self.name)
+            }
+            CANMessageKind::Template => {
+                panic!("Tried to generate populate function for template `{}`", self.name)
+            }
+            CANMessageKind::FromTemplate(_) => {
+                // strip the node name
+                // todo: assumes node name is present in the message and is actually the prefix
+                let stripped = self.name.strip_prefix(self.tx_node.as_ref().unwrap()).unwrap();
+                format!("CANTX_populateTemplate{stripped}")
+            }
+        }
     }
 
     fn tx_populate_fn_decl(&self) -> String {

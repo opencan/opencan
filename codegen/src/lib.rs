@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use anyhow::{Context, Result};
 use clap::Parser;
 use indoc::formatdoc;
-use opencan_core::{CANMessage, CANNetwork};
+use opencan_core::{CANMessage, CANNetwork, CANMessageKind};
 use textwrap::indent;
 
 pub mod message;
@@ -21,6 +23,7 @@ pub struct Args {
 #[non_exhaustive]
 pub struct CodegenOutput {
     pub callbacks_h: String,
+    pub templates_h: String,
     pub rx_c: String,
     pub rx_h: String,
     pub tx_c: String,
@@ -68,11 +71,63 @@ impl<'n> Codegen<'n> {
 
         Ok(CodegenOutput {
             callbacks_h: self.callbacks_h(),
+            templates_h: self.templates_h(),
             rx_c: self.rx_c(),
             rx_h: self.rx_h(),
             tx_c: self.tx_c(),
             tx_h: self.tx_h(),
         })
+    }
+
+    fn templates_h(&self) -> String {
+        // visit all RX and TX messages, and if they're derived from a template,
+        // check if we've already emitted it, and if not, emit definitions for it.
+
+        let mut templates: HashMap<String, String> = HashMap::new();
+
+        for message in [self.sorted_rx_messages(), self.sorted_tx_messages()].concat() {
+            let CANMessageKind::FromTemplate(template_name) = message.kind() else {
+                continue;
+            };
+
+            if templates.contains_key(template_name) {
+                continue;
+            }
+
+            let template = self.net.template_message_by_name(template_name).expect("template in network for FromTemplate message");
+
+            let def = formatdoc! {"
+                /*********************************************************/
+                /* Message Template: {name} */
+                /*********************************************************/
+
+                /*** Template Message Structs ***/
+
+                {mstruct_raw}
+
+                {mstruct}
+                ",
+                name = template.name,
+                mstruct_raw = template.raw_struct_def(),
+                mstruct = template.struct_def()
+            };
+
+            templates.insert(message.name.clone(), def);
+        }
+
+        let templates: Vec<_> = templates.into_iter().map(|(_, def)| def).collect();
+        let templates = templates.join("\n");
+
+        formatdoc! {"
+            {greet}
+
+            {std_incl}
+
+            {templates}
+            ",
+            greet = self.internal_prelude_greeting(CodegenOutput::TEMPLATES_H_NAME),
+            std_incl = Self::common_std_includes(),
+        }
     }
 
     fn rx_h(&self) -> String {
@@ -122,6 +177,8 @@ impl<'n> Codegen<'n> {
 
             {std_incl}
 
+            #include \"{templates_h}\"
+
             /*********************************************************/
             /* ID-to-Rx-Function Lookup */
             /*********************************************************/
@@ -137,6 +194,7 @@ impl<'n> Codegen<'n> {
             rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
             rx_fn_name = Self::ID_TO_RX_FN_NAME,
             std_incl = Self::common_std_includes(),
+            templates_h = CodegenOutput::TEMPLATES_H_NAME,
         }
     }
 
@@ -246,6 +304,8 @@ impl<'n> Codegen<'n> {
 
             {std_incl}
 
+            #include \"{templates_h}\"
+
             // todo comment
             void CANTX_scheduler_1kHz(void);
 
@@ -253,8 +313,9 @@ impl<'n> Codegen<'n> {
 
             #endif
             ",
+            greet = self.internal_prelude_greeting(CodegenOutput::TX_H_NAME),
             std_incl = Self::common_std_includes(),
-            greet = self.internal_prelude_greeting(CodegenOutput::TX_H_NAME)
+            templates_h = CodegenOutput::TEMPLATES_H_NAME,
         }
     }
 
@@ -448,6 +509,7 @@ impl<'n> Codegen<'n> {
 
 impl CodegenOutput {
     const CALLBACKS_H_NAME: &str = "opencan_callbacks.h";
+    const TEMPLATES_H_NAME: &str = "opencan_templates.h";
     const RX_C_NAME: &str = "opencan_rx.c";
     const RX_H_NAME: &str = "opencan_rx.h";
     const TX_C_NAME: &str = "opencan_tx.c";
@@ -464,6 +526,7 @@ impl CodegenOutput {
     pub fn as_list_h(&self) -> Vec<(&str, &str)> {
         vec![
             (Self::CALLBACKS_H_NAME, &self.callbacks_h),
+            (Self::TEMPLATES_H_NAME, &self.templates_h),
             (Self::RX_H_NAME, &self.rx_h),
             (Self::TX_H_NAME, &self.tx_h),
         ]

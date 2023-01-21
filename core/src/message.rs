@@ -238,6 +238,10 @@ impl CANMessage {
         builder
     }
 
+    pub fn kind(&self) -> &CANMessageKind {
+        &self.kind
+    }
+
     /// Get a [signal](CANSignalWithPosition) from this message by name.
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let &idx = self.sig_map.get(name)?;
