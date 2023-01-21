@@ -10,6 +10,33 @@
 #     - PB
 #     - STEER
 
+message_templates:
+- NodeInfo:
+    cycletime: 1000
+    signals:
+        - gitHash:
+            description: Githash of the currently-running firmware.
+            width: 32
+        - gitDirty:
+            description: Repository was dirty at build time.
+            width: 1
+        - eepromIdentity:
+            description: EEPROM identity.
+            width: 6
+
+- EncoderData:
+    cycletime: 10
+    signals:
+        - encoderLeft:
+            description: Left encoder pulses since last reading.
+            width: 12
+        - encoderRight:
+            description: Right encoder pulses since last reading.
+            width: 12
+        - dtUs:
+            description: Microseconds since last reading.
+            width: 16
+
 nodes:
 - TEST:
     messages:
@@ -42,24 +69,15 @@ nodes:
               width: 5
 
     - NodeInfo:
+        from_template: NodeInfo
         id: 0xD0
-        cycletime: 1000
-
-        signals:
-          - gitHash:
-              description: Githash of the currently-running firmware.
-              width: 32
-
-          - gitDirty:
-              description: Repository was dirty at build time.
-              width: 1
-
-          - eepromIdentity:
-              description: EEPROM identity.
-              width: 6
 
 - THROTTLE:
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD1
+
     - AccelData:
         id: 0x10
         cycletime: 100
@@ -84,6 +102,10 @@ nodes:
 
 - BRAKE:
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD2
+
     - BrakeData:
           id: 0x11
           cycletime: 100
@@ -109,48 +131,30 @@ nodes:
 
 - ENCF:
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD3
+
     - EncoderData:
+        from_template: EncoderData
         id: 0x13
-        cycletime: 10
-
-        signals:
-          - encoderLeft:
-              description: Left encoder pulses since last reading.
-              # is_signed: true
-              width: 12
-
-          - encoderRight:
-              description: Right encoder pulses since last reading.
-              # is_signed: true
-              width: 12
-
-          - dtUs:
-              description: Microseconds since last reading.
-              width: 16
 
 - ENCR:
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD4
+
     - EncoderData:
+        from_template: EncoderData
         id: 0x14
-        cycletime: 10
-
-        signals:
-          - encoderLeft:
-              description: Left encoder pulses since last reading.
-              # is_signed: true
-              width: 12
-
-          - encoderRight:
-              description: Right encoder pulses since last reading.
-              # is_signed: true
-              width: 12
-
-          - dtUs:
-              description: Microseconds since last reading.
-              width: 16
 
 - PB:
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD5
+
     - ParkingBrakeData:
         id: 0x15
         cycletime: 100
@@ -172,6 +176,10 @@ nodes:
     rx:
       - DBW_ESTOP
     messages:
+    - NodeInfo:
+        from_template: NodeInfo
+        id: 0xD6
+
     - SteeringData:
         id: 0x16
         cycletime: 100
