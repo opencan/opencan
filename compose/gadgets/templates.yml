@@ -1,0 +1,13 @@
+message_templates:
+- NodeStatus:
+    cycletime: 100
+    signals:
+      - sysState:
+          width: 2
+
+nodes:
+- TEST:
+    messages:
+    - NodeStatus:
+        from_template: NodeStatus
+        id: 0x30

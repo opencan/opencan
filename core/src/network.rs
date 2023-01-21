@@ -179,10 +179,17 @@ impl CANNetwork {
         Ok(())
     }
 
-    pub fn insert_template_message(&mut self, template: CANMessage) -> Result<(), CANConstructionError> {
+    pub fn insert_template_message(
+        &mut self,
+        template: CANMessage,
+    ) -> Result<(), CANConstructionError> {
         let name = template.name.clone();
 
-        if self.template_messages.insert(name.clone(), template).is_some() {
+        if self
+            .template_messages
+            .insert(name.clone(), template)
+            .is_some()
+        {
             return Err(CANConstructionError::TemplateMessageNameAlreadyExists(name));
         }
 

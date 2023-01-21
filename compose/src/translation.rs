@@ -4,7 +4,9 @@
 //! We build signals/messages/nodes and ultimately hand back a [`CANNetwork`].
 //! Errors originating inside `opencan_core` are bubbled up.
 
-use anyhow::{Context, Result};
+use std::collections::HashMap;
+
+use anyhow::{anyhow, Context, Result};
 use opencan_core::*;
 
 use crate::ymlfmt::*;
@@ -13,6 +15,18 @@ impl YDesc {
     /// Make a `CANNetwork` from a `YDesc` (top-level yml description).
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
+
+        // Add all the templates to the network
+        for tmap in &self.message_templates {
+            let (name, tdesc) = unmap(tmap);
+
+            let template = tdesc
+                .to_template_message(name)
+                .context(format!("Could not build template `{name}`"))?;
+
+            net.insert_template_message(template)
+                .context(format!("Could not add template `{name}` to network"))?;
+        }
 
         // unmap all nodes into tuples
         let nodes: &Vec<_> = &self.nodes.iter().map(unmap).collect();
@@ -60,7 +74,7 @@ impl YDesc {
 
     /// Add contents of a `YNode` to a given network (doesn't add node itself)
     fn add_node_msgs(net: &mut CANNetwork, node_name: &str, ndesc: &YNode) -> Result<()> {
-        let msgs = ndesc.to_messages(node_name)?;
+        let msgs = ndesc.to_messages(net, node_name)?;
 
         for msg in msgs {
             net.insert_msg(msg)?;
@@ -72,14 +86,14 @@ impl YDesc {
 
 impl YNode {
     /// Make a `Vec<CANMessage>` from a `YNode`.
-    fn to_messages(&self, name: &str) -> Result<Vec<CANMessage>> {
+    fn to_messages(&self, net: &CANNetwork, name: &str) -> Result<Vec<CANMessage>> {
         let mut msgs = Vec::new();
 
         for m in &self.messages {
             let (msg_name, mdesc) = unmap(m);
 
             let appended_name = format!("{name}_{msg_name}");
-            let msg = mdesc.to_message(&appended_name, name)?;
+            let msg = mdesc.to_message(net, &appended_name, name)?;
 
             msgs.push(msg);
         }
@@ -88,9 +102,49 @@ impl YNode {
     }
 }
 
+impl YMessageTemplate {
+    /// Make a template `CANMessage` from a `YMessageTemplate`.
+    fn to_template_message(&self, name: &str) -> Result<CANMessage> {
+        let mut msg = CANMessage::template().name(name);
+
+        // cycletime
+        msg = msg.cycletime(self.cycletime);
+
+        // Add signals
+        msg = YMessage::add_signals_to_message_builder(msg, &self.signals, "")?;
+
+        let msg = msg.build()?;
+        Ok(msg)
+    }
+}
+
 impl YMessage {
     /// Make a `CANMessage` from a `YMessage`.
-    fn to_message(&self, msg_name: &str, node_name: &str) -> Result<CANMessage> {
+    fn to_message(&self, net: &CANNetwork, msg_name: &str, node_name: &str) -> Result<CANMessage> {
+        if let Some(template_name) = &self.from_template {
+            // Make sure there is no signals field
+            if self.signals.is_some() {
+                return Err(anyhow!("Message {msg_name} inherits signals from template `{template_name}` and cannot specify a `signals:` field."));
+            }
+
+            // Find template
+            let template = net
+                .template_message_by_name(template_name)
+                .context(format!("No template named `{template_name}` in network."))?;
+
+            // Instantiate template
+            let signal_prefix = format!("{node_name}_");
+            let msg = template.template_instance(
+                msg_name,
+                self.id,
+                &signal_prefix,
+                self.cycletime,
+                Some(node_name),
+            )?;
+
+            return Ok(msg);
+        }
+
         // First, make a CANMessageBuilder.
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
@@ -98,30 +152,47 @@ impl YMessage {
             .cycletime(self.cycletime)
             .tx_node(node_name);
 
-        // For each signal, make the YSignal into a CANSignal, and add it to the message.
-        for s in &self.signals {
-            let (sig_name, sdesc) = unmap(s);
+        // Make sure we have a signals field
+        let Some(signals) = &self.signals else {
+            return Err(anyhow!("Message `{msg_name}` should have a `signals:` field if it's not a template instance, even if empty."));
+        };
 
-            let start_bit = sdesc.start_bit;
-            let full_sig_name = format!("{node_name}_{sig_name}");
-
-            let sig = sdesc.to_signal(&full_sig_name).context(format!(
-                "Could not create signal `{sig_name}` while composing message `{msg_name}`"
-            ))?;
-
-            can_msg = match start_bit {
-                Some(bit) => can_msg.add_signal_fixed(bit, sig),
-                None => can_msg.add_signal(sig),
-            }
+        // Add signals
+        can_msg = Self::add_signals_to_message_builder(can_msg, signals, &format!("{node_name}_"))
             .context(format!(
-                "Could not add signal `{sig_name}` to message `{msg_name}`"
+                "Could not populate signals for message `{msg_name}`"
             ))?;
-        }
 
         // Build message and return
         can_msg
             .build()
             .context(format!("Could not build message `{msg_name}`"))
+    }
+
+    fn add_signals_to_message_builder(
+        mut message: CANMessageBuilder,
+        signals: &Vec<HashMap<String, YSignal>>,
+        signal_prefix: &str,
+    ) -> Result<CANMessageBuilder> {
+        // For each signal, make the YSignal into a CANSignal, and add it to the message
+        for s in signals {
+            let (sig_name, sdesc) = unmap(s);
+
+            let start_bit = sdesc.start_bit;
+            let full_sig_name = format!("{signal_prefix}{sig_name}");
+
+            let sig = sdesc
+                .to_signal(&full_sig_name)
+                .context(format!("Could not create signal `{sig_name}`."))?;
+
+            message = match start_bit {
+                Some(bit) => message.add_signal_fixed(bit, sig),
+                None => message.add_signal(sig),
+            }
+            .context(format!("Could not add signal `{sig_name}`."))?;
+        }
+
+        Ok(message)
     }
 }
 
