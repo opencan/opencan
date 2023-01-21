@@ -118,8 +118,14 @@ impl<'n> Codegen<'n> {
             templates.insert(template.name.clone(), def);
         }
 
-        let templates: Vec<_> = templates.into_iter().map(|(_, def)| def).collect();
-        let templates = templates.join("\n");
+        let mut templates: Vec<_> = templates.into_iter().collect();
+        templates.sort();
+
+        let templates = templates
+            .into_iter()
+            .map(|(_, def)| def)
+            .collect::<Vec<String>>()
+            .join("\n");
 
         formatdoc! {"
             {greet}
