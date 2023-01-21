@@ -74,6 +74,9 @@ nodes:
         id: 0xE0
 
 - THROTTLE:
+    rx:
+    - DBW_Active
+    - DBW_VelCmd
     messages:
     - NodeInfo:
         from_template: DBWNodeInfo
@@ -106,6 +109,9 @@ nodes:
               width: 1
 
 - BRAKE:
+    rx:
+    - DBW_Active
+    - DBW_VelCmd
     messages:
     - NodeInfo:
         from_template: DBWNodeInfo
