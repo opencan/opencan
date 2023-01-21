@@ -39,6 +39,7 @@ message_templates:
 
 nodes:
 - TEST:
+    rx: "*"
     messages:
     - NodeStatus:
         id: 0xE0

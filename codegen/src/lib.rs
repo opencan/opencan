@@ -112,7 +112,7 @@ impl<'n> Codegen<'n> {
                 mstruct = template.struct_def()
             };
 
-            templates.insert(message.name.clone(), def);
+            templates.insert(template.name.clone(), def);
         }
 
         let templates: Vec<_> = templates.into_iter().map(|(_, def)| def).collect();

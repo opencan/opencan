@@ -43,6 +43,9 @@ pub trait MessageCodegen {
     /// Enumerations for all signals that have them in this message.
     fn signal_enums(&self) -> String;
 
+    /// Fix up signal name within structs for template-derived messages.
+    fn normalize_struct_signal_name(&self, name: &str) -> String;
+
     /// Stub (empty) tx function for tests.
     fn tx_stub(&self) -> String;
 }
@@ -215,12 +218,7 @@ impl MessageCodegen for CANMessage {
             let sig = &sigbit.sig;
             let bit = sigbit.start();
 
-            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
-                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
-                &sig.name.strip_prefix(&prefix).unwrap()
-            } else {
-                &sig.name
-            };
+            let sig_name = self.normalize_struct_signal_name(&sig.name);
 
             unpack += &format!(
                 "// Unpack `{}`, start bit {}, width {}\n",
@@ -296,12 +294,8 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
-            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
-                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
-                &sig.name.strip_prefix(&prefix).unwrap()
-            } else {
-                &sig.name
-            };
+            let sig_name = self.normalize_struct_signal_name(&sig.name);
+
             decode += &formatdoc! {"
                 // Decode `{name}`
                 dec.{name} = {};
@@ -368,12 +362,8 @@ impl MessageCodegen for CANMessage {
 
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
-            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
-                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
-                &sig.name.strip_prefix(&prefix).unwrap()
-            } else {
-                &sig.name
-            };
+            let sig_name = self.normalize_struct_signal_name(&sig.name);
+
             encode += &formatdoc! {"
                 // Encode `{name}`
                 raw.{name} = {};
@@ -402,12 +392,7 @@ impl MessageCodegen for CANMessage {
             let sig = &sigbit.sig;
             let bit = sigbit.start();
 
-            let sig_name: &str = if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
-                let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
-                &sig.name.strip_prefix(&prefix).unwrap()
-            } else {
-                &sig.name
-            };
+            let sig_name = self.normalize_struct_signal_name(&sig.name);
 
             pack += &format!(
                 "// Pack `{}`, start bit {}, width {}\n",
@@ -544,7 +529,7 @@ impl MessageCodegen for CANMessage {
                 }}
 
                 ",
-                name = sig.name,
+                name = self.normalize_struct_signal_name(&sig.name),
                 sigty_dec = sig.c_ty_decoded(),
                 sigty_raw = sig.c_ty_raw(),
                 global_decoded = self.global_struct_ident(),
@@ -572,6 +557,15 @@ impl MessageCodegen for CANMessage {
             out.trim().into()
         } else {
             "// (none for this message)".into()
+        }
+    }
+
+    fn normalize_struct_signal_name(&self, name: &str) -> String {
+        if matches!(self.kind(), CANMessageKind::FromTemplate(_)) {
+            let prefix = format!("{}_", self.tx_node.as_ref().unwrap());
+            name.strip_prefix(&prefix).unwrap().into()
+        } else {
+            name.into()
         }
     }
 
