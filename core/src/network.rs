@@ -14,6 +14,9 @@ pub struct CANNetwork {
     /// Owning Vec of all CANMessage in this network.
     messages: Vec<CANMessage>,
 
+    /// Map of all template-kind CANMessage in this network.
+    template_messages: HashMap<String, CANMessage>,
+
     /// index into .messages
     #[serde(skip)]
     messages_by_name: HashMap<String, usize>,
@@ -39,6 +42,8 @@ impl CANNetwork {
         Self {
             nodes: Vec::new(),
             messages: Vec::new(),
+
+            template_messages: HashMap::new(),
 
             messages_by_name: HashMap::new(),
             messages_by_id: HashMap::new(),
@@ -172,6 +177,20 @@ impl CANNetwork {
         node.add_rx_message(msg, msg_idx);
 
         Ok(())
+    }
+
+    pub fn insert_template_message(&mut self, template: CANMessage) -> Result<(), CANConstructionError> {
+        let name = template.name.clone();
+
+        if self.template_messages.insert(name.clone(), template).is_some() {
+            return Err(CANConstructionError::TemplateMessageNameAlreadyExists(name));
+        }
+
+        Ok(())
+    }
+
+    pub fn template_message_by_name(&self, name: &str) -> Option<&CANMessage> {
+        self.template_messages.get(name)
     }
 }
 

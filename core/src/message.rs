@@ -247,7 +247,7 @@ impl CANMessage {
     /// Create a new CAN message from this template.
     pub fn template_instance(&self, name: &str, id: u32, signal_prefix: &str, cycletime: Option<u32>, tx_node: Option<&str>,) -> Result<Self, CANConstructionError> {
         if !matches!(self.kind, CANMessageKind::Template) {
-            return Err(CANConstructionError::MessageIsNotATemplate(self.name.clone(), name.into()));
+            return Err(CANConstructionError::MessageIsNotATemplate(self.name.clone()));
         }
 
         let mut new = self.clone();

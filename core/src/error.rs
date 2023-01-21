@@ -47,8 +47,11 @@ pub enum CANConstructionError {
     #[error("Message `{0}` does not exist.")]
     MessageDoesNotExist(String),
 
-    #[error("Message `{0}` is not a template; cannot create template instance `{1}`")]
-    MessageIsNotATemplate(String, String),
+    #[error("Message `{0}` is not a template")]
+    MessageIsNotATemplate(String),
+
+    #[error("Template message name `{0}` already exists in network.")]
+    TemplateMessageNameAlreadyExists(String),
 
     #[error("Node with name `{0}` already exists in network.")]
     NodeAlreadyExists(String),
