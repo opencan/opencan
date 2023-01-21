@@ -6,6 +6,7 @@ use opencan_core::{CANMessage, CANMessageKind, CANSignal};
 use crate::{message::MessageCodegen, Indent};
 
 pub enum CSignalTy {
+    Bool,
     U8,
     U16,
     U32,
@@ -20,6 +21,7 @@ impl Display for CSignalTy {
             f,
             "{}",
             match self {
+                Self::Bool => "bool",
                 Self::U8 => "uint8_t",
                 Self::U16 => "uint16_t",
                 Self::U32 => "uint32_t",
@@ -54,7 +56,8 @@ pub trait SignalCodegen {
 impl SignalCodegen for CANMessage {
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy {
         match sig.width {
-            1..=8 => CSignalTy::U8,
+            1 => CSignalTy::Bool,
+            2..=8 => CSignalTy::U8,
             9..=16 => CSignalTy::U16,
             17..=32 => CSignalTy::U32,
             33..=64 => CSignalTy::U64,

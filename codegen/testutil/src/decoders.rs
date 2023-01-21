@@ -12,6 +12,7 @@ pub type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the rig
 
 #[derive(Debug, PartialEq)]
 pub enum SignalValue {
+    Bool(bool),
     U8(u8),
     U16(u16),
     U32(u32),
@@ -66,6 +67,10 @@ impl Decoder for CodegenDecoder<'_> {
             let raw_fn_name = raw_fn_name.as_bytes();
 
             let val = match msg.sig_ty_raw(&sigbit.sig) {
+                CodegenCSignalTy::Bool => {
+                    let raw_fn: Symbol<fn() -> bool> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::Bool(raw_fn())
+                }
                 CodegenCSignalTy::U8 => {
                     let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name)? };
                     SignalValue::U8(raw_fn())
@@ -130,6 +135,10 @@ impl Decoder for CantoolsDecoder<'_> {
 
             for sigbit in &net_msg.signals {
                 let val = match net_msg.sig_ty_raw(&sigbit.sig) {
+                    CodegenCSignalTy::Bool => {
+                        // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
+                        SignalValue::Bool(sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0)
+                    }
                     CodegenCSignalTy::U8 => {
                         SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     }
