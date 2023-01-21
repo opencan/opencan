@@ -32,11 +32,28 @@ impl CANSignalWithPosition {
     }
 }
 
+#[derive(Serialize, Deserialize, Clone)]
+pub enum CANMessageKind {
+    Independent,
+    Template,
+    FromTemplate(String),
+}
+
+impl Default for CANMessageKind {
+    fn default() -> Self {
+        Self::Independent
+    }
+}
+
 /// A validated description of a CAN message.
 #[derive(Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {
+    /// Message kind.
+    #[builder(setter(custom), default)]
+    kind: CANMessageKind,
+
     /// Message name.
     #[builder(setter(into))]
     pub name: String,
@@ -206,6 +223,16 @@ impl CANMessage {
         CANMessageBuilder::default()
     }
 
+    /// Get a [builder](CANMessageBuilder) for a template message.
+    ///
+    /// Call [.build()](CANMessageBuilder::build) to build into a [`CANMessage]`.
+    pub fn template() -> CANMessageBuilder {
+        let mut builder = CANMessageBuilder::default();
+        builder.kind = Some(CANMessageKind::Template);
+
+        builder
+    }
+
     /// Get a [signal](CANSignalWithPosition) from this message by name.
     pub fn get_sig(&self, name: &str) -> Option<&CANSignalWithPosition> {
         let &idx = self.sig_map.get(name)?;
@@ -215,6 +242,38 @@ impl CANMessage {
     /// Get transmitting node.
     pub fn tx_node(&self) -> Option<&str> {
         self.tx_node.as_deref()
+    }
+
+    /// Create a new CAN message from this template.
+    pub fn template_instance(&self, name: &str, id: u32, signal_prefix: &str, cycletime: Option<u32>, tx_node: Option<&str>,) -> Result<Self, CANConstructionError> {
+        if !matches!(self.kind, CANMessageKind::Template) {
+            return Err(CANConstructionError::MessageIsNotATemplate(self.name.clone(), name.into()));
+        }
+
+        let mut new = self.clone();
+
+        // set name, id, tx_node, cycletime
+        new.name = name.into();
+        new.id = id;
+        new.tx_node = tx_node.map(|t| t.into()); // inner &str to String
+        if let Some(c) = cycletime {
+            new.cycletime = Some(c);
+        }
+
+        // apply signal prefix to signals vec and make a new sig_map
+        let mut sig_map = HashMap::new();
+        for (i, sigbit) in new.signals.iter_mut().enumerate() {
+            let name = format!("{}{}", signal_prefix, sigbit.sig.name);
+
+            sigbit.sig.name = name.clone();
+            sig_map.insert(name, i);
+        }
+
+        // replace sig_map
+        new.sig_map = sig_map;
+
+        // done; return new message
+        Ok(new)
     }
 }
 
