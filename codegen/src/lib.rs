@@ -33,6 +33,8 @@ pub struct CodegenOutput {
 pub struct Codegen<'n> {
     args: Args,
     net: &'n CANNetwork,
+    sorted_tx_messages: Vec<&'n CANMessage>,
+    sorted_rx_messages: Vec<&'n CANMessage>,
     time: chrono::DateTime<chrono::Utc>,
 }
 
@@ -58,9 +60,23 @@ impl<'n> Codegen<'n> {
 
     pub fn new(args: Args, net: &'n CANNetwork) -> Self {
         Self {
-            args,
             net,
+            sorted_rx_messages: {
+                let mut messages = net.rx_messages_by_node(&args.node).unwrap();
+
+                messages.sort_by_key(|m| m.id);
+
+                messages
+            },
+            sorted_tx_messages: {
+                let mut messages = net.tx_messages_by_node(&args.node).unwrap();
+
+                messages.sort_by_key(|m| m.id);
+
+                messages
+            },
             time: chrono::Utc::now(), // date recorded now
+            args,
         }
     }
 
@@ -85,7 +101,10 @@ impl<'n> Codegen<'n> {
 
         let mut templates: HashMap<String, String> = HashMap::new();
 
-        for message in [self.sorted_rx_messages(), self.sorted_tx_messages()].concat() {
+        for message in [&self.sorted_rx_messages, &self.sorted_tx_messages]
+            .into_iter()
+            .flatten()
+        {
             let CANMessageKind::FromTemplate(template_name) = message.kind() else {
                 continue;
             };
@@ -152,7 +171,7 @@ impl<'n> Codegen<'n> {
     fn rx_h(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_rx_messages() {
+        for msg in &self.sorted_rx_messages {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
@@ -220,7 +239,7 @@ impl<'n> Codegen<'n> {
     fn rx_c(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_rx_messages() {
+        for msg in &self.sorted_rx_messages {
             messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
@@ -279,7 +298,7 @@ impl<'n> Codegen<'n> {
     fn tx_h(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_tx_messages() {
+        for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
                 /*********************************************************/
                 /* TX Message: {name} */
@@ -341,7 +360,7 @@ impl<'n> Codegen<'n> {
     fn tx_c(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_tx_messages() {
+        for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
                 /*********************************************************/
                 /* TX Message: {name} */
@@ -442,7 +461,7 @@ impl<'n> Codegen<'n> {
     fn rx_id_to_decode_fn(&self) -> String {
         let mut cases = String::new();
 
-        for msg in self.sorted_rx_messages() {
+        for msg in &self.sorted_rx_messages {
             cases += &formatdoc! {"
                 case 0x{:X}: return {};
                 ",
@@ -470,7 +489,7 @@ impl<'n> Codegen<'n> {
     fn tx_scheduler(&self) -> String {
         let mut messages = String::new();
 
-        for msg in self.sorted_tx_messages() {
+        for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
                 if ((ms % {cycletime}) == 0) {{
                     {tx_fn}();
@@ -496,24 +515,6 @@ impl<'n> Codegen<'n> {
             {messages}
             }}"
         }
-    }
-
-    /// Get tx messages for our node sorted by ID
-    fn sorted_tx_messages(&self) -> Vec<&CANMessage> {
-        let mut messages = self.net.tx_messages_by_node(&self.args.node).unwrap();
-
-        messages.sort_by_key(|m| m.id);
-
-        messages
-    }
-
-    /// Get rx messages for our node sorted by ID
-    fn sorted_rx_messages(&self) -> Vec<&CANMessage> {
-        let mut messages = self.net.rx_messages_by_node(&self.args.node).unwrap();
-
-        messages.sort_by_key(|m| m.id);
-
-        messages
     }
 }
 
