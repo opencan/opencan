@@ -137,7 +137,9 @@ impl Decoder for CantoolsDecoder<'_> {
                 let val = match net_msg.sig_ty_raw(&sigbit.sig) {
                     CodegenCSignalTy::Bool => {
                         // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
-                        SignalValue::Bool(sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0)
+                        SignalValue::Bool(
+                            sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
+                        )
                     }
                     CodegenCSignalTy::U8 => {
                         SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)

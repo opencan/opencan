@@ -356,10 +356,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_decl(&self) -> String {
-        format!(
-            "bool {}(void)",
-            self.tx_fn_name()
-        )
+        format!("bool {}(void)", self.tx_fn_name())
     }
 
     fn tx_fn_def(&self) -> String {

@@ -80,7 +80,10 @@ impl SignalCodegen for CANMessage {
             let name = match self.kind() {
                 CANMessageKind::Independent => format!("enum CAN_{}", sig.name),
                 CANMessageKind::Template => format!("enum CAN_T_{}_{}", self.name, sig.name),
-                CANMessageKind::FromTemplate(t) => format!("enum CAN_T_{t}_{}", self.normalize_struct_signal_name(&sig.name)),
+                CANMessageKind::FromTemplate(t) => format!(
+                    "enum CAN_T_{t}_{}",
+                    self.normalize_struct_signal_name(&sig.name)
+                ),
             };
 
             CSignalTy::Enum(name)
