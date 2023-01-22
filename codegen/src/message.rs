@@ -25,6 +25,8 @@ pub trait MessageCodegen {
     /// Definition of the RX handler function for this message.
     fn rx_fn_def(&self) -> String;
 
+    fn rx_timestamp_ident(&self) -> String;
+
     /// Name of the TX handler function for this message.
     fn tx_fn_name(&self) -> String;
     /// Declaration of the TX handler function for this messsage.
@@ -179,6 +181,10 @@ impl MessageCodegen for CANMessage {
         }
     }
 
+    fn rx_timestamp_ident(&self) -> String {
+        format!("CANRX_lastRxTime_{}", self.name)
+    }
+
     fn rx_fn_def(&self) -> String {
         /* function comment */
         let comment = formatdoc! {"
@@ -318,9 +324,11 @@ impl MessageCodegen for CANMessage {
         let set_global = formatdoc! {"
             /* Set global data. */
             {global_raw} = raw;
-            {global_dec} = dec;",
+            {global_dec} = dec;
+            {timestamp} = CAN_callback_get_system_time();",
             global_raw = self.global_raw_struct_ident(),
             global_dec = self.global_struct_ident(),
+            timestamp = self.rx_timestamp_ident(),
         };
 
         /* stitch it all together */

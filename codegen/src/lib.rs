@@ -58,8 +58,11 @@ impl<'n> Codegen<'n> {
     const RX_FN_PTR_TYPEDEF: &str = "rx_fn_ptr";
     const ID_TO_RX_FN_NAME: &str = "CANRX_id_to_rx_fn";
 
-    pub fn new(args: Args, net: &'n CANNetwork) -> Self {
-        Self {
+    pub fn new(args: Args, net: &'n CANNetwork) -> Result<Self> {
+        net.node_by_name(&args.node)
+            .context(format!("Node `{}` not found in network.", args.node))?;
+
+        Ok(Self {
             net,
             sorted_rx_messages: {
                 let mut messages = net.rx_messages_by_node(&args.node).unwrap();
@@ -77,22 +80,18 @@ impl<'n> Codegen<'n> {
             },
             time: chrono::Utc::now(), // date recorded now
             args,
-        }
+        })
     }
 
-    pub fn network_to_c(self) -> Result<CodegenOutput> {
-        self.net
-            .node_by_name(&self.args.node)
-            .context(format!("Node `{}` not found in network.", self.args.node))?;
-
-        Ok(CodegenOutput {
+    pub fn network_to_c(self) -> CodegenOutput {
+        CodegenOutput {
             callbacks_h: self.callbacks_h(),
             templates_h: self.templates_h(),
             rx_c: self.rx_c(),
             rx_h: self.rx_h(),
             tx_c: self.tx_c(),
             tx_h: self.tx_h(),
-        })
+        }
     }
 
     fn templates_h(&self) -> String {
@@ -226,6 +225,12 @@ impl<'n> Codegen<'n> {
 
             {messages}
 
+            /*********************************************************/
+            /* Node Health Checks */
+            /*********************************************************/
+
+            {node_checks}
+
             #endif
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_H_NAME),
@@ -233,6 +238,7 @@ impl<'n> Codegen<'n> {
             rx_fn_name = Self::ID_TO_RX_FN_NAME,
             std_incl = Self::common_std_includes(),
             templates_h = CodegenOutput::TEMPLATES_H_NAME,
+            node_checks = self.node_ok_fn_decls(),
         }
     }
 
@@ -251,6 +257,10 @@ impl<'n> Codegen<'n> {
                 static {mstruct_raw_name} {global_ident_raw};
                 static {mstruct_name} {global_ident};
 
+                /*** Accounting Data ***/
+
+                uint64_t {timestamp};
+
                 /*** Signal Getters ***/
 
                 {getters}
@@ -264,6 +274,7 @@ impl<'n> Codegen<'n> {
                 global_ident_raw = msg.global_raw_struct_ident(),
                 mstruct_name = msg.struct_ty(),
                 global_ident = msg.global_struct_ident(),
+                timestamp = msg.rx_timestamp_ident(),
                 getters = msg.getter_fn_defs(),
                 rx_def = msg.rx_fn_def(),
             }
@@ -286,12 +297,19 @@ impl<'n> Codegen<'n> {
             {id_to_fn}
 
             {messages}
+
+            /*********************************************************/
+            /* Node Health Checks */
+            /*********************************************************/
+
+            {node_checks}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             callbacks_h = CodegenOutput::CALLBACKS_H_NAME,
             rx_h = CodegenOutput::RX_H_NAME,
             std_incl = Self::common_std_includes(),
             id_to_fn = self.rx_id_to_decode_fn(),
+            node_checks = self.node_ok_fn_defs(),
         }
     }
 
@@ -420,6 +438,7 @@ impl<'n> Codegen<'n> {
             {std_incl}
 
             void CAN_callback_enqueue_tx_message(const uint8_t *data, uint8_t len, uint32_t id);
+            uint64_t CAN_callback_get_system_time(void);
 
             #endif
             ",
@@ -515,6 +534,132 @@ impl<'n> Codegen<'n> {
             {messages}
             }}"
         }
+    }
+
+    fn node_ok_fn_name(&self, node: &str) -> String {
+        format!("CANRX_is_node_{node}_ok")
+    }
+
+    fn node_ok_fn_decl(&self, node: &str) -> String {
+        format!("bool {}(void)", self.node_ok_fn_name(node))
+    }
+
+    fn node_ok_fn_def(&self, node: &str) -> String {
+        const TIME_TY: &str = "uint64_t";
+
+        let mut timestamps = String::new();
+        let mut checks = String::new();
+
+        for message in &self.sorted_rx_messages {
+            let tx_node = message.tx_node().expect("message to have tx node");
+            if tx_node != node {
+                continue;
+            }
+
+            let Some(cycletime) = message.cycletime else {
+                continue; // just don't check this message
+            };
+
+            timestamps += &formatdoc! {"
+                const {TIME_TY} timestamp_{} = {};
+                ",
+                message.name,
+                message.rx_timestamp_ident()
+            };
+            checks += &formatdoc! {"
+
+                timestamp_{name} != 0 && (current_time - timestamp_{name}) <= ({cycletime} * MS_TO_US) &&",
+                name = message.name,
+            }
+        }
+
+        // no checks for this node, just make a dummy that always returns true
+        if checks.is_empty() {
+            return formatdoc! {"
+                {decl} {{
+                    // No messages recieved from node `{node}` with a cycletime.
+                    return true;
+                }}",
+                decl = self.node_ok_fn_decl(node)
+            };
+        }
+
+        let timestamps = timestamps.trim().indent(4);
+        let checks = checks.strip_suffix("&&").unwrap().trim().indent(8);
+
+        // all together now
+        formatdoc! {"
+            {decl} {{
+                // Check that each message has been recieved (ever) + that it's on time.
+                const {TIME_TY} current_time = CAN_callback_get_system_time();
+                const uint_fast16_t MS_TO_US = 1000;
+
+            {timestamps}
+
+                if (
+            {checks}
+                ) {{
+                    return true;
+                }}
+
+                return false;
+            }}",
+            decl = self.node_ok_fn_decl(node)
+        }
+    }
+
+    fn node_ok_fn_decls(&self) -> String {
+        let mut checks: HashMap<String, String> = HashMap::new();
+
+        for msg in &self.sorted_rx_messages {
+            let node = msg.tx_node().expect("Message to have tx node");
+            if checks.contains_key(node) {
+                continue;
+            }
+
+            checks.insert(node.into(), format!("{};", self.node_ok_fn_decl(node)));
+        }
+
+        // collect into vec
+        let mut checks: Vec<_> = checks.into_iter().collect();
+
+        // sort by node name
+        checks.sort();
+
+        // collect into string with \n separators
+        checks
+            .into_iter()
+            .map(|(_, def)| def + "\n")
+            .collect::<String>()
+            .trim()
+            .into()
+    }
+
+    fn node_ok_fn_defs(&self) -> String {
+        let mut checks: HashMap<String, String> = HashMap::new();
+
+        for msg in &self.sorted_rx_messages {
+            let node = msg.tx_node().expect("Message to have tx node");
+            if checks.contains_key(node) {
+                continue;
+            }
+
+            checks.insert(node.into(), self.node_ok_fn_def(node));
+        }
+
+        // collect into vec
+        let mut checks: Vec<_> = checks.into_iter().collect();
+
+        // sort by node name
+        checks.sort();
+
+        // collect into string with \n\n separators
+        checks
+            .into_iter()
+            .map(|(_, def)| def + "\n\n")
+            .collect::<String>()
+            .trim()
+            .into()
     }
 }
 

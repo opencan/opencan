@@ -3,7 +3,7 @@ use std::iter::zip;
 use anyhow::{Context, Result};
 use indoc::formatdoc;
 use libloading::Symbol;
-use testutil::{decoders::*, util::*};
+use testutil::decoders::*;
 
 #[test]
 fn message_id_lookup() -> Result<()> {
@@ -31,19 +31,12 @@ fn message_id_lookup() -> Result<()> {
     let net = opencan_compose::compose_str(&desc)?;
 
     // Do codegen
-    let args = opencan_codegen::Args {
-        node: "TESTRX".into(),
-        tx_stubs: true,
-    };
-    let c = opencan_codegen::Codegen::new(args, &net).network_to_c()?;
-
-    // Compile
-    let lib = c_strings_to_so(c.as_list())?;
+    let dec = CodegenDecoder::new(&net, "TESTRX")?;
 
     // Look up symbols
-    let msg1_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TESTTX_Message1")? };
-    let msg2_decode: Symbol<DecodeFn> = unsafe { lib.get(b"CANRX_doRx_TESTTX_Message2")? };
-    let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { lib.get(b"CANRX_id_to_rx_fn")? };
+    let msg1_decode: Symbol<DecodeFn> = unsafe { dec.lib.get(b"CANRX_doRx_TESTTX_Message1")? };
+    let msg2_decode: Symbol<DecodeFn> = unsafe { dec.lib.get(b"CANRX_doRx_TESTTX_Message2")? };
+    let lookup: Symbol<fn(u32) -> Option<DecodeFn>> = unsafe { dec.lib.get(b"CANRX_id_to_rx_fn")? };
 
     assert_eq!(lookup(0x10), Some(*msg1_decode));
     assert_eq!(lookup(0x11), Some(*msg2_decode));

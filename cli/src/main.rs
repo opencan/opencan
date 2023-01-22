@@ -49,8 +49,8 @@ fn main() -> Result<()> {
                 in_file,
                 dump_json: false,
             })?;
-            let gen = Codegen::new(cg_args, &net);
-            let out = gen.network_to_c()?;
+            let gen = Codegen::new(cg_args, &net)?;
+            let out = gen.network_to_c();
             save_codegen_files(&out, output_path)?;
             Ok(())
         }

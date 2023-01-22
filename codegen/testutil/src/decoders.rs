@@ -25,8 +25,8 @@ pub trait Decoder {
 }
 
 pub struct CodegenDecoder<'n> {
-    net: &'n CANNetwork,
-    lib: Library,
+    pub net: &'n CANNetwork,
+    pub lib: Library,
 }
 
 impl<'n> CodegenDecoder<'n> {
@@ -36,8 +36,10 @@ impl<'n> CodegenDecoder<'n> {
             tx_stubs: true,
         };
 
-        let c = opencan_codegen::Codegen::new(args, net).network_to_c()?;
-        let lib = c_strings_to_so(c.as_list())?;
+        let stubs = include_str!("test_callback_stubs.c");
+
+        let c = opencan_codegen::Codegen::new(args, net)?.network_to_c();
+        let lib = c_strings_to_so([c.as_list(), vec![("test_callback_stubs.c", stubs)]].concat())?;
 
         Ok(Self { net, lib })
     }
