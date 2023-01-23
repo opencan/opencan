@@ -259,7 +259,7 @@ impl<'n> Codegen<'n> {
 
                 /*** Accounting Data ***/
 
-                uint64_t {timestamp};
+                static _Atomic uint64_t {timestamp};
 
                 /*** Signal Getters ***/
 
@@ -316,6 +316,7 @@ impl<'n> Codegen<'n> {
     fn tx_h(&self) -> String {
         let mut messages = String::new();
 
+        // todo: struct members don't necessarily need to be _Atomic for tx
         for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
                 /*********************************************************/

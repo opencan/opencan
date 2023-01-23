@@ -87,7 +87,7 @@ impl MessageCodegen for CANMessage {
                  * ----> Start bit: {start}
                  * ----> Width: {width}
                  */
-                {sigty} {name};
+                _Atomic {sigty} {name};
                 ",
                 name = sigbit.sig.name,
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
@@ -144,7 +144,7 @@ impl MessageCodegen for CANMessage {
                  * ----> Start bit: {start}
                  * ----> Width: {width}
                  */
-                {sigty} {name};
+                _Atomic {sigty} {name};
                 ",
                 name = sigbit.sig.name,
                 desc = sigbit.sig.description.as_ref().unwrap_or(&"(None)".into()),
