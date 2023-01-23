@@ -48,6 +48,7 @@ fn main() -> Result<()> {
             let net = opencan_compose::compose(opencan_compose::Args {
                 in_file,
                 dump_json: false,
+                dump_python: false,
             })?;
             let gen = Codegen::new(cg_args, &net)?;
             let out = gen.network_to_c();

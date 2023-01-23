@@ -1,8 +1,10 @@
 //! Composition of [`CANNetwork`]s from YAML definition files.
 
+use std::fs;
+
 use anyhow::{Context, Result};
 use clap::Parser;
-use opencan_core::CANNetwork;
+use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
 
 mod ymlfmt;
 use ymlfmt::*;
@@ -14,14 +16,19 @@ mod translation;
 pub struct Args {
     /// Input .yml file
     pub in_file: String,
+
     /// Dump composed network as JSON to stdout
     #[clap(long, short, action)]
     pub dump_json: bool,
+
+    /// Dump composed network as Python to stdout
+    #[clap(long, action)]
+    pub dump_python: bool,
 }
 
 /// Compose YAML definitions into a `CANNetwork` given opencan_compose::Args.
 pub fn compose(args: Args) -> Result<CANNetwork> {
-    let input = std::fs::read_to_string(&args.in_file).context("Failed to read input file")?;
+    let input = fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
     let net = compose_str(&input).context(format!(
         "Failed to ingest specifications file {}",
@@ -30,6 +37,10 @@ pub fn compose(args: Args) -> Result<CANNetwork> {
 
     if args.dump_json {
         println!("{}", serde_json::to_string_pretty(&net).unwrap());
+    }
+
+    if args.dump_python {
+        println!("{}", CantoolsTranslator::dump_network(&net));
     }
 
     Ok(net)

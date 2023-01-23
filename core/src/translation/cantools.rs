@@ -23,7 +23,18 @@ impl TranslationLayer for CantoolsTranslator {
             messages.push(Self::dump_message(msg));
         }
 
-        messages.join("\n")
+        let messages = indent(messages.join(",\n").trim(), &" ".repeat(4));
+
+        formatdoc! {"
+            import cantools
+
+            messages = [
+            {messages}
+            ]
+
+            db = cantools.database.can.Database(messages)
+            cantools.database.dump_file(db, 'opencan.dbc')
+        "}
     }
 
     fn dump_message(msg: &CANMessage) -> String {
@@ -39,6 +50,7 @@ impl TranslationLayer for CantoolsTranslator {
                 name = {:?},
                 frame_id = {:#x},
                 length = {},
+                senders = ['{}'],
                 cycle_time = {},
                 signals = [
             {}
@@ -48,6 +60,7 @@ impl TranslationLayer for CantoolsTranslator {
             msg.name,
             msg.id,
             msg.length,
+            option_to_py(&msg.tx_node),
             option_to_py(&msg.cycletime),
             indent(&signals.join("\n"), &" ".repeat(8))
         )
@@ -86,7 +99,7 @@ impl CantoolsTranslator {
         ch.sort_by_key(|e| e.1);
 
         ch.iter()
-            .map(|(s, v)| format!("'{s}': {v},"))
+            .map(|(s, v)| format!("{v}: {s:?},"))
             .collect::<Vec<String>>()
             .join("\n")
     }
