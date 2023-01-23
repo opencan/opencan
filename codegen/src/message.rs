@@ -452,7 +452,10 @@ impl MessageCodegen for CANMessage {
             // todo: length condition check
             bool {fn_name}(void)\n{{
                 /* Call user-provided populate function */
-                {dec_ty} dec;
+
+                // Struct is zeroed. If the user doesn't populate a signal value,
+                // its value will be as if the user had said `m->signal = 0`.
+                {dec_ty} dec = {{0}};
                 {pop_fn}(&dec); // calls into user code!
 
                 /* ------- Encode signals ------- */
@@ -461,7 +464,7 @@ impl MessageCodegen for CANMessage {
             {encode}
 
                 /* ------- Pack signals ------- */
-                uint8_t data[{length}];
+                uint8_t data[{length}] = {{0}};
 
             {pack}
 
