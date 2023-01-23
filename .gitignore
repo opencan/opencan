@@ -1,6 +1,9 @@
 .DS_Store
 .vscode
 
+opencan.dbc
+cgout
+
 # Added by cargo
 
 /target
