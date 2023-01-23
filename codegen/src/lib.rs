@@ -567,7 +567,7 @@ impl<'n> Codegen<'n> {
             };
             checks += &formatdoc! {"
 
-                timestamp_{name} != 0U && (current_time - timestamp_{name}) <= ({cycletime}U * MS_TO_US) &&",
+                timestamp_{name} != 0U && (current_time - timestamp_{name}) <= (({cycletime}U * MS_TO_US) + LATENESS_TOLERANCE_US) &&",
                 name = message.name,
             }
         }
@@ -592,6 +592,7 @@ impl<'n> Codegen<'n> {
                 // Check that each message has been recieved (ever) + that it's on time.
                 const {TIME_TY} current_time = CAN_callback_get_system_time();
                 const uint_fast16_t MS_TO_US = 1000U;
+                const uint_fast16_t LATENESS_TOLERANCE_US = 100U;
 
             {timestamps}
 
