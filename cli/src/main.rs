@@ -13,6 +13,8 @@ struct PrimaryArgs {
 
 #[derive(clap::Subcommand)]
 enum Command {
+    /// Analyze
+    Analyze,
     /// Compose a CAN network using a definitions file
     Compose(opencan_compose::Args),
     Codegen {
@@ -39,6 +41,7 @@ fn main() -> Result<()> {
     // 1. (compose <- yml) -> network.json
     // 2. codegen <- network.json
     match args.subcommand {
+        Command::Analyze => Ok(opencan_analyze::hello()),
         Command::Compose(a) => opencan_compose::compose(a).map(|_| ()),
         Command::Codegen {
             cg_args,
