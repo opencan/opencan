@@ -483,7 +483,7 @@ impl<'n> Codegen<'n> {
 
         for msg in &self.sorted_rx_messages {
             cases += &formatdoc! {"
-                case 0x{:X}: return {};
+                case 0x{:X}U: return {};
                 ",
                 msg.id,
                 msg.rx_fn_name()
@@ -511,7 +511,7 @@ impl<'n> Codegen<'n> {
 
         for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
-                if ((ms % {cycletime}) == 0) {{
+                if ((ms % {cycletime}U) == 0U) {{
                     {tx_fn}();
                 }}
 
@@ -569,7 +569,7 @@ impl<'n> Codegen<'n> {
             };
             checks += &formatdoc! {"
 
-                timestamp_{name} != 0 && (current_time - timestamp_{name}) <= ({cycletime} * MS_TO_US) &&",
+                timestamp_{name} != 0U && (current_time - timestamp_{name}) <= ({cycletime}U * MS_TO_US) &&",
                 name = message.name,
             }
         }
@@ -593,7 +593,7 @@ impl<'n> Codegen<'n> {
             {decl} {{
                 // Check that each message has been recieved (ever) + that it's on time.
                 const {TIME_TY} current_time = CAN_callback_get_system_time();
-                const uint_fast16_t MS_TO_US = 1000;
+                const uint_fast16_t MS_TO_US = 1000U;
 
             {timestamps}
 

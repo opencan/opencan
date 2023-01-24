@@ -275,7 +275,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
-                    raw.{name} |= ({rawty})((data[{byte}] & ({mask} << {mask_shift})) >> {mask_shift}) << {sig_pos};\n",
+                    raw.{name} |= ({rawty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
                     name = sig_name,
                     rawty = self.sig_ty_raw(sig),
                     sig_pos = pos - bit
@@ -435,7 +435,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 pack += &formatdoc! {"
-                    data[{byte}] |= ((raw.{name} & ({mask} << {sig_pos})) >> {sig_pos}) << {mask_shift};\n",
+                    data[{byte}U] |= ((raw.{name} & ({mask}U << {sig_pos}U)) >> {sig_pos}U) << {mask_shift}U;\n",
                     name = sig_name,
                     sig_pos = pos - bit
                 };
@@ -469,7 +469,7 @@ impl MessageCodegen for CANMessage {
             {pack}
 
                 /* ------- Send message ------- */
-                CAN_callback_enqueue_tx_message(data, {length}, 0x{id:X});
+                CAN_callback_enqueue_tx_message(data, {length}, 0x{id:X}U);
 
                 return true;
             }}",
