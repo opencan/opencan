@@ -8,8 +8,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
-chrono = { version = "0.4.23", features = ["clock", "std"], default-features = false }
 clap = { version = "4.1.3", features = ["cargo", "derive" ] }
+git-version = "0.3.5"
 indoc = "1.0.8"
 textwrap = { version = "0.16.0", default-features = false }
 
