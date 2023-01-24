@@ -287,8 +287,8 @@ impl<'n> Codegen<'n> {
 
             {std_incl}
 
-            #include \"{callbacks_h}\"
             #include \"{rx_h}\"
+            #include \"{callbacks_h}\"
 
             /*********************************************************/
             /* ID-to-Rx-Function Lookup */
