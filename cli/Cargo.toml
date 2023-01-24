@@ -8,4 +8,4 @@ edition = "2021"
 anyhow = "1.0.68"
 opencan-codegen = { path = "../codegen" }
 opencan-compose = { path = "../compose" }
-clap = "4.1.1"
+clap = "4.1.3"
