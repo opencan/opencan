@@ -37,6 +37,8 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| ui.heading("OpenCAN Loves You"));
+
+            let frame = self.can_adapter.unwrap().read_frame().unwrap();
         });
     }
 }
