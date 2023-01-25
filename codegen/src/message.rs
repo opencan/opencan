@@ -24,7 +24,14 @@ pub trait MessageCodegen {
     fn rx_fn_decl(&self) -> String;
     /// Definition of the RX handler function for this message.
     fn rx_fn_def(&self) -> String;
+    /// Name of the RX user callback function for this message.
+    fn rx_callback_fn_name(&self) -> String;
+    /// Declaration of the RX user callback function for this message.
+    fn rx_callback_fn_decl(&self) -> String;
+    /// Stub (empty) RX user callback function.
+    fn rx_callback_fn_stub(&self) -> String;
 
+    /// Identifier for the global last-RX timestamp for this message.
     fn rx_timestamp_ident(&self) -> String;
 
     /// Name of the TX handler function for this message.
@@ -33,10 +40,12 @@ pub trait MessageCodegen {
     fn tx_fn_decl(&self) -> String;
     /// Definition of the TX handler function for this message.
     fn tx_fn_def(&self) -> String;
-    /// Name of the TX user populate callback for this message.
+    /// Name of the TX user populate function for this message.
     fn tx_populate_fn_name(&self) -> String;
     /// Declaration of the TX user populate function for this message.
     fn tx_populate_fn_decl(&self) -> String;
+    /// Stub (empty) TX user populate function.
+    fn tx_populate_fn_stub(&self) -> String;
 
     /// Declarations of the signal getter functions for this message.
     fn getter_fn_decls(&self) -> String;
@@ -47,9 +56,6 @@ pub trait MessageCodegen {
 
     /// Fix up signal name within structs for template-derived messages.
     fn normalize_struct_signal_name(&self, name: &str) -> String;
-
-    /// Stub (empty) tx function for tests.
-    fn tx_stub(&self) -> String;
 }
 
 impl MessageCodegen for CANMessage {
@@ -322,13 +328,25 @@ impl MessageCodegen for CANMessage {
 
         /* set global variables */
         let set_global = formatdoc! {"
-            /* Set global data. */
+            /* ------- Set global data ------- */
             {global_raw} = raw;
             {global_dec} = dec;
             {timestamp} = CAN_callback_get_system_time();",
             global_raw = self.global_raw_struct_ident(),
             global_dec = self.global_struct_ident(),
             timestamp = self.rx_timestamp_ident(),
+        };
+
+        /* maybe call user rx callback */
+        let user_callback = if self.cycletime.is_none() {
+            formatdoc!(
+                "\n/* ------- Call user rx callback ------- */
+                {}(&raw, &dec);
+                ",
+                self.rx_callback_fn_name()
+            )
+        } else {
+            "".into()
         };
 
         /* stitch it all together */
@@ -339,13 +357,12 @@ impl MessageCodegen for CANMessage {
 
             {unpack}
 
-
             {decode_start}
 
             {decode}
 
             {set_global}
-
+            {user_callback}
             return true;"
         }
         .indent(4);
@@ -356,6 +373,33 @@ impl MessageCodegen for CANMessage {
             {body}
             }}",
             self.rx_fn_name(),
+        }
+    }
+
+    fn rx_callback_fn_name(&self) -> String {
+        format!("CANRX_onRxCallback_{}", self.name)
+    }
+
+    fn rx_callback_fn_decl(&self) -> String {
+        formatdoc!(
+            "
+            void {}(
+                const {} * const raw,
+                const {} * const dec)",
+            self.rx_callback_fn_name(),
+            self.raw_struct_ty(),
+            self.struct_ty()
+        )
+    }
+
+    fn rx_callback_fn_stub(&self) -> String {
+        formatdoc! {"
+            __attribute__((weak)) {}
+            {{
+                (void)raw;
+                (void)dec;
+            }}",
+            self.rx_callback_fn_decl()
         }
     }
 
@@ -515,6 +559,15 @@ impl MessageCodegen for CANMessage {
         )
     }
 
+    fn tx_populate_fn_stub(&self) -> String {
+        formatdoc! {"
+            __attribute__((weak)) {} {{
+                (void)m;
+            }}",
+            self.tx_populate_fn_decl()
+        }
+    }
+
     fn getter_fn_decls(&self) -> String {
         let mut getters = String::new();
 
@@ -592,15 +645,6 @@ impl MessageCodegen for CANMessage {
             name.strip_prefix(&prefix).unwrap().into()
         } else {
             name.into()
-        }
-    }
-
-    fn tx_stub(&self) -> String {
-        formatdoc! {"
-            __attribute__((weak)) {} {{
-                (void)m;
-            }}",
-            self.tx_populate_fn_decl()
         }
     }
 }

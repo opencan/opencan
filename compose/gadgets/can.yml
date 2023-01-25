@@ -123,7 +123,8 @@ nodes:
 
     - BrakeData:
           id: 0x11
-          cycletime: 100
+        #   disabled cycletime to get some coverage for RX user callbacks
+        #   cycletime: 100
 
           signals:
             - frequency:

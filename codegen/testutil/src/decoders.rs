@@ -34,6 +34,7 @@ impl<'n> CodegenDecoder<'n> {
         let args = opencan_codegen::Args {
             node: node.into(),
             tx_stubs: true,
+            rx_callback_stubs: true,
         };
 
         let stubs = include_str!("test_callback_stubs.c");

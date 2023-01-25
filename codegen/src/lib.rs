@@ -18,6 +18,10 @@ pub struct Args {
     /// Emit weak stub TX functions.
     #[clap(long)]
     pub tx_stubs: bool,
+    /// Emit weak stub RX callback functions for
+    /// messages with RX callbacks.
+    #[clap(long)]
+    pub rx_callback_stubs: bool,
 }
 
 #[non_exhaustive]
@@ -200,6 +204,17 @@ impl<'n> Codegen<'n> {
                 getters = msg.getter_fn_decls(),
                 enums = msg.signal_enums(),
                 rx_decl = msg.rx_fn_decl(),
+            };
+
+            if msg.cycletime.is_none() {
+                messages += &formatdoc! {"
+
+                    /*** User RX Callback Function ***/
+
+                    {};
+                    ",
+                    msg.rx_callback_fn_decl()
+                };
             }
         }
 
@@ -283,6 +298,16 @@ impl<'n> Codegen<'n> {
                 timestamp = msg.rx_timestamp_ident(),
                 getters = msg.getter_fn_defs(),
                 rx_def = msg.rx_fn_def(),
+            };
+
+            if self.args.rx_callback_stubs && msg.cycletime.is_none() {
+                messages += &formatdoc! {"
+                    /*** RX Callback Stub Function */
+
+                    {}
+                    ",
+                    msg.rx_callback_fn_stub()
+                }
             }
         }
 
@@ -422,7 +447,7 @@ impl<'n> Codegen<'n> {
                     {tx_stub}
 
                     ",
-                    tx_stub = msg.tx_stub(),
+                    tx_stub = msg.tx_populate_fn_stub(),
                 };
             }
         }
@@ -531,13 +556,16 @@ impl<'n> Codegen<'n> {
         let mut messages = String::new();
 
         for msg in &self.sorted_tx_messages {
+            let Some(cycletime) = msg.cycletime else {
+                continue; // skip messages with no cycletime
+            };
+
             messages += &formatdoc! {"
                 if ((ms % {cycletime}U) == 0U) {{
                     {tx_fn}();
                 }}
 
                 ",
-                cycletime = msg.cycletime.expect("message to have cycletime - handle this case"),
                 tx_fn = msg.tx_fn_name(),
             };
         }
