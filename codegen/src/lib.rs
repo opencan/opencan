@@ -56,6 +56,7 @@ impl Indent for &str {
 impl<'n> Codegen<'n> {
     const RX_FN_PTR_TYPEDEF: &str = "rx_fn_ptr";
     const ID_TO_RX_FN_NAME: &str = "CANRX_id_to_rx_fn";
+    const RX_HANDLER_FN_NAME: &str = "CANRX_handle_rx";
 
     pub fn new(args: Args, net: &'n CANNetwork) -> Result<Self> {
         net.node_by_name(&args.node)
@@ -215,6 +216,12 @@ impl<'n> Codegen<'n> {
             #include \"{templates_h}\"
 
             /*********************************************************/
+            /* Primary Rx Handler Function */
+            /*********************************************************/
+
+            void {rx_handler}(uint32_t id, uint8_t * data, uint8_t len);
+
+            /*********************************************************/
             /* ID-to-Rx-Function Lookup */
             /*********************************************************/
 
@@ -232,10 +239,11 @@ impl<'n> Codegen<'n> {
             #endif
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_H_NAME),
-            rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
-            rx_fn_name = Self::ID_TO_RX_FN_NAME,
             std_incl = Self::common_std_includes(),
             templates_h = CodegenOutput::TEMPLATES_H_NAME,
+            rx_handler = Self::RX_HANDLER_FN_NAME,
+            rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
+            rx_fn_name = Self::ID_TO_RX_FN_NAME,
             node_checks = self.node_ok_fn_decls(),
         }
     }
@@ -289,10 +297,22 @@ impl<'n> Codegen<'n> {
             #include \"{callbacks_h}\"
 
             /*********************************************************/
+            /* Primary Rx Handler Function */
+            /*********************************************************/
+
+            void {rx_handler}(const uint32_t id, uint8_t * const data, const uint8_t len) {{
+                const {rx_fn_ptr} rx_fn = {id_to_rx_name}(id);
+
+                if (rx_fn) {{
+                    rx_fn(data, len);
+                }}
+            }}
+
+            /*********************************************************/
             /* ID-to-Rx-Function Lookup */
             /*********************************************************/
 
-            {id_to_fn}
+            {id_to_rx_def}
 
             {messages}
 
@@ -304,9 +324,12 @@ impl<'n> Codegen<'n> {
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             callbacks_h = CodegenOutput::CALLBACKS_H_NAME,
+            rx_handler = Self::RX_HANDLER_FN_NAME,
+            rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
+            id_to_rx_name = Self::ID_TO_RX_FN_NAME,
             rx_h = CodegenOutput::RX_H_NAME,
             std_incl = Self::common_std_includes(),
-            id_to_fn = self.rx_id_to_decode_fn(),
+            id_to_rx_def = self.rx_id_to_decode_fn(),
             node_checks = self.node_ok_fn_defs(),
         }
     }
