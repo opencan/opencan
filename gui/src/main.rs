@@ -1,27 +1,42 @@
-use std::time::{Duration, Instant};
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use tokio::time;
-use tokio_stream::{wrappers::IntervalStream, StreamExt};
+use anyhow::Result;
+use eframe::egui::{self, Slider};
+use socketcan::CANSocket;
 
-#[tokio::main]
-async fn main() {
-    let cycletime = Duration::from_millis(5);
+fn main() -> Result<()> {
+    // Log to stdout (if you run with `RUST_LOG=debug`).
+    tracing_subscriber::fmt::init();
 
-    let mut interval = tokio::time::interval(cycletime);
+    #[cfg(target_os = "linux")]
+    let can = Some(socketcan::CANSocket::open("can0")?);
+    #[cfg(target_os = "macos")]
+    let can = None;
 
-    interval.tick().await;
+    let gui = Gui { can_adapter: can };
 
-    let task = tokio::task::spawn(async move {
-        let mut last_t = tokio::time::Instant::now();
-        loop {
-            let t = interval.tick().await;
+    let options = eframe::NativeOptions {
+        initial_window_size: Some(egui::vec2(320.0, 240.0)),
+        ..Default::default()
+    };
 
-            println!("Hello! {:#?}", t.duration_since(last_t).as_nanos());
-            println!("    Elapsed: {:#?}", last_t.elapsed());
+    eframe::run_native(
+        "OpenCAN GUI",
+        options,
+        Box::new(|_cc| Box::new(gui)),
+    );
 
-            last_t = t;
-        }
-    });
+    Ok(())
+}
 
-    task.await.expect("oopie");
+struct Gui {
+    can_adapter: Option<CANSocket>,
+}
+
+impl eframe::App for Gui {
+    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        egui::CentralPanel::default().show(ctx, |ui| {
+            ui.vertical_centered(|ui| ui.heading("OpenCAN Loves You"));
+        });
+    }
 }
