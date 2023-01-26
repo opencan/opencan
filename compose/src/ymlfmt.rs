@@ -106,4 +106,7 @@ pub struct YDesc {
 
     #[serde(default)]
     pub message_templates: Vec<HashMap<String, YMessageTemplate>>,
+
+    #[serde(default)]
+    pub bitrate: Option<u32>,
 }
