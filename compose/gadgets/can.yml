@@ -73,10 +73,16 @@ nodes:
         from_template: DBWNodeStatus
         id: 0xE0
 
+    - FatSignal: # test 64 bit wide signal
+        id: 0xF0
+        signals:
+          - fatSignal:
+              width: 64
 - THROTTLE:
     rx:
     - DBW_Active
     - DBW_VelCmd
+    - TEST_FatSignal
     messages:
     - NodeInfo:
         from_template: DBWNodeInfo
