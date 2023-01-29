@@ -174,12 +174,33 @@ impl<'n> Codegen<'n> {
         let mut messages = String::new();
 
         for msg in &self.sorted_rx_messages {
-            messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
-                /* RX Message: {name} */
+                /* RX Message: {} */
                 /*********************************************************/
+                ",
+                msg.name
+            };
 
+            if matches!(msg.kind(), CANMessageKind::Raw) {
+                messages += &formatdoc! {"
+                    /* --- This is a raw message. --- */
+
+                    /*** RX Processing Function ***/
+                    {};
+
+                    /*** User RX Callback Function ***/
+                    {};
+                    ",
+                    msg.rx_fn_decl(),
+                    msg.rx_callback_fn_decl(),
+                };
+
+                continue;
+            }
+
+            messages += "\n";
+            messages += &formatdoc! {"
                 /*** Signal Enums ***/
 
                 {enums}
@@ -196,9 +217,8 @@ impl<'n> Codegen<'n> {
 
                 /*** RX Processing Function ***/
 
-                {rx_decl}
+                {rx_decl};
                 ",
-                name = msg.name,
                 mstruct_raw = msg.raw_struct_def(),
                 mstruct = msg.struct_def(),
                 getters = msg.getter_fn_decls(),
@@ -267,12 +287,39 @@ impl<'n> Codegen<'n> {
         let mut messages = String::new();
 
         for msg in &self.sorted_rx_messages {
-            messages += "\n";
             messages += &formatdoc! {"
                 /*********************************************************/
-                /* RX Message: {name} */
+                /* RX Message: {} */
                 /*********************************************************/
+                ",
+                msg.name
+            };
 
+            if matches!(msg.kind(), CANMessageKind::Raw) {
+                messages += &formatdoc! {"
+                    /* --- This is a raw message. --- */
+
+                    /*** RX Processing Function ***/
+                    {}
+                    ",
+                    msg.rx_fn_def()
+                };
+
+                if self.args.rx_callback_stubs {
+                    messages += &formatdoc! {"
+                        /*** RX Callback Stub Function */
+
+                        {}
+                        ",
+                        msg.rx_callback_fn_stub()
+                    }
+                }
+
+                continue;
+            }
+
+            messages += "\n";
+            messages += &formatdoc! {"
                 /*** Message Structs ***/
 
                 static {mstruct_raw_name} {global_ident_raw};
@@ -290,7 +337,6 @@ impl<'n> Codegen<'n> {
 
                 {rx_def}
                 ",
-                name = msg.name,
                 mstruct_raw_name = msg.raw_struct_ty(),
                 global_ident_raw = msg.global_raw_struct_ident(),
                 mstruct_name = msg.struct_ty(),
@@ -366,9 +412,31 @@ impl<'n> Codegen<'n> {
         for msg in &self.sorted_tx_messages {
             messages += &formatdoc! {"
                 /*********************************************************/
-                /* TX Message: {name} */
+                /* TX Message: {} */
                 /*********************************************************/
+                ",
+                msg.name
+            };
 
+            if matches!(msg.kind(), CANMessageKind::Raw) {
+                messages += &formatdoc! {"
+                    /* --- This is a raw message. --- */
+
+                    /*** User-provided Populate Function ***/
+
+                    {};
+
+                    /*** TX Processing Function ***/
+                    {};
+                    ",
+                    msg.tx_populate_fn_decl(),
+                    msg.tx_fn_decl()
+                };
+
+                continue;
+            }
+
+            messages += &formatdoc! {"
                 /*** Signal Enums ***/
 
                 {enums}
@@ -388,7 +456,6 @@ impl<'n> Codegen<'n> {
                 {tx_decl};
 
                 ",
-                name = msg.name,
                 mstruct_raw = msg.raw_struct_def(),
                 mstruct = msg.struct_def(),
                 enums = msg.signal_enums(),

@@ -78,6 +78,7 @@ impl SignalCodegen for CANMessage {
         if !sig.enumerated_values.is_empty() {
             // CSignalTy::Enum(format!("enum CAN_{}", sig.name))
             let name = match self.kind() {
+                CANMessageKind::Raw => panic!("Raw message should not have signals"),
                 CANMessageKind::Independent => format!("enum CAN_{}", sig.name),
                 CANMessageKind::Template => format!("enum CAN_T_{}_{}", self.name, sig.name),
                 CANMessageKind::FromTemplate(t) => format!(
@@ -115,6 +116,7 @@ impl SignalCodegen for CANMessage {
 
         // choose prefix
         let prefix = match self.kind() {
+            CANMessageKind::Raw => panic!("Raw message should not have enums"),
             CANMessageKind::Independent => "CAN".into(),
             CANMessageKind::Template => format!("CAN_T_{}", self.name.to_uppercase()),
             CANMessageKind::FromTemplate(t) => format!("CAN_T_{}", t.to_uppercase()),

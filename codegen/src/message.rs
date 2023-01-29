@@ -61,6 +61,9 @@ pub trait MessageCodegen {
 impl MessageCodegen for CANMessage {
     fn struct_ty(&self) -> String {
         match self.kind() {
+            CANMessageKind::Raw => {
+                panic!("No decoded struct type for raw message")
+            }
             CANMessageKind::Independent => {
                 format!("struct CAN_Message_{}", self.name)
             }
@@ -118,6 +121,7 @@ impl MessageCodegen for CANMessage {
 
     fn raw_struct_ty(&self) -> String {
         match self.kind() {
+            CANMessageKind::Raw => "struct CAN_RawMessage".into(),
             CANMessageKind::Independent => {
                 format!("struct CAN_MessageRaw_{}", self.name)
             }
@@ -182,7 +186,7 @@ impl MessageCodegen for CANMessage {
             bool {}(
                 const uint8_t * data,
                 uint_fast8_t len
-            );",
+            )",
             self.rx_fn_name()
         }
     }
@@ -192,6 +196,23 @@ impl MessageCodegen for CANMessage {
     }
 
     fn rx_fn_def(&self) -> String {
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            return formatdoc! {"
+                bool {}(
+                    const uint8_t * const data,
+                    const uint_fast8_t len
+                )
+                {{
+                    // Stub right into user callback
+                    {}(data, len);
+
+                    return true;
+                }}",
+                self.rx_fn_name(),
+                self.rx_callback_fn_name()
+            };
+        }
+
         /* function comment */
         let comment = formatdoc! {"
             /**
@@ -381,25 +402,45 @@ impl MessageCodegen for CANMessage {
     }
 
     fn rx_callback_fn_decl(&self) -> String {
-        formatdoc!(
-            "
-            void {}(
-                const {} * const raw,
-                const {} * const dec)",
-            self.rx_callback_fn_name(),
-            self.raw_struct_ty(),
-            self.struct_ty()
-        )
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                void {}(
+                    const uint8_t * const data,
+                    const uint8_t len)",
+                self.rx_callback_fn_name()
+            }
+        } else {
+            formatdoc!(
+                "
+                void {}(
+                    const {} * const raw,
+                    const {} * const dec)",
+                self.rx_callback_fn_name(),
+                self.raw_struct_ty(),
+                self.struct_ty()
+            )
+        }
     }
 
     fn rx_callback_fn_stub(&self) -> String {
-        formatdoc! {"
-            __attribute__((weak)) {}
-            {{
-                (void)raw;
-                (void)dec;
-            }}",
-            self.rx_callback_fn_decl()
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)data;
+                    (void)len;
+                }}",
+                self.rx_callback_fn_decl()
+            }
+        } else {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)raw;
+                    (void)dec;
+                }}",
+                self.rx_callback_fn_decl()
+            }
         }
     }
 
@@ -412,6 +453,26 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_def(&self) -> String {
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            return formatdoc! {"
+                bool {fn_name}(void) {{
+                    /* Call user-provided populate function */
+
+                    uint8_t data[8] = {{0}};
+                    uint8_t len = 0;
+                    {pop_fn}(data, &len);
+
+                    /* ------- Send message ------- */
+                    CAN_callback_enqueue_tx_message(data, len, 0x{id:X}U);
+
+                    return true;
+                }}",
+                fn_name = self.tx_fn_name(),
+                pop_fn = self.tx_populate_fn_name(),
+                id = self.id,
+            };
+        }
+
         /* encoding */
         let mut encode = String::new();
 
@@ -528,7 +589,7 @@ impl MessageCodegen for CANMessage {
 
     fn tx_populate_fn_name(&self) -> String {
         match self.kind() {
-            CANMessageKind::Independent => {
+            CANMessageKind::Independent | CANMessageKind::Raw => {
                 format!("CANTX_populate_{}", self.name)
             }
             CANMessageKind::Template => {
@@ -552,19 +613,38 @@ impl MessageCodegen for CANMessage {
     fn tx_populate_fn_decl(&self) -> String {
         // include the const in the decl even though we normally wouldn't -
         // user might copy the prototype.
-        format!(
-            "void {}({} * const m)",
-            self.tx_populate_fn_name(),
-            self.struct_ty()
-        )
+
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            format!(
+                "void {}(uint8_t * const data, uint8_t * const len)",
+                self.tx_populate_fn_name()
+            )
+        } else {
+            format!(
+                "void {}({} * const m)",
+                self.tx_populate_fn_name(),
+                self.struct_ty()
+            )
+        }
     }
 
     fn tx_populate_fn_stub(&self) -> String {
-        formatdoc! {"
-            __attribute__((weak)) {} {{
-                (void)m;
-            }}",
-            self.tx_populate_fn_decl()
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)data;
+                    *len = 0;
+                }}",
+                self.tx_populate_fn_decl()
+            }
+        } else {
+            formatdoc! {"
+                __attribute__((weak)) {} {{
+                    (void)m;
+                }}",
+                self.tx_populate_fn_decl()
+            }
         }
     }
 
