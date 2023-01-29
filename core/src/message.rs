@@ -34,6 +34,7 @@ impl CANSignalWithPosition {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum CANMessageKind {
+    Raw,
     Independent,
     Template,
     FromTemplate(String),
@@ -236,6 +237,24 @@ impl CANMessage {
         builder = builder.id(0);
 
         builder
+    }
+
+    pub fn new_raw(
+        name: &str,
+        id: u32,
+        cycletime: Option<u32>,
+        tx_node: Option<&str>,
+    ) -> CANMessage {
+        CANMessage {
+            kind: CANMessageKind::Raw,
+            name: name.into(),
+            id,
+            cycletime,
+            length: 8, // todo: maybe make it an Option?
+            tx_node: tx_node.map(|t| t.into()),
+            signals: Default::default(),
+            sig_map: Default::default(),
+        }
     }
 
     pub fn kind(&self) -> &CANMessageKind {
