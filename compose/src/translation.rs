@@ -203,7 +203,8 @@ impl YSignal {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
             .description(self.description.clone())
-            .scale(self.scale);
+            .scale(self.scale)
+            .offset(self.offset);
 
         // Translate each enumerated value
         for h in &self.enumerated_values {
