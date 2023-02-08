@@ -158,8 +158,8 @@ impl SignalCodegen for CANMessage {
         // do at all in this function.
 
         if matches!(self.sig_ty_decoded(sig), CSignalTy::Float) {
-            let scale = sig.scale.map_or("".into(), |s| format!(" * {s}f"));
-            let offset = sig.offset.map_or("".into(), |o| format!(" + {o}f"));
+            let scale = sig.scale.map_or("".into(), |s| format!(" * {s:?}f"));
+            let offset = sig.offset.map_or("".into(), |o| format!(" + {o:?}f"));
 
             format!(
                 "(({float_ty})({raw_rvalue}){scale}){offset}",
@@ -179,8 +179,8 @@ impl SignalCodegen for CANMessage {
     // Similar logic and notes as above
     fn encoding_expression(&self, sig: &CANSignal, dec_rvalue: &str) -> String {
         if matches!(self.sig_ty_decoded(sig), CSignalTy::Float) {
-            let scale = sig.scale.map_or("".into(), |s| format!(" / {s}f"));
-            let offset = sig.offset.map_or("".into(), |o| format!(" - {o}f"));
+            let scale = sig.scale.map_or("".into(), |s| format!(" / {s:?}f"));
+            let offset = sig.offset.map_or("".into(), |o| format!(" - {o:?}f"));
 
             format!(
                 "({raw_ty})((({dec_rvalue}){scale}){offset})",

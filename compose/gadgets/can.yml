@@ -228,6 +228,7 @@ nodes:
               # minimum: -0.610865238
               # maximum: 0.610865238
               scale: 0.000000001
+              offset: 3.00
               # is_signed: true
               width: 32
 
