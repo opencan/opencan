@@ -78,7 +78,7 @@ impl TranslationLayer for CantoolsTranslator {
                 offset = {},
                 choices = {{
             {}
-                }},
+                }},{bodge}
             ),
             ",
             s.sig.name,
@@ -87,7 +87,8 @@ impl TranslationLayer for CantoolsTranslator {
             option_to_py(&s.sig.description),
             s.sig.scale.unwrap_or(1.0),
             s.sig.offset.unwrap_or(0.0),
-            indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8))
+            indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8)),
+            bodge = if s.sig.name == "STEER_angleCmd" { "is_signed = True," } else { "" },
         )
     }
 }
