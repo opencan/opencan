@@ -21,6 +21,14 @@ impl<'n> Analyze<'n> {
             frames += frame;
             println!("{} {:?} {}", msg.name, msg.cycletime, frame);
         }
-        println!("{}", frames)
+        println!("Frames per second: {}", frames)
     }
+}
+
+fn eleven_bit_id(tbit:u8){
+    Cm = (((34 + 8*8)/5) + 47 + 8*8)*tbit;
+}
+
+fn twenty_nine_bit_id(tbit:u8){
+    Cm = (((52 + 8*8)/5) + 65 + 8*8)*tbit;
 }
