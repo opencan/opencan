@@ -1,9 +1,5 @@
 use opencan_core::CANNetwork;
 
-pub fn hello() {
-    println!("Hello, world!");
-}
-
 pub struct Analyze<'n> {
     net: &'n CANNetwork,
 }
