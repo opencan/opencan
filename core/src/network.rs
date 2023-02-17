@@ -8,6 +8,9 @@ use crate::node::*;
 
 #[derive(Serialize, Deserialize)]
 pub struct CANNetwork {
+    /// Bitrate for this network
+    bitrate: Option<u32>,
+
     /// Owning Vec of all CANNode in this network.
     nodes: Vec<CANNode>,
 
@@ -40,6 +43,7 @@ impl CANNetwork {
     /// Create a new (empty) network.
     pub fn new() -> Self {
         Self {
+            bitrate: None,
             nodes: Vec::new(),
             messages: Vec::new(),
 
@@ -62,6 +66,14 @@ impl CANNetwork {
     pub fn message_by_id(&self, id: &u32) -> Option<&CANMessage> {
         let &idx = self.messages_by_id.get(id)?;
         Some(&self.messages[idx])
+    }
+
+    pub fn set_bitrate(&mut self, bitrate: u32) {
+        self.bitrate = Some(bitrate);
+    }
+
+    pub fn bitrate(&self) -> Option<u32> {
+        self.bitrate
     }
 
     /// Insert a message into the network.

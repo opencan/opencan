@@ -16,6 +16,11 @@ impl YDesc {
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
 
+        // Bitrate
+        if let Some(b) = self.bitrate {
+            net.set_bitrate(b);
+        }
+
         // Add all the templates to the network
         for tmap in &self.message_templates {
             let (name, tdesc) = unmap(tmap);

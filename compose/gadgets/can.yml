@@ -1,14 +1,6 @@
 ---
 
-# templategroups:
-#   dbwnodes:
-#     - BLINK
-#     - THROTTLE
-#     - BRAKE
-#     - ENCF
-#     - ENCR
-#     - PB
-#     - STEER
+bitrate: 500000
 
 message_templates:
 - DBWNodeInfo:
