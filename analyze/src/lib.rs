@@ -8,8 +8,9 @@ impl<'n> Analyze<'n> {
     pub fn new(net: &'n CANNetwork) -> Self {
         Self { net }
     }
+
     //https://electronics.stackexchange.com/questions/422998/how-to-calculate-bus-load-of-can-bus
-    pub fn printnodes(&self) {
+    pub fn print_bus_load(&self) {
         let mut frames: u32 = 0;
         //for 29 bit id, we need something in the .yml or some other settings file to specify longer msg ids
         //i thought about reading the msg id with some function from compose, but that would require the existence of a msg with the highest id
@@ -31,7 +32,8 @@ impl<'n> Analyze<'n> {
                 if id_len == 11 {
                     let frame_bytes = msg.length;
 
-                    // Tindell Equation
+                    // Analysing Real-Time Communications: Controller Area Network (CAN)
+                    // Tindell Equation:
                     let bits_this_frame = ((34 + 8 * frame_bytes) / 5) + 47 + 8 * frame_bytes;
                     bits_sent += tx_per_sec * bits_this_frame
                 }

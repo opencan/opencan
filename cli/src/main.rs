@@ -52,7 +52,7 @@ fn main() -> Result<()> {
                 dump_python: false,
             })?;
             let ana = Analyze::new(&net);
-            ana.printnodes();
+            ana.print_bus_load();
             Ok(())
         }
         Command::Compose(a) => opencan_compose::compose(a).map(|_| ()),
