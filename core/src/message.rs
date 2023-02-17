@@ -34,9 +34,17 @@ impl CANSignalWithPosition {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub enum CANMessageKind {
+    /// A raw message.
+    /// Raw messages do not have a fixed length and cannot contain signals.
     Raw,
+
+    /// A normal message (does not originate from a template).
     Independent,
+
+    /// A template message.
     Template,
+
+    /// A message that originates from a template.
     FromTemplate(String),
 }
 
@@ -239,6 +247,7 @@ impl CANMessage {
         builder
     }
 
+    /// Create a new raw message.
     pub fn new_raw(
         name: &str,
         id: u32,
