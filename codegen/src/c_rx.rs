@@ -19,6 +19,7 @@ impl<'n> Codegen<'n> {
                 msg.name
             };
 
+            // Is this a raw message?
             if matches!(msg.kind(), CANMessageKind::Raw) {
                 messages += &formatdoc! {"
                     /* --- This is a raw message. --- */
@@ -30,12 +31,13 @@ impl<'n> Codegen<'n> {
                     {};
                     ",
                     msg.rx_fn_decl(),
-                    msg.rx_callback_fn_decl(),
+                    msg.rx_callback_fn_decl(), // there's always an RX callback for raw messages
                 };
 
                 continue;
             }
 
+            // Not a raw message.
             messages += "\n";
             messages += &formatdoc! {"
                 /*** Signal Enums ***/
@@ -63,6 +65,7 @@ impl<'n> Codegen<'n> {
                 rx_decl = msg.rx_fn_decl(),
             };
 
+            // There should be a user callback function if the message has no cycletime.
             if msg.cycletime.is_none() {
                 messages += &formatdoc! {"
 
@@ -132,6 +135,7 @@ impl<'n> Codegen<'n> {
                 msg.name
             };
 
+            // Is this a raw message?
             if matches!(msg.kind(), CANMessageKind::Raw) {
                 messages += &formatdoc! {"
                     /* --- This is a raw message. --- */
@@ -142,6 +146,7 @@ impl<'n> Codegen<'n> {
                     msg.rx_fn_def()
                 };
 
+                // Emit a stub if stubs are enabled.
                 if self.args.rx_callback_stubs {
                     messages += &formatdoc! {"
                         /*** RX Callback Stub Function */
@@ -183,6 +188,7 @@ impl<'n> Codegen<'n> {
                 rx_def = msg.rx_fn_def(),
             };
 
+            // Emit a stub if stubs are enabled and the message has no cycletime.
             if self.args.rx_callback_stubs && msg.cycletime.is_none() {
                 messages += &formatdoc! {"
                     /*** RX Callback Stub Function */

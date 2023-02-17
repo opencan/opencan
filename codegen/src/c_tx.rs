@@ -20,6 +20,7 @@ impl<'n> Codegen<'n> {
                 msg.name
             };
 
+            // Is this a raw message?
             if matches!(msg.kind(), CANMessageKind::Raw) {
                 messages += &formatdoc! {"
                     /* --- This is a raw message. --- */
@@ -38,6 +39,7 @@ impl<'n> Codegen<'n> {
                 continue;
             }
 
+            // Not a raw message.
             messages += &formatdoc! {"
                 /*** Signal Enums ***/
 
@@ -149,9 +151,10 @@ impl<'n> Codegen<'n> {
         let mut messages = String::new();
 
         for msg in &self.sorted_tx_messages {
+            // skip messages with no cycletime
             let Some(cycletime) = msg.cycletime else {
-                    continue; // skip messages with no cycletime
-                };
+                continue;
+            };
 
             messages += &formatdoc! {"
                     if ((ms % {cycletime}U) == 0U) {{
