@@ -4,8 +4,6 @@ pub fn hello() {
     println!("Hello, world!");
 }
 
-// lifetime to save one reference to can netowrk
-
 pub struct Analyze<'n> {
     net: &'n CANNetwork,
 }
@@ -21,19 +19,22 @@ impl<'n> Analyze<'n> {
                       //for 29 bit id, we need something in the .yml or some other settings file to specify longer msg ids
                       //i thought about reading the msg id with some function from compose, but that would require the existence of a msg with the highest id
                       // im forcing it to 11 here
-        let id_len = 11;
+
         let cap = tbit * 1000000;
 
         let mut bits_sent = 0;
 
         for msg in self.net.iter_messages() {
+            let id_len = 11;
             if let Some(cycletime) = msg.cycletime {
-                let frame = 1000 / cycletime;
-                frames += frame;
+                let tx_per_sec = 1000 / cycletime;
+                frames += tx_per_sec;
                 if id_len == 11 {
                     let frame_bytes = msg.length;
-                    let bits_per_frame = ((34 + 8 * frame_bytes) / 5) + 47 + 8 * frame_bytes;
-                    bits_sent += frame * bits_per_frame
+
+                    // Tindell Equation
+                    let bits_this_frame = ((34 + 8 * frame_bytes) / 5) + 47 + 8 * frame_bytes;
+                    bits_sent += tx_per_sec * bits_this_frame
                 }
             }
         }
@@ -46,7 +47,6 @@ impl<'n> Analyze<'n> {
         println!("Busload at {busload}%")
     }
 }
-
 
 // fn twenty_nine_bit_id(tbit:u8){
 //     let Cm;
