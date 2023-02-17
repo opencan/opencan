@@ -62,7 +62,7 @@ impl MessageCodegen for CANMessage {
     fn struct_ty(&self) -> String {
         match self.kind() {
             CANMessageKind::Raw => {
-                panic!("No decoded struct type for raw message")
+                panic!("Tried to get struct_ty for raw message `{}`", self.name);
             }
             CANMessageKind::Independent => {
                 format!("struct CAN_Message_{}", self.name)
@@ -121,7 +121,9 @@ impl MessageCodegen for CANMessage {
 
     fn raw_struct_ty(&self) -> String {
         match self.kind() {
-            CANMessageKind::Raw => "struct CAN_RawMessage".into(),
+            CANMessageKind::Raw => {
+                panic!("Tried to get raw_struct_ty for raw message `{}`", self.name);
+            }
             CANMessageKind::Independent => {
                 format!("struct CAN_MessageRaw_{}", self.name)
             }
