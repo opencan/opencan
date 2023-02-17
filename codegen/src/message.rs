@@ -196,6 +196,7 @@ impl MessageCodegen for CANMessage {
     }
 
     fn rx_fn_def(&self) -> String {
+        // Is this a raw message?
         if matches!(self.kind(), CANMessageKind::Raw) {
             return formatdoc! {"
                 bool {}(
@@ -212,6 +213,8 @@ impl MessageCodegen for CANMessage {
                 self.rx_callback_fn_name()
             };
         }
+
+        // Not a raw message.
 
         /* function comment */
         let comment = formatdoc! {"
@@ -453,11 +456,13 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_def(&self) -> String {
+        // Is this a raw message?
         if matches!(self.kind(), CANMessageKind::Raw) {
             return formatdoc! {"
                 bool {fn_name}(void) {{
                     /* Call user-provided populate function */
 
+                    // User will provide raw data and length.
                     uint8_t data[8] = {{0}};
                     uint8_t len = 0;
                     {pop_fn}(data, &len);
@@ -472,6 +477,8 @@ impl MessageCodegen for CANMessage {
                 id = self.id,
             };
         }
+
+        // Not a raw message.
 
         /* encoding */
         let mut encode = String::new();
