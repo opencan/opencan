@@ -23,7 +23,7 @@ impl<'n> Analyze<'n> {
                       // im forcing it to 11 here
         let id_len = 11;
         let cap = tbit * 1000000;
-        let mut frame_bytes;
+
         let mut bits_sent = 0;
 
         for msg in self.net.iter_messages() {
@@ -31,26 +31,23 @@ impl<'n> Analyze<'n> {
                 let frame = 1000 / cycletime;
                 frames += frame;
                 if id_len == 11 {
-                    frame_bytes = msg.length;
+                    let frame_bytes = msg.length;
                     let bits_per_frame = ((34 + 8 * frame_bytes) / 5) + 47 + 8 * frame_bytes;
                     bits_sent += frame * bits_per_frame
                 }
-                //println!("{} {:?} {}", msg.name, msg.cycletime, frame);
             }
         }
 
-        println!("Frames sent per second: {}", frames);
-        //max_sent = frames * bits_per_frame;
-        println!("Max bits sent per sec: {}", bits_sent);
+        println!("Frames sent per second: {frames}");
+        println!("Max bits sent per sec: {bits_sent}");
 
         let busload = ((bits_sent as f64) / (cap as f64)) * 100.0;
 
-        println!("Busload at {}%", busload)
+        println!("Busload at {busload}%")
     }
 }
 
-//for 29 bit id, we need something in the .yml or some other settings file to specify longer msg ids
-//i thought about reading the msg id with some function from compose, but that would require the existence of a msg with the highest id
+
 // fn twenty_nine_bit_id(tbit:u8){
 //     let Cm;
 //     Cm = (((52 + 8*8)/5) + 65 + 8*8)*tbit;
