@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use indoc::formatdoc;
 
-use crate::{Codegen, message::MessageCodegen, Indent};
+use crate::{message::MessageCodegen, Codegen, Indent};
 
 impl<'n> Codegen<'n> {
     fn node_ok_fn_name(&self, node: &str) -> String {

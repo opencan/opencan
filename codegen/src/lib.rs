@@ -9,10 +9,10 @@ use textwrap::indent;
 pub mod message;
 use message::MessageCodegen;
 
-pub mod node_ok;
-pub mod signal;
 pub mod c_rx;
 pub mod c_tx;
+pub mod node_ok;
+pub mod signal;
 
 #[derive(Clone, Parser)]
 pub struct Args {
