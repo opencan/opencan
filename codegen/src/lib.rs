@@ -11,8 +11,8 @@ use message::MessageCodegen;
 
 pub mod node_ok;
 pub mod signal;
-pub mod rx;
-pub mod tx;
+pub mod c_rx;
+pub mod c_tx;
 
 #[derive(Clone, Parser)]
 pub struct Args {
