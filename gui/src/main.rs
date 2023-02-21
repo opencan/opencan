@@ -60,14 +60,14 @@ impl eframe::App for Gui {
                         });
                     })
                     .body(|mut body| {
-                                let row_height = 40.0;
-                                 let num_rows = 2;
-                                 body.rows(row_height, num_rows, |row_index, mut row| {
-                                     row.col(|ui| {
-                                         ui.label("First column");
-                                     });
-                                 });
-                             });
+                        let row_height = 40.0;
+                        let num_rows = 2;
+                        body.rows(row_height, num_rows, |row_index, mut row| {
+                            row.col(|ui| {
+                                ui.label("First column");
+                            });
+                        });
+                    });
             });
         });
 
