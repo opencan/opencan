@@ -8,34 +8,20 @@ fn main() -> Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
-    let gui = Gui {
-        count: 0,
-        table: Table {
-            striped: true,
-            resizeable: true,
-        },
-    };
+    let gui = Gui { count: 0 };
 
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(1000.0, 1000.0)),
         ..Default::default()
     };
 
-    eframe::run_native("OpenCAN GUI", options, Box::new(|_cc| Box::new(gui)));
+    eframe::run_native("OpenCAN GUI", options, Box::new(|_cc| Box::new(gui))).unwrap();
 
     Ok(())
 }
 
 struct Gui {
     count: u32,
-    table: Table,
-}
-
-/// Table with dynamic layout
-#[cfg_attr(feature = "serde", derive(serde::Deserialize, srde::Serialize))]
-pub struct Table {
-    striped: bool,
-    resizeable: bool,
 }
 
 impl eframe::App for Gui {
@@ -59,10 +45,10 @@ impl eframe::App for Gui {
                             ui.heading("Message");
                         });
                     })
-                    .body(|mut body| {
+                    .body(|body| {
                         let row_height = 40.0;
                         let num_rows = 2;
-                        body.rows(row_height, num_rows, |row_index, mut row| {
+                        body.rows(row_height, num_rows, |_row_index, mut row| {
                             row.col(|ui| {
                                 ui.label("First column");
                             });
