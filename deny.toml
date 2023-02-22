@@ -6,9 +6,13 @@ allow = [
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
     "BSD-3-Clause",
+    "BSL-1.0",
     "ISC",
+    "LicenseRef-UFL-1.0",   # https://github.com/emilk/egui/issues/2321
     "MIT",
     "MPL-2.0",
+    "OFL-1.1",              # https://github.com/emilk/egui/issues/2321
+    "Zlib"
 ]
 
 exceptions = [
