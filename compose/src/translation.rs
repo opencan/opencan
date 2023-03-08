@@ -208,6 +208,7 @@ impl YSignal {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
             .description(self.description.clone())
+            .twos_complement(self.twos_complement)
             .scale(self.scale)
             .offset(self.offset);
 

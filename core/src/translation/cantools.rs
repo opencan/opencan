@@ -76,6 +76,7 @@ impl TranslationLayer for CantoolsTranslator {
                 comment = {:?},
                 scale = {},
                 offset = {},
+                is_signed = {},
                 choices = {{
             {}
                 }},
@@ -87,6 +88,11 @@ impl TranslationLayer for CantoolsTranslator {
             option_to_py(&s.sig.description),
             s.sig.scale.unwrap_or(1.0),
             s.sig.offset.unwrap_or(0.0),
+            if s.sig.twos_complement {
+                "True"
+            } else {
+                "False"
+            },
             indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8))
         )
     }
