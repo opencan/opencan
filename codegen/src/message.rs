@@ -250,12 +250,6 @@ impl MessageCodegen for CANMessage {
         };
 
         /* unpacking */
-        let unpack_start = formatdoc! {"
-            /* ------- Unpack signals ------- */
-            {rawty} raw = {{0}};",
-            rawty = self.raw_struct_ty()
-        };
-
         let mut unpack = String::new();
 
         for sigbit in &self.signals {
@@ -287,6 +281,19 @@ impl MessageCodegen for CANMessage {
                 "Too many bits for me :P, please fix for CAN FD"
             );
 
+            let unpack_ty = match self.sig_ty_raw(sig) {
+                CSignalTy::Bool => CSignalTy::Bool,
+                CSignalTy::I8 | CSignalTy::U8 => CSignalTy::U8,
+                CSignalTy::I16 | CSignalTy::U16 => CSignalTy::U16,
+                CSignalTy::I32 | CSignalTy::U32 => CSignalTy::U32,
+                CSignalTy::I64 | CSignalTy::U64 => CSignalTy::U64,
+                CSignalTy::Float => CSignalTy::Float,
+                CSignalTy::Enum(e) => CSignalTy::Enum(e),
+            };
+
+            let unpack_var = format!("tmp_unpack__{sig_name}");
+            unpack += &format!("{unpack_ty} {unpack_var} = 0;\n");
+
             let mut pos = bit;
             let sig_end = sigbit.end();
             while pos <= sig_end {
@@ -307,9 +314,8 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
-                    raw.{name} |= ({rawty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
-                    name = sig_name,
-                    rawty = self.sig_ty_raw(sig),
+                    {unpack_var} |= ({rawty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
+                    rawty = unpack_ty,
                     sig_pos = pos - bit
                 };
 
@@ -320,6 +326,44 @@ impl MessageCodegen for CANMessage {
         }
 
         let unpack = unpack.trim();
+
+        /* sign extension + populate raw struct */
+        let mut raw_struct = formatdoc! {"
+            /* put values into raw value struct */
+            {} raw = {{", self.raw_struct_ty()
+        };
+        let mut sign_extensions = "/* sign extension */\n".to_string();
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            let sig_name = self.normalize_struct_signal_name(&sigbit.sig.name);
+
+            let unpacked_val = if self.sig_needs_sign_extension(sig) {
+                let extended = format!("tmp_unpack_ext__{sig_name}");
+
+                sign_extensions += &formatdoc! {"
+                    {ty} {extended} = 0;
+                    {{
+                        const struct {{ {ty} x : {width}; }} x = {{
+                            .x = tmp_unpack__{sig_name},
+                        }};
+                        tmp_unpack_ext__{sig_name} = x.x;
+                    }}
+                    ",
+                    ty = self.sig_ty_raw(sig),
+                    width = sig.width,
+                };
+
+                extended
+            } else {
+                format!("tmp_unpack__{sig_name}")
+            };
+
+            raw_struct += &format!("\n    .{sig_name} = {unpacked_val},");
+        }
+        raw_struct += "\n};";
+
+        let raw_struct = raw_struct.trim();
+        let sign_extensions = sign_extensions.trim();
 
         /* decode */
         // We need to take each of the raw signals we just unpacked
@@ -379,9 +423,13 @@ impl MessageCodegen for CANMessage {
         let body = formatdoc! {"
             {length_cond}
 
-            {unpack_start}
+            /* ------- Unpack signals ------- */
 
             {unpack}
+
+            {sign_extensions}
+
+            {raw_struct}
 
             {decode_start}
 

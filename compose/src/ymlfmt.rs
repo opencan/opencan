@@ -44,6 +44,9 @@ pub struct YSignal {
 
     pub description: Option<String>,
 
+    #[serde(default)]
+    pub twos_complement: bool,
+
     pub scale: Option<f32>,
     pub offset: Option<f32>,
 
