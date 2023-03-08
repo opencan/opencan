@@ -8,9 +8,13 @@ use crate::{message::MessageCodegen, Indent};
 pub enum CSignalTy {
     Bool,
     U8,
+    I8,
     U16,
+    I16,
     U32,
+    I32,
     U64,
+    I64,
     Float,
     Enum(String),
 }
@@ -23,9 +27,13 @@ impl Display for CSignalTy {
             match self {
                 Self::Bool => "bool",
                 Self::U8 => "uint8_t",
+                Self::I8 => "int8_t",
                 Self::U16 => "uint16_t",
+                Self::I16 => "int16_t",
                 Self::U32 => "uint32_t",
+                Self::I32 => "int32_t",
                 Self::U64 => "uint64_t",
+                Self::I64 => "int64_t",
                 Self::Float => "float", // todo: use a typedef?
                 Self::Enum(s) => s,
             }
@@ -38,6 +46,8 @@ pub trait SignalCodegen {
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy;
     /// C type for this signal's decoded value.
     fn sig_ty_decoded(&self, sig: &CANSignal) -> CSignalTy;
+    /// Whether this signal needs sign extension.
+    fn sig_needs_sign_extension(&self, sig: &CANSignal) -> bool;
 
     /// C enumeration for this signal's enumerated values, if any.
     fn c_enum(&self, sig: &CANSignal) -> Option<String>;
@@ -55,17 +65,41 @@ pub trait SignalCodegen {
 
 impl SignalCodegen for CANMessage {
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy {
-        match sig.width {
-            1 => CSignalTy::Bool,
-            2..=8 => CSignalTy::U8,
-            9..=16 => CSignalTy::U16,
-            17..=32 => CSignalTy::U32,
-            33..=64 => CSignalTy::U64,
-            w => panic!(
-                "Unexpectedly wide signal: `{}` is `{}` bits wide",
-                sig.name, w
-            ),
+        if sig.twos_complement {
+            match sig.width {
+                1 => panic!(
+                    "Signal `{}` has width 1 but also twos_complement=true",
+                    sig.name
+                ),
+                2..=8 => CSignalTy::I8,
+                9..=16 => CSignalTy::I16,
+                17..=32 => CSignalTy::I32,
+                33..=64 => CSignalTy::I64,
+                w => panic!(
+                    "Unexpectedly wide signal: `{}` is `{}` bits wide",
+                    sig.name, w
+                ),
+            }
+        } else {
+            match sig.width {
+                1 => CSignalTy::Bool,
+                2..=8 => CSignalTy::U8,
+                9..=16 => CSignalTy::U16,
+                17..=32 => CSignalTy::U32,
+                33..=64 => CSignalTy::U64,
+                w => panic!(
+                    "Unexpectedly wide signal: `{}` is `{}` bits wide",
+                    sig.name, w
+                ),
+            }
         }
+    }
+
+    fn sig_needs_sign_extension(&self, sig: &CANSignal) -> bool {
+        matches!(
+            self.sig_ty_raw(sig),
+            CSignalTy::I8 | CSignalTy::I16 | CSignalTy::I32 | CSignalTy::I64
+        ) && !sig.width.is_power_of_two()
     }
 
     /// Get the C type for the decoded signal.

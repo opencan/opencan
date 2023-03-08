@@ -19,6 +19,10 @@ pub struct CANSignal {
     #[builder(default)]
     pub description: Option<String>,
 
+    /// Whether the signal is transmitted as twos-complement.
+    #[builder(default)]
+    pub twos_complement: bool,
+
     /// Numerical offset for this signal.
     #[builder(default)]
     pub offset: Option<f32>,
