@@ -281,17 +281,9 @@ impl MessageCodegen for CANMessage {
                 "Too many bits for me :P, please fix for CAN FD"
             );
 
-            let unpack_ty = match self.sig_ty_raw(sig) {
-                CSignalTy::Bool => CSignalTy::Bool,
-                CSignalTy::I8 | CSignalTy::U8 => CSignalTy::U8,
-                CSignalTy::I16 | CSignalTy::U16 => CSignalTy::U16,
-                CSignalTy::I32 | CSignalTy::U32 => CSignalTy::U32,
-                CSignalTy::I64 | CSignalTy::U64 => CSignalTy::U64,
-                CSignalTy::Float => CSignalTy::Float,
-                CSignalTy::Enum(e) => CSignalTy::Enum(e),
-            };
+            let unpack_ty = self.sig_ty_raw_before_sign_extension(sig);
 
-            let unpack_var = format!("tmp_unpack__{sig_name}");
+            let unpack_var = format!("unpack__{sig_name}");
             unpack += &format!("{unpack_ty} {unpack_var} = 0;\n");
 
             let mut pos = bit;
@@ -314,8 +306,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
-                    {unpack_var} |= ({rawty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
-                    rawty = unpack_ty,
+                    {unpack_var} |= ({unpack_ty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
                     sig_pos = pos - bit
                 };
 
@@ -328,25 +319,23 @@ impl MessageCodegen for CANMessage {
         let unpack = unpack.trim();
 
         /* sign extension + populate raw struct */
-        let mut raw_struct = formatdoc! {"
-            /* put values into raw value struct */
-            {} raw = {{", self.raw_struct_ty()
-        };
-        let mut sign_extensions = "/* sign extension */\n".to_string();
+        // The sign extensions go before the raw struct, but we'll build both in parallel.
+        let mut raw_struct = format!("const {} raw = {{", self.raw_struct_ty());
+        let mut sign_extensions = String::new();
         for sigbit in &self.signals {
             let sig = &sigbit.sig;
             let sig_name = self.normalize_struct_signal_name(&sigbit.sig.name);
 
             let unpacked_val = if self.sig_needs_sign_extension(sig) {
-                let extended = format!("tmp_unpack_ext__{sig_name}");
+                let extended = format!("unpack_ext__{sig_name}");
 
                 sign_extensions += &formatdoc! {"
                     {ty} {extended} = 0;
                     {{
                         const struct {{ {ty} x : {width}; }} x = {{
-                            .x = tmp_unpack__{sig_name},
+                            .x = unpack__{sig_name},
                         }};
-                        tmp_unpack_ext__{sig_name} = x.x;
+                        unpack_ext__{sig_name} = x.x;
                     }}
                     ",
                     ty = self.sig_ty_raw(sig),
@@ -355,7 +344,7 @@ impl MessageCodegen for CANMessage {
 
                 extended
             } else {
-                format!("tmp_unpack__{sig_name}")
+                format!("unpack__{sig_name}")
             };
 
             raw_struct += &format!("\n    .{sig_name} = {unpacked_val},");
@@ -372,11 +361,7 @@ impl MessageCodegen for CANMessage {
         // todo for later bounds checks: a facility for signals being strictly enumerated?
         // todo  -> that is, ensure a signal can only be one of its enumerated values
 
-        let decode_start = formatdoc! {"
-            /* ------- Decode signals ------- */
-            {decty} dec = {{0}};",
-            decty = self.struct_ty()
-        };
+        let decode_start = format!("{} dec = {{0}};", self.struct_ty());
 
         let mut decode = String::new();
 
@@ -409,12 +394,12 @@ impl MessageCodegen for CANMessage {
 
         /* maybe call user rx callback */
         let user_callback = if self.cycletime.is_none() {
-            formatdoc!(
-                "\n/* ------- Call user rx callback ------- */
+            formatdoc! {"
+                \n/* ------- Call user rx callback ------- */
                 {}(&raw, &dec);
                 ",
                 self.rx_callback_fn_name()
-            )
+            }
         } else {
             "".into()
         };
@@ -427,9 +412,15 @@ impl MessageCodegen for CANMessage {
 
             {unpack}
 
+            /* --- Perform sign extension --- */
+
             {sign_extensions}
 
+            /* -- Populate raw value struct -- */
+
             {raw_struct}
+
+            /* ------- Decode signals ------- */
 
             {decode_start}
 

@@ -42,11 +42,23 @@ impl Display for CSignalTy {
 }
 
 pub trait SignalCodegen {
+    /// C type for this signal for unpacking.
+    ///
+    /// This is like the raw type, but always unsigned,
+    /// as it is pre-sign extension.
+    fn sig_ty_raw_before_sign_extension(&self, sig: &CANSignal) -> CSignalTy;
     /// C type for this signal's raw value.
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy;
-    /// C type for this signal's decoded value.
+    /// Get the C type for the decoded signal.
+    ///
+    /// This does not take into account minimum/maximum capping - that is, this
+    /// gives the type for the entire _representable_ decoded range, not just
+    /// what's within the minimum/maximum additional bounds.
     fn sig_ty_decoded(&self, sig: &CANSignal) -> CSignalTy;
     /// Whether this signal needs sign extension.
+    ///
+    /// Signals that are twos-complement and whose width is not an even power
+    /// of two need sign extension.
     fn sig_needs_sign_extension(&self, sig: &CANSignal) -> bool;
 
     /// C enumeration for this signal's enumerated values, if any.
@@ -64,6 +76,17 @@ pub trait SignalCodegen {
 }
 
 impl SignalCodegen for CANMessage {
+    fn sig_ty_raw_before_sign_extension(&self, sig: &CANSignal) -> CSignalTy {
+        match self.sig_ty_raw(sig) {
+            CSignalTy::Bool => CSignalTy::Bool,
+            CSignalTy::I8 | CSignalTy::U8 => CSignalTy::U8,
+            CSignalTy::I16 | CSignalTy::U16 => CSignalTy::U16,
+            CSignalTy::I32 | CSignalTy::U32 => CSignalTy::U32,
+            CSignalTy::I64 | CSignalTy::U64 => CSignalTy::U64,
+            t => panic!("Unexpected raw type {t} for signal {}", sig.name),
+        }
+    }
+
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy {
         if sig.twos_complement {
             match sig.width {
@@ -102,11 +125,6 @@ impl SignalCodegen for CANMessage {
         ) && !sig.width.is_power_of_two()
     }
 
-    /// Get the C type for the decoded signal.
-    ///
-    /// This does not take into account minimum/maximum capping - that is, this
-    /// gives the type for the entire _representable_ decoded range, not just
-    /// what's within the minimum/maximum additional bounds.
     fn sig_ty_decoded(&self, sig: &CANSignal) -> CSignalTy {
         // todo: support for both enumerated and continuous decoded getters
         if !sig.enumerated_values.is_empty() {
@@ -202,7 +220,7 @@ impl SignalCodegen for CANMessage {
         } else {
             // Just copy the raw signal.
 
-            // For now,, these should be None according to the logic in .c_ty_decoded()
+            // For now, these should be None according to the logic in .c_ty_decoded()
             assert!(sig.offset.is_none());
             assert!(sig.scale.is_none());
 
