@@ -25,7 +25,7 @@ pub enum SignalValue {
 }
 
 pub trait Decoder {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>>;
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>>;
 }
 
 pub struct CodegenDecoder<'n> {
@@ -51,7 +51,7 @@ impl<'n> CodegenDecoder<'n> {
 }
 
 impl Decoder for CodegenDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>> {
         let decode_fn_name = format!("CANRX_doRx_{msg}");
         let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
 
@@ -82,7 +82,7 @@ impl Decoder for CodegenDecoder<'_> {
                 };
             }
 
-            let val = match msg.sig_ty_raw(&sigbit.sig) {
+            let raw = match msg.sig_ty_raw(&sigbit.sig) {
                 CodegenCSignalTy::Bool => codegen_get_raw!(Bool, bool),
                 CodegenCSignalTy::U8 => codegen_get_raw!(U8, u8),
                 CodegenCSignalTy::I8 => codegen_get_raw!(I8, i8),
@@ -95,10 +95,36 @@ impl Decoder for CodegenDecoder<'_> {
                 t => panic!("Unexpected signal type `{t}` for raw codegen decode"),
             };
 
-            sigvals.push((sigbit.sig.name.clone(), val));
+            let dec_fn_name = format!("CANRX_get_{}", sigbit.sig.name);
+            let dec_fn_name = dec_fn_name.as_bytes();
+
+            macro_rules! codegen_get_dec {
+                ($sigval_ty:ident, $rust_ty:ty) => {
+                    {
+                        let dec_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(dec_fn_name)? };
+                        SignalValue::$sigval_ty(dec_fn())
+                    }
+                };
+            }
+
+            let dec = match msg.sig_ty_decoded(&sigbit.sig) {
+                CodegenCSignalTy::Bool => codegen_get_dec!(Bool, bool),
+                CodegenCSignalTy::U8 => codegen_get_dec!(U8, u8),
+                CodegenCSignalTy::I8 => codegen_get_dec!(I8, i8),
+                CodegenCSignalTy::U16 => codegen_get_dec!(U16, u16),
+                CodegenCSignalTy::I16 => codegen_get_dec!(I16, i16),
+                CodegenCSignalTy::U32 => codegen_get_dec!(U32, u32),
+                CodegenCSignalTy::I32 => codegen_get_dec!(I32, i32),
+                CodegenCSignalTy::U64 => codegen_get_dec!(U64, u64),
+                CodegenCSignalTy::I64 => codegen_get_dec!(I64, i64),
+                CodegenCSignalTy::Float => codegen_get_dec!(Float, f32),
+                CodegenCSignalTy::Enum(_) => codegen_get_dec!(I32, i32), // todo enum better handling?
+            };
+
+            sigvals.push((sigbit.sig.name.clone(), raw, dec));
         }
 
-        sigvals.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
+        sigvals.sort_by(|(n1, ..), (n2, ..)| n1.cmp(n2));
 
         Ok(sigvals)
     }
@@ -115,7 +141,7 @@ impl<'n> CantoolsDecoder<'n> {
 }
 
 impl Decoder for CantoolsDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue)>> {
+    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>> {
         // pretty much stateless.
 
         Python::with_gil(|py| -> Result<_> {
@@ -132,24 +158,27 @@ impl Decoder for CantoolsDecoder<'_> {
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
 
             // decode signals
-            let sigs_dict = py_msg.call_method1("decode", (data, false, false))?;
+            //                                                  choices,scaling
+            let raw_sigs_dict = py_msg.call_method1("decode", (data, false, false))?;
+            let dec_sigs_dict = py_msg.call_method1("decode", (data, false, true))?;
 
-            let sigs_map: HashMap<String, &PyAny> = sigs_dict.extract()?;
+            let raw_sigs_map: HashMap<String, &PyAny> = raw_sigs_dict.extract()?;
+            let dec_sigs_map: HashMap<String, &PyAny> = dec_sigs_dict.extract()?;
 
             let mut sigvals = vec![];
 
             for sigbit in &net_msg.signals {
                 macro_rules! cantools_get_raw{
                     ($sigval_ty:ident) => {
-                        SignalValue::$sigval_ty(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                        SignalValue::$sigval_ty(raw_sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
                     };
                 }
 
-                let val = match net_msg.sig_ty_raw(&sigbit.sig) {
+                let raw = match net_msg.sig_ty_raw(&sigbit.sig) {
                     CodegenCSignalTy::Bool => {
                         // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
                         SignalValue::Bool(
-                            sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
+                            raw_sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
                         )
                     }
                     CodegenCSignalTy::U8 => cantools_get_raw!(U8),
@@ -163,10 +192,35 @@ impl Decoder for CantoolsDecoder<'_> {
                     t => panic!("Unexpected signal type `{t}` for raw cantools decode"),
                 };
 
-                sigvals.push((sigbit.sig.name.clone(), val));
+                macro_rules! cantools_get_dec{
+                    ($sigval_ty:ident) => {
+                        SignalValue::$sigval_ty(dec_sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    };
+                }
+
+                let dec = match net_msg.sig_ty_decoded(&sigbit.sig) {
+                    CodegenCSignalTy::Bool => {
+                        // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
+                        SignalValue::Bool(
+                            dec_sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
+                        )
+                    }
+                    CodegenCSignalTy::U8 => cantools_get_dec!(U8),
+                    CodegenCSignalTy::I8 => cantools_get_dec!(I8),
+                    CodegenCSignalTy::U16 => cantools_get_dec!(U16),
+                    CodegenCSignalTy::I16 => cantools_get_dec!(I16),
+                    CodegenCSignalTy::U32 => cantools_get_dec!(U32),
+                    CodegenCSignalTy::I32 => cantools_get_dec!(I32),
+                    CodegenCSignalTy::U64 => cantools_get_dec!(U64),
+                    CodegenCSignalTy::I64 => cantools_get_dec!(I64),
+                    CodegenCSignalTy::Float => cantools_get_dec!(Float),
+                    CodegenCSignalTy::Enum(_) => cantools_get_dec!(I32), // todo enum better handling?
+                };
+
+                sigvals.push((sigbit.sig.name.clone(), raw, dec));
             }
 
-            sigvals.sort_by(|(n1, _), (n2, _)| n1.cmp(n2));
+            sigvals.sort_by(|(n1, ..), (n2, ..)| n1.cmp(n2));
 
             Ok(sigvals)
         })
