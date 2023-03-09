@@ -25,9 +25,9 @@ fn test_decode_with_trait() -> Result<()> {
 
     assert!(v.len() == 1); // one signal
 
-    let (sig, val) = &v[0];
+    let (sig, raw, _dec) = &v[0];
     assert_eq!(sig, "TESTTX_testSignal");
-    assert_eq!(*val, SignalValue::U8(0xA));
+    assert_eq!(*raw, SignalValue::U8(0xA));
 
     Ok(())
 }
@@ -41,9 +41,9 @@ fn test_decode_with_trait_cantools() -> Result<()> {
 
     assert!(v.len() == 1); // one signal
 
-    let (sig, val) = &v[0];
+    let (sig, raw, _dec) = &v[0];
     assert_eq!(sig, "TESTTX_testSignal");
-    assert_eq!(*val, SignalValue::U8(0xA));
+    assert_eq!(*raw, SignalValue::U8(0xA));
 
     Ok(())
 }
