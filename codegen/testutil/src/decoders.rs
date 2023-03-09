@@ -3,7 +3,7 @@ use std::{collections::HashMap, ffi::c_float};
 use anyhow::{anyhow, Context, Result};
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
-use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
+use opencan_core::{translation::{CantoolsTranslator}, CANNetwork, Translation};
 use pyo3::{prelude::*, types::IntoPyDict};
 
 use crate::util::*;
@@ -73,43 +73,25 @@ impl Decoder for CodegenDecoder<'_> {
             let raw_fn_name = format!("CANRX_getRaw_{}", sigbit.sig.name);
             let raw_fn_name = raw_fn_name.as_bytes();
 
+            macro_rules! codegen_get_raw {
+                ($sigval_ty:ident, $rust_ty:ty) => {
+                    {
+                        let raw_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(raw_fn_name)? };
+                        SignalValue::$sigval_ty(raw_fn())
+                    }
+                };
+            }
+
             let val = match msg.sig_ty_raw(&sigbit.sig) {
-                CodegenCSignalTy::Bool => {
-                    let raw_fn: Symbol<fn() -> bool> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::Bool(raw_fn())
-                }
-                CodegenCSignalTy::U8 => {
-                    let raw_fn: Symbol<fn() -> u8> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::U8(raw_fn())
-                }
-                CodegenCSignalTy::I8 => {
-                    let raw_fn: Symbol<fn() -> i8> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::I8(raw_fn())
-                }
-                CodegenCSignalTy::U16 => {
-                    let raw_fn: Symbol<fn() -> u16> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::U16(raw_fn())
-                }
-                CodegenCSignalTy::I16 => {
-                    let raw_fn: Symbol<fn() -> i16> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::I16(raw_fn())
-                }
-                CodegenCSignalTy::U32 => {
-                    let raw_fn: Symbol<fn() -> u32> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::U32(raw_fn())
-                }
-                CodegenCSignalTy::I32 => {
-                    let raw_fn: Symbol<fn() -> i32> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::I32(raw_fn())
-                }
-                CodegenCSignalTy::U64 => {
-                    let raw_fn: Symbol<fn() -> u64> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::U64(raw_fn())
-                }
-                CodegenCSignalTy::I64 => {
-                    let raw_fn: Symbol<fn() -> i64> = unsafe { self.lib.get(raw_fn_name)? };
-                    SignalValue::I64(raw_fn())
-                }
+                CodegenCSignalTy::Bool => codegen_get_raw!(Bool, bool),
+                CodegenCSignalTy::U8 => codegen_get_raw!(U8, u8),
+                CodegenCSignalTy::I8 => codegen_get_raw!(I8, i8),
+                CodegenCSignalTy::U16 => codegen_get_raw!(U16, u16),
+                CodegenCSignalTy::I16 => codegen_get_raw!(I16, i16),
+                CodegenCSignalTy::U32 => codegen_get_raw!(U32, u32),
+                CodegenCSignalTy::I32 => codegen_get_raw!(I32, i32),
+                CodegenCSignalTy::U64 => codegen_get_raw!(U64, u64),
+                CodegenCSignalTy::I64 => codegen_get_raw!(I64, i64),
                 t => panic!("Unexpected signal type `{t}` for raw codegen decode"),
             };
 
@@ -157,6 +139,12 @@ impl Decoder for CantoolsDecoder<'_> {
             let mut sigvals = vec![];
 
             for sigbit in &net_msg.signals {
+                macro_rules! cantools_get_raw{
+                    ($sigval_ty:ident) => {
+                        SignalValue::$sigval_ty(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                    };
+                }
+
                 let val = match net_msg.sig_ty_raw(&sigbit.sig) {
                     CodegenCSignalTy::Bool => {
                         // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
@@ -164,30 +152,14 @@ impl Decoder for CantoolsDecoder<'_> {
                             sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
                         )
                     }
-                    CodegenCSignalTy::U8 => {
-                        SignalValue::U8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::I8 => {
-                        SignalValue::I8(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::U16 => {
-                        SignalValue::U16(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::I16 => {
-                        SignalValue::I16(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::U32 => {
-                        SignalValue::U32(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::I32 => {
-                        SignalValue::I32(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::U64 => {
-                        SignalValue::U64(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
-                    CodegenCSignalTy::I64 => {
-                        SignalValue::I64(sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
-                    }
+                    CodegenCSignalTy::U8 => cantools_get_raw!(U8),
+                    CodegenCSignalTy::I8 => cantools_get_raw!(I8),
+                    CodegenCSignalTy::U16 => cantools_get_raw!(U16),
+                    CodegenCSignalTy::I16 => cantools_get_raw!(I16),
+                    CodegenCSignalTy::U32 => cantools_get_raw!(U32),
+                    CodegenCSignalTy::I32 => cantools_get_raw!(I32),
+                    CodegenCSignalTy::U64 => cantools_get_raw!(U64),
+                    CodegenCSignalTy::I64 => cantools_get_raw!(I64),
                     t => panic!("Unexpected signal type `{t}` for raw cantools decode"),
                 };
 
