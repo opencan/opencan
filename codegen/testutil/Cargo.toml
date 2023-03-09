@@ -10,7 +10,7 @@ edition = "2021"
 anyhow = "1.0.68"
 libloading = "0.7.4"
 pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
-tempfile = "3.3.0"
+tempfile = "3.4.0"
 
 opencan-codegen = { path = "../" }
 opencan-core = { path = "../../core" }
