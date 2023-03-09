@@ -1,6 +1,7 @@
 use std::{collections::HashMap, ffi::c_float};
 
 use anyhow::{anyhow, Context, Result};
+use float_cmp::approx_eq;
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
 use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
@@ -10,7 +11,7 @@ use crate::util::*;
 
 pub type DecodeFn = unsafe fn(*const u8, u8) -> bool; // todo: u8 is not the right length type - it's uint_fast8_t!
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum SignalValue {
     Bool(bool),
     U8(u8),
@@ -22,6 +23,24 @@ pub enum SignalValue {
     U64(u64),
     I64(i64),
     Float(c_float),
+}
+
+impl PartialEq for SignalValue {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Bool(l0), Self::Bool(r0)) => l0 == r0,
+            (Self::U8(l0), Self::U8(r0)) => l0 == r0,
+            (Self::I8(l0), Self::I8(r0)) => l0 == r0,
+            (Self::U16(l0), Self::U16(r0)) => l0 == r0,
+            (Self::I16(l0), Self::I16(r0)) => l0 == r0,
+            (Self::U32(l0), Self::U32(r0)) => l0 == r0,
+            (Self::I32(l0), Self::I32(r0)) => l0 == r0,
+            (Self::U64(l0), Self::U64(r0)) => l0 == r0,
+            (Self::I64(l0), Self::I64(r0)) => l0 == r0,
+            (Self::Float(l0), Self::Float(r0)) => approx_eq!(f32, *l0, *r0, ulps = 2),
+            _ => false,
+        }
+    }
 }
 
 pub trait Decoder {
@@ -121,7 +140,7 @@ impl Decoder for CodegenDecoder<'_> {
                 CodegenCSignalTy::I32 => codegen_get_dec!(I32, i32),
                 CodegenCSignalTy::U64 => codegen_get_dec!(U64, u64),
                 CodegenCSignalTy::I64 => codegen_get_dec!(I64, i64),
-                CodegenCSignalTy::Float => codegen_get_dec!(Float, f32),
+                CodegenCSignalTy::Float => codegen_get_dec!(Float, c_float),
                 CodegenCSignalTy::Enum(_) => codegen_get_dec!(I32, i32), // todo enum better handling?
             };
 
@@ -166,7 +185,7 @@ impl Decoder for CantoolsDecoder<'_> {
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
 
             // decode signals
-            //                                                  choices,scaling
+            //                                                      choices,scaling
             let raw_sigs_dict = py_msg.call_method1("decode", (data, false, false))?;
             let dec_sigs_dict = py_msg.call_method1("decode", (data, false, true))?;
 
