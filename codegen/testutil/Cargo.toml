@@ -8,6 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.68"
+float-cmp = "0.9.0"
 libloading = "0.7.4"
 pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
 tempfile = "3.4.0"
