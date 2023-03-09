@@ -3,7 +3,7 @@ use std::{collections::HashMap, ffi::c_float};
 use anyhow::{anyhow, Context, Result};
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
-use opencan_core::{translation::{CantoolsTranslator}, CANNetwork, Translation};
+use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
 use pyo3::{prelude::*, types::IntoPyDict};
 
 use crate::util::*;
@@ -25,7 +25,11 @@ pub enum SignalValue {
 }
 
 pub trait Decoder {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>>;
+    fn decode_message(
+        &self,
+        msg: &str,
+        data: &[u8],
+    ) -> Result<Vec<(String, SignalValue, SignalValue)>>;
 }
 
 pub struct CodegenDecoder<'n> {
@@ -51,7 +55,11 @@ impl<'n> CodegenDecoder<'n> {
 }
 
 impl Decoder for CodegenDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>> {
+    fn decode_message(
+        &self,
+        msg: &str,
+        data: &[u8],
+    ) -> Result<Vec<(String, SignalValue, SignalValue)>> {
         let decode_fn_name = format!("CANRX_doRx_{msg}");
         let decode: Symbol<DecodeFn> = unsafe { self.lib.get(decode_fn_name.as_bytes())? };
 
@@ -74,12 +82,10 @@ impl Decoder for CodegenDecoder<'_> {
             let raw_fn_name = raw_fn_name.as_bytes();
 
             macro_rules! codegen_get_raw {
-                ($sigval_ty:ident, $rust_ty:ty) => {
-                    {
-                        let raw_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(raw_fn_name)? };
-                        SignalValue::$sigval_ty(raw_fn())
-                    }
-                };
+                ($sigval_ty:ident, $rust_ty:ty) => {{
+                    let raw_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(raw_fn_name)? };
+                    SignalValue::$sigval_ty(raw_fn())
+                }};
             }
 
             let raw = match msg.sig_ty_raw(&sigbit.sig) {
@@ -99,12 +105,10 @@ impl Decoder for CodegenDecoder<'_> {
             let dec_fn_name = dec_fn_name.as_bytes();
 
             macro_rules! codegen_get_dec {
-                ($sigval_ty:ident, $rust_ty:ty) => {
-                    {
-                        let dec_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(dec_fn_name)? };
-                        SignalValue::$sigval_ty(dec_fn())
-                    }
-                };
+                ($sigval_ty:ident, $rust_ty:ty) => {{
+                    let dec_fn: Symbol<fn() -> $rust_ty> = unsafe { self.lib.get(dec_fn_name)? };
+                    SignalValue::$sigval_ty(dec_fn())
+                }};
             }
 
             let dec = match msg.sig_ty_decoded(&sigbit.sig) {
@@ -141,7 +145,11 @@ impl<'n> CantoolsDecoder<'n> {
 }
 
 impl Decoder for CantoolsDecoder<'_> {
-    fn decode_message(&self, msg: &str, data: &[u8]) -> Result<Vec<(String, SignalValue, SignalValue)>> {
+    fn decode_message(
+        &self,
+        msg: &str,
+        data: &[u8],
+    ) -> Result<Vec<(String, SignalValue, SignalValue)>> {
         // pretty much stateless.
 
         Python::with_gil(|py| -> Result<_> {
@@ -168,9 +176,11 @@ impl Decoder for CantoolsDecoder<'_> {
             let mut sigvals = vec![];
 
             for sigbit in &net_msg.signals {
-                macro_rules! cantools_get_raw{
+                macro_rules! cantools_get_raw {
                     ($sigval_ty:ident) => {
-                        SignalValue::$sigval_ty(raw_sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                        SignalValue::$sigval_ty(
+                            raw_sigs_map.get(&sigbit.sig.name).unwrap().extract()?,
+                        )
                     };
                 }
 
@@ -178,7 +188,11 @@ impl Decoder for CantoolsDecoder<'_> {
                     CodegenCSignalTy::Bool => {
                         // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
                         SignalValue::Bool(
-                            raw_sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
+                            raw_sigs_map
+                                .get(&sigbit.sig.name)
+                                .unwrap()
+                                .extract::<u8>()?
+                                != 0,
                         )
                     }
                     CodegenCSignalTy::U8 => cantools_get_raw!(U8),
@@ -192,9 +206,11 @@ impl Decoder for CantoolsDecoder<'_> {
                     t => panic!("Unexpected signal type `{t}` for raw cantools decode"),
                 };
 
-                macro_rules! cantools_get_dec{
+                macro_rules! cantools_get_dec {
                     ($sigval_ty:ident) => {
-                        SignalValue::$sigval_ty(dec_sigs_map.get(&sigbit.sig.name).unwrap().extract()?)
+                        SignalValue::$sigval_ty(
+                            dec_sigs_map.get(&sigbit.sig.name).unwrap().extract()?,
+                        )
                     };
                 }
 
@@ -202,7 +218,11 @@ impl Decoder for CantoolsDecoder<'_> {
                     CodegenCSignalTy::Bool => {
                         // extract as u8 and then convert to bool with `!= 0`, otherwise TypeError from pyo3
                         SignalValue::Bool(
-                            dec_sigs_map.get(&sigbit.sig.name).unwrap().extract::<u8>()? != 0,
+                            dec_sigs_map
+                                .get(&sigbit.sig.name)
+                                .unwrap()
+                                .extract::<u8>()?
+                                != 0,
                         )
                     }
                     CodegenCSignalTy::U8 => cantools_get_dec!(U8),
