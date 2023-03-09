@@ -355,7 +355,7 @@ checksum = "6f61fba1741ea2b3d6a1e3178721804bb716a68a6aeba1149b5d52e3d464ea66"
 
 [[package]]
 name = "opencan-analyze"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "clap",
  "opencan-core",
@@ -363,7 +363,7 @@ dependencies = [
 
 [[package]]
 name = "opencan-cli"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -374,7 +374,7 @@ dependencies = [
 
 [[package]]
 name = "opencan-codegen"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -391,7 +391,7 @@ dependencies = [
 
 [[package]]
 name = "opencan-compose"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -404,7 +404,7 @@ dependencies = [
 
 [[package]]
 name = "opencan-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "bimap",
  "derive_builder",
