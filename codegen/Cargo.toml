@@ -19,7 +19,7 @@ opencan-core = { path = "../core" }
 indoc = "2.0.1"
 libloading = "0.7.4"
 pyo3 = { version = "0.18.1", features = ["auto-initialize"] }
-semver = "1.0.16"
+semver = "1.0.17"
 
 opencan-compose = { path = "../compose" }
 
