@@ -5,7 +5,7 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
-bimap = { version = "0.6.2", features = ["serde"] }
+bimap = { version = "0.6.3", features = ["serde"] }
 derive_builder = { version = "0.12.0", features = ["clippy"] }
 indoc = "2.0.1"
 serde = { version = "1.0.156", features = ["derive"] }
