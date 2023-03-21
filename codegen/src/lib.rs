@@ -11,6 +11,7 @@ use message::MessageCodegen;
 
 pub mod c_rx;
 pub mod c_tx;
+pub mod message_ok;
 pub mod node_ok;
 pub mod signal;
 
