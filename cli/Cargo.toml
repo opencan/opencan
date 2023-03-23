@@ -5,7 +5,7 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
-anyhow = "1.0.68"
+anyhow = "1.0.70"
 opencan-analyze = { path = "../analyze" }
 opencan-codegen = { path = "../codegen" }
 opencan-compose = { path = "../compose" }
