@@ -2,7 +2,18 @@ use indoc::formatdoc;
 
 use crate::{message::MessageCodegen, Codegen, Indent};
 
-impl<'n> Codegen<'n> {
+pub trait MessageOk {
+    /// Name of the MessageOk function for the RX message.
+    fn message_ok_fn_name(&self, message: &str) -> String;
+    /// Declaration of the MessageOk function for the RX message.
+    fn message_ok_fn_decl(&self, message: &str) -> String;
+    /// Declarations of MessageOk functions for the current node.
+    fn message_ok_fn_decls(&self) -> String;
+    /// Definitions of MessageOk functions for the current node.
+    fn message_ok_fn_defs(&self) -> String;
+}
+
+impl MessageOk for Codegen<'_> {
     fn message_ok_fn_name(&self, message: &str) -> String {
         format!("CANRX_is_message_{message}_ok")
     }
@@ -11,7 +22,7 @@ impl<'n> Codegen<'n> {
         format!("bool {}(void)", self.message_ok_fn_name(message))
     }
 
-    pub fn message_ok_fn_decls(&self) -> String {
+    fn message_ok_fn_decls(&self) -> String {
         // collect into vec
         let mut checks: Vec<_> = self
             .sorted_rx_messages
@@ -26,7 +37,7 @@ impl<'n> Codegen<'n> {
         checks.join("\n")
     }
 
-    pub fn message_ok_fn_defs(&self) -> String {
+    fn message_ok_fn_defs(&self) -> String {
         const TIME_TY: &str = "uint64_t";
 
         let mut checks = String::new();

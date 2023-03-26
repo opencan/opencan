@@ -1,6 +1,7 @@
 use indoc::formatdoc;
 use opencan_core::CANMessageKind;
 
+use crate::message_ok::MessageOk;
 use crate::node_ok::NodeOk;
 use crate::Codegen;
 use crate::CodegenOutput;
