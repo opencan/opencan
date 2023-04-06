@@ -1,12 +1,13 @@
 use indoc::formatdoc;
+use opencan_core::CANMessage;
 
 use crate::{message::MessageCodegen, Codegen, Indent};
 
 pub trait MessageOk {
     /// Name of the MessageOk function for the RX message.
-    fn message_ok_fn_name(&self, message: &str) -> String;
+    fn message_ok_fn_name(&self, message: &CANMessage) -> String;
     /// Declaration of the MessageOk function for the RX message.
-    fn message_ok_fn_decl(&self, message: &str) -> String;
+    fn message_ok_fn_decl(&self, message: &CANMessage) -> String;
     /// Declarations of MessageOk functions for the current node.
     fn message_ok_fn_decls(&self) -> String;
     /// Definitions of MessageOk functions for the current node.
@@ -14,11 +15,11 @@ pub trait MessageOk {
 }
 
 impl MessageOk for Codegen<'_> {
-    fn message_ok_fn_name(&self, message: &str) -> String {
-        format!("CANRX_is_message_{message}_ok")
+    fn message_ok_fn_name(&self, message: &CANMessage) -> String {
+        format!("CANRX_is_message_{}_ok", message.name)
     }
 
-    fn message_ok_fn_decl(&self, message: &str) -> String {
+    fn message_ok_fn_decl(&self, message: &CANMessage) -> String {
         format!("bool {}(void)", self.message_ok_fn_name(message))
     }
 
@@ -27,7 +28,7 @@ impl MessageOk for Codegen<'_> {
         let mut checks: Vec<_> = self
             .sorted_rx_messages
             .iter()
-            .map(|m| format!("{};", self.message_ok_fn_decl(&m.name)))
+            .map(|message| format!("{};", self.message_ok_fn_decl(message)))
             .collect();
 
         // sort by node name
@@ -78,7 +79,7 @@ impl MessageOk for Codegen<'_> {
 
                     return false;
                 }}\n\n",
-                decl = self.message_ok_fn_decl(&message.name),
+                decl = self.message_ok_fn_decl(&message),
             }
         }
 
