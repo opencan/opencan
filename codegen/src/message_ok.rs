@@ -3,7 +3,7 @@ use opencan_core::CANMessage;
 
 use crate::{message::MessageCodegen, Codegen, Indent};
 
-pub trait MessageOk {
+pub trait MessageStatusCodegen {
     /// Name of the MessageOk function for the RX message.
     fn message_ok_fn_name(&self, message: &CANMessage) -> String;
     /// Declaration of the MessageOk function for the RX message.
@@ -14,7 +14,7 @@ pub trait MessageOk {
     fn message_ok_fn_defs(&self) -> String;
 }
 
-impl MessageOk for Codegen<'_> {
+impl MessageStatusCodegen for Codegen<'_> {
     fn message_ok_fn_name(&self, message: &CANMessage) -> String {
         format!("CANRX_is_message_{}_ok", message.name)
     }

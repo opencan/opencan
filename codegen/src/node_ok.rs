@@ -4,7 +4,7 @@ use indoc::formatdoc;
 
 use crate::{message::MessageCodegen, Codegen, Indent};
 
-pub trait NodeOk {
+pub trait NodeStatusCodegen {
     /// Name of the NodeOk function for the node.
     fn node_ok_fn_name(&self, node: &str) -> String;
     /// Declaration of the NodeOk function for the node.
@@ -17,7 +17,7 @@ pub trait NodeOk {
     fn node_ok_fn_defs(&self) -> String;
 }
 
-impl NodeOk for Codegen<'_> {
+impl NodeStatusCodegen for Codegen<'_> {
     fn node_ok_fn_name(&self, node: &str) -> String {
         format!("CANRX_is_node_{node}_ok")
     }
