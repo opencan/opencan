@@ -9,9 +9,9 @@ pub trait MessageStatusCodegen {
     /// Declaration of the `message_ok` function for the given RX message.
     fn message_ok_fn_decl(&self, message: &CANMessage) -> String;
     /// Declarations of the `message_ok` functions for all of our RX messages.
-    fn message_ok_fn_decls(&self) -> String;
+    fn all_rx_messages_ok_fn_decls(&self) -> String;
     /// Definitions of the `message_ok` functions for all of our RX messages.
-    fn message_ok_fn_defs(&self) -> String;
+    fn all_rx_messages_ok_fn_defs(&self) -> String;
 }
 
 impl MessageStatusCodegen for Codegen<'_> {
@@ -23,7 +23,7 @@ impl MessageStatusCodegen for Codegen<'_> {
         format!("bool {}(void)", self.message_ok_fn_name(message))
     }
 
-    fn message_ok_fn_decls(&self) -> String {
+    fn all_rx_messages_ok_fn_decls(&self) -> String {
         // collect into vec
         let mut checks: Vec<_> = self
             .sorted_rx_messages
@@ -38,7 +38,7 @@ impl MessageStatusCodegen for Codegen<'_> {
         checks.join("\n")
     }
 
-    fn message_ok_fn_defs(&self) -> String {
+    fn all_rx_messages_ok_fn_defs(&self) -> String {
         const TIME_TY: &str = "uint64_t";
 
         let mut checks = String::new();

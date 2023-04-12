@@ -127,8 +127,8 @@ impl<'n> Codegen<'n> {
             rx_handler = Self::RX_HANDLER_FN_NAME,
             rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
             rx_fn_name = Self::ID_TO_RX_FN_NAME,
-            node_checks = self.node_ok_fn_decls(),
-            message_checks = self.message_ok_fn_decls(),
+            node_checks = self.all_rx_nodes_ok_fn_decls(),
+            message_checks = self.all_rx_messages_ok_fn_decls(),
         }
     }
 
@@ -259,8 +259,8 @@ impl<'n> Codegen<'n> {
             rx_h = CodegenOutput::RX_H_NAME,
             std_incl = Self::common_std_includes(),
             id_to_rx_def = self.rx_id_to_decode_fn(),
-            node_checks = self.node_ok_fn_defs(),
-            message_checks = self.message_ok_fn_defs(),
+            node_checks = self.all_rx_nodes_ok_fn_defs(),
+            message_checks = self.all_rx_messages_ok_fn_defs(),
         }
     }
 

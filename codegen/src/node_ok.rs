@@ -12,9 +12,9 @@ pub trait NodeStatusCodegen {
     /// Definition of the `node_ok` function for the given node.
     fn node_ok_fn_def(&self, node: &str) -> String;
     /// Declarations of the `node_ok` functions for all nodes we RX messages from.
-    fn node_ok_fn_decls(&self) -> String;
+    fn all_rx_nodes_ok_fn_decls(&self) -> String;
     /// Definitions of the `node_ok` functions for all nodes we RX messages from.
-    fn node_ok_fn_defs(&self) -> String;
+    fn all_rx_nodes_ok_fn_defs(&self) -> String;
 }
 
 impl NodeStatusCodegen for Codegen<'_> {
@@ -91,7 +91,7 @@ impl NodeStatusCodegen for Codegen<'_> {
         }
     }
 
-    fn node_ok_fn_decls(&self) -> String {
+    fn all_rx_nodes_ok_fn_decls(&self) -> String {
         let mut checks: HashMap<String, String> = HashMap::new();
 
         for msg in &self.sorted_rx_messages {
@@ -118,7 +118,7 @@ impl NodeStatusCodegen for Codegen<'_> {
             .into()
     }
 
-    fn node_ok_fn_defs(&self) -> String {
+    fn all_rx_nodes_ok_fn_defs(&self) -> String {
         let mut checks: HashMap<String, String> = HashMap::new();
 
         for msg in &self.sorted_rx_messages {
