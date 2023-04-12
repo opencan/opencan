@@ -11,7 +11,7 @@ anyhow = "1.0.70"
 float-cmp = "0.9.0"
 libloading = "0.7.4"
 pyo3 = { version = "0.18.2", features = ["auto-initialize"] }
-tempfile = "3.4.0"
+tempfile = "3.5.0"
 
 opencan-codegen = { path = "../" }
 opencan-core = { path = "../../core" }
