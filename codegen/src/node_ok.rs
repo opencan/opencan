@@ -5,15 +5,15 @@ use indoc::formatdoc;
 use crate::{message::MessageCodegen, Codegen, Indent};
 
 pub trait NodeStatusCodegen {
-    /// Name of the NodeOk function for the node.
+    /// Name of the `node_ok` function for the given node.
     fn node_ok_fn_name(&self, node: &str) -> String;
-    /// Declaration of the NodeOk function for the node.
+    /// Declaration of the `node_ok` function for the given node.
     fn node_ok_fn_decl(&self, node: &str) -> String;
-    /// Definition of the NodeOk function for the node.
+    /// Definition of the `node_ok` function for the given node.
     fn node_ok_fn_def(&self, node: &str) -> String;
-    /// Declarations of NodeOk functions for the current node.
+    /// Declarations of the `node_ok` functions for all nodes we RX messages from.
     fn node_ok_fn_decls(&self) -> String;
-    /// Definitions of NodeOk functions for the current node.
+    /// Definitions of the `node_ok` functions for all nodes we RX messages from.
     fn node_ok_fn_defs(&self) -> String;
 }
 

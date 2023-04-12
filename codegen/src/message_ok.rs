@@ -4,13 +4,13 @@ use opencan_core::CANMessage;
 use crate::{message::MessageCodegen, Codegen, Indent};
 
 pub trait MessageStatusCodegen {
-    /// Name of the MessageOk function for the RX message.
+    /// Name of the `message_ok` function for the given RX message.
     fn message_ok_fn_name(&self, message: &CANMessage) -> String;
-    /// Declaration of the MessageOk function for the RX message.
+    /// Declaration of the `message_ok` function for the given RX message.
     fn message_ok_fn_decl(&self, message: &CANMessage) -> String;
-    /// Declarations of MessageOk functions for the current node.
+    /// Declarations of the `message_ok` functions for all of our RX messages.
     fn message_ok_fn_decls(&self) -> String;
-    /// Definitions of MessageOk functions for the current node.
+    /// Definitions of the `message_ok` functions for all of our RX messages.
     fn message_ok_fn_defs(&self) -> String;
 }
 
