@@ -8,7 +8,7 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.70"
-clap = { version = "4.1.11", features = ["cargo", "derive" ] }
+clap = { version = "4.2.2", features = ["cargo", "derive" ] }
 git-version = "0.3.5"
 indoc = "2.0.1"
 textwrap = { version = "0.16.0", default-features = false }
@@ -17,8 +17,8 @@ opencan-core = { path = "../core" }
 
 [dev-dependencies]
 indoc = "2.0.1"
-libloading = "0.7.4"
-pyo3 = { version = "0.18.2", features = ["auto-initialize"] }
+libloading = "0.8.0"
+pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
 semver = "1.0.17"
 
 opencan-compose = { path = "../compose" }
