@@ -17,7 +17,9 @@ CAN is inexpensive, powerful, and should be simple. OpenCAN is there to make
 that happen. Our goals:
 
 - Be free and open-source.
-- Make CAN as easy to possible for you to use for your projects.
+- Make CAN as easy to possible for you to use for your projects. This means
+  OpenCAN primarily focuses on making new CAN systems, rather than interacting
+  with or reverse engineering existing ones.
 - Choose simplicity over breadth of features.
 - Coalesce open-source CAN efforts behind a new network format description
   to replace the closed-source DBC standard.
@@ -38,7 +40,7 @@ Every message is composed of two important parts - the ***message id*** and the
 
 The message data typically contains more than one piece of information.
 
-Let's start thinking in terms of an example. Say we want to broadcast both the
+Let's start thinking in terms of an example: say we want to broadcast both the
 temperature inside and outside a car using CAN. If each temperature measurement
 fits in 1 byte, we could put both of them in a single two-byte message, and
 decide that the first byte is, say, the temperature outside, and the second
@@ -75,4 +77,39 @@ knowledge of how to interpret all the kinds of messages.
     The other usage of 'message' refers to a predefined id + arrangement
     of signals. Both of these usages are common in the field, and like most,
     OpenCAN uses them interchangeably.
+
+## Naming and Conventions
+
+These are the naming conventions that OpenCAN follows.
+
+### Nodes and Messages
+
+Each node on the network generally has a name and sends messages that 'belong'
+to it. Every message has an owning node and can only be sent by that node.
+
+While this is not a hardware limitation of CAN, it is a nearly universal
+practice and is generally how you want to do it. OpenCAN only supports this
+scheme and does not support sending the same message from multiple nodes.
+
+### Nodes
+Every node has a unique uppercase name like `BRAKE` or `THROTTLE`.
+
+### Messages
+Every message has a unique corresponding name. The name is unique across the
+network and exactly corresponds to a message id and layout.
+
+Message names start with the node they come from, followed by an underscore,
+and then an UpperCamelCase descriptive name, like `BRAKE_CaliperTemperatures`.
+
+### Signals
+Every signal also has a unique corresponding name, unique across the entire
+network.
+
+Signal names start with the node they come from, followed by an underscore,
+and then a lowerCamelCase descriptive name, like `BRAKE_leftFrontCaliperTemp`.
+
+Signal names do not include the names of the message they come from and are
+unique across the *network*, not just the message. For more information, see
+(link).
+
 
