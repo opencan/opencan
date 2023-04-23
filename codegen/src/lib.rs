@@ -75,7 +75,10 @@ impl<'n> Codegen<'n> {
 
                 messages.sort_by_key(|m| m.id);
 
-                messages
+                messages // skip our own tx messages
+                    .into_iter()
+                    .filter(|m| m.tx_node().is_some_and(|n| n != args.node))
+                    .collect()
             },
             sorted_tx_messages: {
                 let mut messages = net.tx_messages_by_node(&args.node).unwrap();

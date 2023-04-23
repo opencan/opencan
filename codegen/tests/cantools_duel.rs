@@ -53,6 +53,10 @@ fn basic_compare_decoders() -> Result<()> {
     let opencan = CodegenDecoder::new(&net, "TEST")?;
 
     for node in net.iter_nodes() {
+        if node.name == "TEST" {
+            continue;
+        }
+
         eprintln!("---- Node: {}", node.name);
         for msg in net
             .tx_messages_by_node(&node.name)
