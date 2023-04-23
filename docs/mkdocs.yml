@@ -1,0 +1,11 @@
+site_name: OpenCAN
+theme:
+  name: material
+  palette:
+    accent: orange
+    primary: orange
+    scheme: slate
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
