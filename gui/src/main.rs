@@ -1,9 +1,9 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{collections::BTreeMap, sync::mpsc, process::exit};
+use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
-use eframe::egui::{self};
+use eframe::egui::{self, TextStyle::Monospace};
 use egui_extras::{Column, TableBuilder};
 use pycanrs::{PyCanBusType, PyCanMessage};
 
@@ -11,7 +11,12 @@ struct Gui {
     messages: mpsc::Receiver<PyCanMessage>,
 
     /// Message ID -> last data
-    message_history: BTreeMap<u32, PyCanMessage>,
+    message_history: BTreeMap<u32, RecievedMessage>,
+}
+
+struct RecievedMessage {
+    msg: PyCanMessage,
+    count: u32,
 }
 
 fn main() -> Result<()> {
@@ -58,19 +63,29 @@ fn main() -> Result<()> {
 impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // drain messages from channel
+        // todo: performance pinch point. we should probably not do this in the egui update loop.
         while let Ok(msg) = self.messages.try_recv() {
-            self.message_history.insert(msg.arbitration_id, msg);
+            let count = if let Some(prev) = self.message_history.get(&msg.arbitration_id) {
+                prev.count
+            } else {
+                0
+            };
+
+            self.message_history
+                .insert(msg.arbitration_id, RecievedMessage { msg, count: count + 1 });
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
+            ui.style_mut().override_text_style = Some(Monospace);
             ui.vertical(|ui| {
                 TableBuilder::new(ui)
                     .striped(true)
                     .resizable(true)
-                    .column(Column::auto().at_least(30.0).clip(true).resizable(true))
-                    .column(Column::auto().at_least(50.0).clip(true).resizable(true))
-                    .column(Column::remainder())
-                    .header(20.0, |mut header| {
+                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
+                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
+                    .column(Column::auto().at_least(200.0).clip(true).resizable(true))
+                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
+                    .header(30.0, |mut header| {
                         header.col(|ui| {
                             ui.heading("ID");
                         });
@@ -80,18 +95,34 @@ impl eframe::App for Gui {
                         header.col(|ui| {
                             ui.heading("Message");
                         });
+                        header.col(|ui| {
+                            ui.heading("Count");
+                        });
                     })
                     .body(|body| {
                         let row_height = 40.0;
                         let num_rows = self.message_history.len();
 
                         body.rows(row_height, num_rows, |row_index, mut row| {
-                            let (_, msg) = self.message_history.iter().nth(row_index).unwrap();
-
-                            let label = msg.to_string();
+                            let (id, msg) = self.message_history.iter().nth(row_index).unwrap();
 
                             row.col(|ui| {
-                                ui.label(label);
+                                ui.label(format!("0x{id:X}"));
+                            });
+                            row.col(|ui| {
+                                ui.label("Some message");
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    if let Some(data) = &msg.msg.data {
+                                        format!("{data:02X?}")
+                                    } else {
+                                        "(empty message)".into()
+                                    }
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(format!("{}", msg.count));
                             });
                         })
                     });
