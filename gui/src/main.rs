@@ -9,6 +9,7 @@ use opencan_core::{CANMessage, CANNetwork};
 use pycanrs::{PyCanBusType, PyCanMessage};
 
 mod decode;
+mod interface_selection;
 
 struct Gui {
     messages: mpsc::Receiver<PyCanMessage>,
@@ -103,6 +104,9 @@ impl eframe::App for Gui {
                 TableBuilder::new(ui)
                     .striped(true)
                     .resizable(true)
+                    .cell_layout(egui::Layout::centered_and_justified(
+                        egui::Direction::LeftToRight,
+                    ))
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(250.0).clip(true).resizable(true))
