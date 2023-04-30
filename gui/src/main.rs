@@ -105,7 +105,7 @@ impl eframe::App for Gui {
                     .resizable(true)
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
-                    .column(Column::auto().at_least(200.0).clip(true).resizable(true))
+                    .column(Column::auto().at_least(250.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(150.0).clip(true).resizable(true))
                     .header(25.0, |mut header| {
