@@ -1183,17 +1183,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "gui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "eframe",
- "egui_extras",
- "pycanrs",
- "tracing-subscriber",
-]
-
-[[package]]
 name = "hashbrown"
 version = "0.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1719,6 +1708,17 @@ dependencies = [
  "serde_json",
  "textwrap",
  "thiserror",
+]
+
+[[package]]
+name = "opencan-juice"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "eframe",
+ "egui_extras",
+ "pycanrs",
+ "tracing-subscriber",
 ]
 
 [[package]]
