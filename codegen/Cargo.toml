@@ -1,6 +1,6 @@
 [package]
 name = "opencan-codegen"
-version = "0.1.0"
+version = "0.1.1"
 license = "MPL-2.0"
 edition = "2021"
 
@@ -10,14 +10,14 @@ edition = "2021"
 anyhow = "1.0.71"
 clap = { version = "4.2.5", features = ["cargo", "derive" ] }
 git-version = "0.3.5"
-indoc = "1.0.9"
+indoc = "2.0.1"
 textwrap = { version = "0.16.0", default-features = false }
 
 opencan-core = { path = "../core" }
 
 [dev-dependencies]
-indoc = "1.0.9"
-libloading = "0.7.4"
+indoc = "2.0.1"
+libloading = "0.8.0"
 pyo3 = { version = "0.18.3", features = ["auto-initialize"] }
 semver = "1.0.17"
 

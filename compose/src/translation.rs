@@ -16,6 +16,11 @@ impl YDesc {
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
 
+        // Bitrate
+        if let Some(b) = self.bitrate {
+            net.set_bitrate(b);
+        }
+
         // Add all the templates to the network
         for tmap in &self.message_templates {
             let (name, tdesc) = unmap(tmap);
@@ -145,17 +150,17 @@ impl YMessage {
             return Ok(msg);
         }
 
+        // If we don't have a signals field, make a raw message
+        let Some(signals) = &self.signals else {
+            return Ok(CANMessage::new_raw(msg_name, self.id, self.cycletime, Some(node_name)));
+        };
+
         // First, make a CANMessageBuilder.
         let mut can_msg = CANMessageBuilder::default()
             .name(msg_name)
             .id(self.id)
             .cycletime(self.cycletime)
             .tx_node(node_name);
-
-        // Make sure we have a signals field
-        let Some(signals) = &self.signals else {
-            return Err(anyhow!("Message `{msg_name}` should have a `signals:` field if it's not a template instance, even if empty."));
-        };
 
         // Add signals
         can_msg = Self::add_signals_to_message_builder(can_msg, signals, &format!("{node_name}_"))
@@ -203,7 +208,9 @@ impl YSignal {
         let mut new_sig = CANSignal::builder()
             .name(sig_name)
             .description(self.description.clone())
-            .scale(self.scale);
+            .twos_complement(self.twos_complement)
+            .scale(self.scale)
+            .offset(self.offset);
 
         // Translate each enumerated value
         for h in &self.enumerated_values {

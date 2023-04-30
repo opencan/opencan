@@ -1,15 +1,30 @@
 name: Rust
 
 on:
-  push:
   pull_request:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
+  pre_job:
+    # continue-on-error: true # Uncomment once integration is finished
+    runs-on: ubuntu-latest
+    outputs:
+      should_skip: ${{ steps.skip_check.outputs.should_skip }}
+    steps:
+      - id: skip_check
+        uses: fkirc/skip-duplicate-actions@v5
+
   # Recommended pipeline from cargo-deny-action
   cargo-deny:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
+
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -22,18 +37,28 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
     - uses: EmbarkStudios/cargo-deny-action@v1
       with:
         command: check ${{ matrix.checks }}
 
   build:
+    needs: pre_job
+    if: needs.pre_job.outputs.should_skip != 'true'
+
     runs-on: ubuntu-latest
 
     steps:
+    - uses: actions/checkout@v3
+    - uses: Swatinem/rust-cache@v2
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+        cache: 'pip'
     - name: Install Python testing dependencies
       run: pip3 install cantools
-    - uses: actions/checkout@v3
     - name: Build
       run: cargo build --verbose
     - name: Run tests
       run: cargo test --verbose
+

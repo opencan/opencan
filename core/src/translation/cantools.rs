@@ -16,6 +16,14 @@ fn option_to_py<T: Display>(opt: &Option<T>) -> String {
     }
 }
 
+fn bool_to_py(b: bool) -> &'static str {
+    if b {
+        "True"
+    } else {
+        "False"
+    }
+}
+
 impl TranslationLayer for CantoolsTranslator {
     fn dump_network(net: &CANNetwork) -> String {
         let mut messages = Vec::new();
@@ -76,6 +84,7 @@ impl TranslationLayer for CantoolsTranslator {
                 comment = {:?},
                 scale = {},
                 offset = {},
+                is_signed = {},
                 choices = {{
             {}
                 }},
@@ -87,6 +96,7 @@ impl TranslationLayer for CantoolsTranslator {
             option_to_py(&s.sig.description),
             s.sig.scale.unwrap_or(1.0),
             s.sig.offset.unwrap_or(0.0),
+            bool_to_py(s.sig.twos_complement),
             indent(&Self::signal_py_choices(&s.sig), &" ".repeat(8))
         )
     }

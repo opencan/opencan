@@ -5,5 +5,7 @@ members = [
     "compose",
     "cli",
     "codegen",
+    "codegen/testutil",
+    "analyze",
     "gui",
 ]

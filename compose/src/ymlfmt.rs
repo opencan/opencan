@@ -44,7 +44,12 @@ pub struct YSignal {
 
     pub description: Option<String>,
 
+    #[serde(default)]
+    pub twos_complement: bool,
+
     pub scale: Option<f32>,
+    pub offset: Option<f32>,
+
     pub unit: Option<String>,
 
     #[serde(default)]
@@ -106,4 +111,7 @@ pub struct YDesc {
 
     #[serde(default)]
     pub message_templates: Vec<HashMap<String, YMessageTemplate>>,
+
+    #[serde(default)]
+    pub bitrate: Option<u32>,
 }

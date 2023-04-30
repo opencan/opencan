@@ -3,6 +3,7 @@ use std::path::Path;
 
 use anyhow::{anyhow, Result};
 use clap::Parser;
+use opencan_analyze::Analyze;
 use opencan_codegen::{Codegen, CodegenOutput};
 
 #[derive(clap::Parser)]
@@ -13,6 +14,11 @@ struct PrimaryArgs {
 
 #[derive(clap::Subcommand)]
 enum Command {
+    /// Analyze
+    Analyze {
+        /// Input .yml file
+        in_file: String,
+    },
     /// Compose a CAN network using a definitions file
     Compose(opencan_compose::Args),
     Codegen {
@@ -39,6 +45,16 @@ fn main() -> Result<()> {
     // 1. (compose <- yml) -> network.json
     // 2. codegen <- network.json
     match args.subcommand {
+        Command::Analyze { in_file } => {
+            let net = opencan_compose::compose(opencan_compose::Args {
+                in_file,
+                dump_json: false,
+                dump_python: false,
+            })?;
+            let ana = Analyze::new(&net);
+            ana.print_bus_load();
+            Ok(())
+        }
         Command::Compose(a) => opencan_compose::compose(a).map(|_| ()),
         Command::Codegen {
             cg_args,

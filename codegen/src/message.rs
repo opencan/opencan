@@ -24,7 +24,14 @@ pub trait MessageCodegen {
     fn rx_fn_decl(&self) -> String;
     /// Definition of the RX handler function for this message.
     fn rx_fn_def(&self) -> String;
+    /// Name of the RX user callback function for this message.
+    fn rx_callback_fn_name(&self) -> String;
+    /// Declaration of the RX user callback function for this message.
+    fn rx_callback_fn_decl(&self) -> String;
+    /// Stub (empty) RX user callback function.
+    fn rx_callback_fn_stub(&self) -> String;
 
+    /// Identifier for the global last-RX timestamp for this message.
     fn rx_timestamp_ident(&self) -> String;
 
     /// Name of the TX handler function for this message.
@@ -33,10 +40,12 @@ pub trait MessageCodegen {
     fn tx_fn_decl(&self) -> String;
     /// Definition of the TX handler function for this message.
     fn tx_fn_def(&self) -> String;
-    /// Name of the TX user populate callback for this message.
+    /// Name of the TX user populate function for this message.
     fn tx_populate_fn_name(&self) -> String;
     /// Declaration of the TX user populate function for this message.
     fn tx_populate_fn_decl(&self) -> String;
+    /// Stub (empty) TX user populate function.
+    fn tx_populate_fn_stub(&self) -> String;
 
     /// Declarations of the signal getter functions for this message.
     fn getter_fn_decls(&self) -> String;
@@ -47,14 +56,14 @@ pub trait MessageCodegen {
 
     /// Fix up signal name within structs for template-derived messages.
     fn normalize_struct_signal_name(&self, name: &str) -> String;
-
-    /// Stub (empty) tx function for tests.
-    fn tx_stub(&self) -> String;
 }
 
 impl MessageCodegen for CANMessage {
     fn struct_ty(&self) -> String {
         match self.kind() {
+            CANMessageKind::Raw => {
+                panic!("Tried to get struct_ty for raw message `{}`", self.name);
+            }
             CANMessageKind::Independent => {
                 format!("struct CAN_Message_{}", self.name)
             }
@@ -112,6 +121,9 @@ impl MessageCodegen for CANMessage {
 
     fn raw_struct_ty(&self) -> String {
         match self.kind() {
+            CANMessageKind::Raw => {
+                panic!("Tried to get raw_struct_ty for raw message `{}`", self.name);
+            }
             CANMessageKind::Independent => {
                 format!("struct CAN_MessageRaw_{}", self.name)
             }
@@ -176,7 +188,7 @@ impl MessageCodegen for CANMessage {
             bool {}(
                 const uint8_t * data,
                 uint_fast8_t len
-            );",
+            )",
             self.rx_fn_name()
         }
     }
@@ -186,6 +198,26 @@ impl MessageCodegen for CANMessage {
     }
 
     fn rx_fn_def(&self) -> String {
+        // Is this a raw message?
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            return formatdoc! {"
+                bool {}(
+                    const uint8_t * const data,
+                    const uint_fast8_t len
+                )
+                {{
+                    // Stub right into user callback
+                    {}(data, len);
+
+                    return true;
+                }}",
+                self.rx_fn_name(),
+                self.rx_callback_fn_name()
+            };
+        }
+
+        // Not a raw message.
+
         /* function comment */
         let comment = formatdoc! {"
             /**
@@ -218,12 +250,6 @@ impl MessageCodegen for CANMessage {
         };
 
         /* unpacking */
-        let unpack_start = formatdoc! {"
-            /* ------- Unpack signals ------- */
-            {rawty} raw = {{0}};",
-            rawty = self.raw_struct_ty()
-        };
-
         let mut unpack = String::new();
 
         for sigbit in &self.signals {
@@ -255,6 +281,11 @@ impl MessageCodegen for CANMessage {
                 "Too many bits for me :P, please fix for CAN FD"
             );
 
+            let unpack_ty = self.sig_ty_raw_before_sign_extension(sig);
+
+            let unpack_var = format!("unpack__{sig_name}");
+            unpack += &format!("{unpack_ty} {unpack_var} = 0;\n");
+
             let mut pos = bit;
             let sig_end = sigbit.end();
             while pos <= sig_end {
@@ -275,9 +306,7 @@ impl MessageCodegen for CANMessage {
                 let mask = format!("0x{mask:02x}");
 
                 unpack += &formatdoc! {"
-                    raw.{name} |= ({rawty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
-                    name = sig_name,
-                    rawty = self.sig_ty_raw(sig),
+                    {unpack_var} |= ({unpack_ty})((data[{byte}U] & ({mask}U << {mask_shift}U)) >> {mask_shift}U) << {sig_pos}U;\n",
                     sig_pos = pos - bit
                 };
 
@@ -289,6 +318,42 @@ impl MessageCodegen for CANMessage {
 
         let unpack = unpack.trim();
 
+        /* sign extension + populate raw struct */
+        // The sign extensions go before the raw struct, but we'll build both in parallel.
+        let mut raw_struct = format!("const {} raw = {{", self.raw_struct_ty());
+        let mut sign_extensions = String::new();
+        for sigbit in &self.signals {
+            let sig = &sigbit.sig;
+            let sig_name = self.normalize_struct_signal_name(&sigbit.sig.name);
+
+            let unpacked_val = if self.sig_needs_sign_extension(sig) {
+                let extended = format!("unpack_ext__{sig_name}");
+
+                sign_extensions += &formatdoc! {"
+                    {ty} {extended} = 0;
+                    {{
+                        const struct {{ {ty} x : {width}; }} x = {{
+                            .x = unpack__{sig_name},
+                        }};
+                        unpack_ext__{sig_name} = x.x;
+                    }}
+                    ",
+                    ty = self.sig_ty_raw(sig),
+                    width = sig.width,
+                };
+
+                extended
+            } else {
+                format!("unpack__{sig_name}")
+            };
+
+            raw_struct += &format!("\n    .{sig_name} = {unpacked_val},");
+        }
+        raw_struct += "\n};";
+
+        let raw_struct = raw_struct.trim();
+        let sign_extensions = sign_extensions.trim();
+
         /* decode */
         // We need to take each of the raw signals we just unpacked
         // and apply some set of transformations to them.
@@ -296,11 +361,7 @@ impl MessageCodegen for CANMessage {
         // todo for later bounds checks: a facility for signals being strictly enumerated?
         // todo  -> that is, ensure a signal can only be one of its enumerated values
 
-        let decode_start = formatdoc! {"
-            /* ------- Decode signals ------- */
-            {decty} dec = {{0}};",
-            decty = self.struct_ty()
-        };
+        let decode_start = format!("{} dec = {{0}};", self.struct_ty());
 
         let mut decode = String::new();
 
@@ -322,7 +383,7 @@ impl MessageCodegen for CANMessage {
 
         /* set global variables */
         let set_global = formatdoc! {"
-            /* Set global data. */
+            /* ------- Set global data ------- */
             {global_raw} = raw;
             {global_dec} = dec;
             {timestamp} = CAN_callback_get_system_time();",
@@ -331,21 +392,42 @@ impl MessageCodegen for CANMessage {
             timestamp = self.rx_timestamp_ident(),
         };
 
+        /* maybe call user rx callback */
+        let user_callback = if self.cycletime.is_none() {
+            formatdoc! {"
+                \n/* ------- Call user rx callback ------- */
+                {}(&raw, &dec);
+                ",
+                self.rx_callback_fn_name()
+            }
+        } else {
+            "".into()
+        };
+
         /* stitch it all together */
         let body = formatdoc! {"
             {length_cond}
 
-            {unpack_start}
+            /* ------- Unpack signals ------- */
 
             {unpack}
 
+            /* --- Perform sign extension --- */
+
+            {sign_extensions}
+
+            /* -- Populate raw value struct -- */
+
+            {raw_struct}
+
+            /* ------- Decode signals ------- */
 
             {decode_start}
 
             {decode}
 
             {set_global}
-
+            {user_callback}
             return true;"
         }
         .indent(4);
@@ -359,6 +441,53 @@ impl MessageCodegen for CANMessage {
         }
     }
 
+    fn rx_callback_fn_name(&self) -> String {
+        format!("CANRX_onRxCallback_{}", self.name)
+    }
+
+    fn rx_callback_fn_decl(&self) -> String {
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                void {}(
+                    const uint8_t * const data,
+                    const uint8_t len)",
+                self.rx_callback_fn_name()
+            }
+        } else {
+            formatdoc!(
+                "
+                void {}(
+                    const {} * const raw,
+                    const {} * const dec)",
+                self.rx_callback_fn_name(),
+                self.raw_struct_ty(),
+                self.struct_ty()
+            )
+        }
+    }
+
+    fn rx_callback_fn_stub(&self) -> String {
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)data;
+                    (void)len;
+                }}",
+                self.rx_callback_fn_decl()
+            }
+        } else {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)raw;
+                    (void)dec;
+                }}",
+                self.rx_callback_fn_decl()
+            }
+        }
+    }
+
     fn tx_fn_name(&self) -> String {
         format!("CANTX_doTx_{}", self.name)
     }
@@ -368,6 +497,30 @@ impl MessageCodegen for CANMessage {
     }
 
     fn tx_fn_def(&self) -> String {
+        // Is this a raw message?
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            return formatdoc! {"
+                bool {fn_name}(void) {{
+                    /* Call user-provided populate function */
+
+                    // User will provide raw data and length.
+                    uint8_t data[8] = {{0}};
+                    uint8_t len = 0;
+                    {pop_fn}(data, &len);
+
+                    /* ------- Send message ------- */
+                    CAN_callback_enqueue_tx_message(data, len, 0x{id:X}U);
+
+                    return true;
+                }}",
+                fn_name = self.tx_fn_name(),
+                pop_fn = self.tx_populate_fn_name(),
+                id = self.id,
+            };
+        }
+
+        // Not a raw message.
+
         /* encoding */
         let mut encode = String::new();
 
@@ -432,10 +585,10 @@ impl MessageCodegen for CANMessage {
                 } else {
                     !(!0 << num_bits_from_this_byte)
                 };
-                let mask = format!("0x{mask:02x}");
+                let mask = format!("(({})0x{mask:02x}U)", self.sig_ty_raw(sig));
 
                 pack += &formatdoc! {"
-                    data[{byte}U] |= ((raw.{name} & ({mask}U << {sig_pos}U)) >> {sig_pos}U) << {mask_shift}U;\n",
+                    data[{byte}U] |= ((raw.{name} & ({mask} << {sig_pos}U)) >> {sig_pos}U) << {mask_shift}U;\n",
                     name = sig_name,
                     sig_pos = pos - bit
                 };
@@ -484,7 +637,7 @@ impl MessageCodegen for CANMessage {
 
     fn tx_populate_fn_name(&self) -> String {
         match self.kind() {
-            CANMessageKind::Independent => {
+            CANMessageKind::Independent | CANMessageKind::Raw => {
                 format!("CANTX_populate_{}", self.name)
             }
             CANMessageKind::Template => {
@@ -508,11 +661,39 @@ impl MessageCodegen for CANMessage {
     fn tx_populate_fn_decl(&self) -> String {
         // include the const in the decl even though we normally wouldn't -
         // user might copy the prototype.
-        format!(
-            "void {}({} * const m)",
-            self.tx_populate_fn_name(),
-            self.struct_ty()
-        )
+
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            format!(
+                "void {}(uint8_t * const data, uint8_t * const len)",
+                self.tx_populate_fn_name()
+            )
+        } else {
+            format!(
+                "void {}({} * const m)",
+                self.tx_populate_fn_name(),
+                self.struct_ty()
+            )
+        }
+    }
+
+    fn tx_populate_fn_stub(&self) -> String {
+        if matches!(self.kind(), CANMessageKind::Raw) {
+            formatdoc! {"
+                __attribute__((weak)) {}
+                {{
+                    (void)data;
+                    *len = 0;
+                }}",
+                self.tx_populate_fn_decl()
+            }
+        } else {
+            formatdoc! {"
+                __attribute__((weak)) {} {{
+                    (void)m;
+                }}",
+                self.tx_populate_fn_decl()
+            }
+        }
     }
 
     fn getter_fn_decls(&self) -> String {
@@ -592,15 +773,6 @@ impl MessageCodegen for CANMessage {
             name.strip_prefix(&prefix).unwrap().into()
         } else {
             name.into()
-        }
-    }
-
-    fn tx_stub(&self) -> String {
-        formatdoc! {"
-            __attribute__((weak)) {} {{
-                (void)m;
-            }}",
-            self.tx_populate_fn_decl()
         }
     }
 }

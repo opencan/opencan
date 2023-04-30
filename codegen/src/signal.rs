@@ -8,9 +8,13 @@ use crate::{message::MessageCodegen, Indent};
 pub enum CSignalTy {
     Bool,
     U8,
+    I8,
     U16,
+    I16,
     U32,
+    I32,
     U64,
+    I64,
     Float,
     Enum(String),
 }
@@ -23,9 +27,13 @@ impl Display for CSignalTy {
             match self {
                 Self::Bool => "bool",
                 Self::U8 => "uint8_t",
+                Self::I8 => "int8_t",
                 Self::U16 => "uint16_t",
+                Self::I16 => "int16_t",
                 Self::U32 => "uint32_t",
+                Self::I32 => "int32_t",
                 Self::U64 => "uint64_t",
+                Self::I64 => "int64_t",
                 Self::Float => "float", // todo: use a typedef?
                 Self::Enum(s) => s,
             }
@@ -34,10 +42,24 @@ impl Display for CSignalTy {
 }
 
 pub trait SignalCodegen {
+    /// C type for this signal for unpacking.
+    ///
+    /// This is like the raw type, but always unsigned,
+    /// as it is pre-sign extension.
+    fn sig_ty_raw_before_sign_extension(&self, sig: &CANSignal) -> CSignalTy;
     /// C type for this signal's raw value.
     fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy;
-    /// C type for this signal's decoded value.
+    /// Get the C type for the decoded signal.
+    ///
+    /// This does not take into account minimum/maximum capping - that is, this
+    /// gives the type for the entire _representable_ decoded range, not just
+    /// what's within the minimum/maximum additional bounds.
     fn sig_ty_decoded(&self, sig: &CANSignal) -> CSignalTy;
+    /// Whether this signal needs sign extension.
+    ///
+    /// Signals that are twos-complement and whose width is not an even power
+    /// of two need sign extension.
+    fn sig_needs_sign_extension(&self, sig: &CANSignal) -> bool;
 
     /// C enumeration for this signal's enumerated values, if any.
     fn c_enum(&self, sig: &CANSignal) -> Option<String>;
@@ -54,30 +76,61 @@ pub trait SignalCodegen {
 }
 
 impl SignalCodegen for CANMessage {
-    fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy {
-        match sig.width {
-            1 => CSignalTy::Bool,
-            2..=8 => CSignalTy::U8,
-            9..=16 => CSignalTy::U16,
-            17..=32 => CSignalTy::U32,
-            33..=64 => CSignalTy::U64,
-            w => panic!(
-                "Unexpectedly wide signal: `{}` is `{}` bits wide",
-                sig.name, w
-            ),
+    fn sig_ty_raw_before_sign_extension(&self, sig: &CANSignal) -> CSignalTy {
+        match self.sig_ty_raw(sig) {
+            CSignalTy::Bool => CSignalTy::Bool,
+            CSignalTy::I8 | CSignalTy::U8 => CSignalTy::U8,
+            CSignalTy::I16 | CSignalTy::U16 => CSignalTy::U16,
+            CSignalTy::I32 | CSignalTy::U32 => CSignalTy::U32,
+            CSignalTy::I64 | CSignalTy::U64 => CSignalTy::U64,
+            t => panic!("Unexpected raw type {t} for signal {}", sig.name),
         }
     }
 
-    /// Get the C type for the decoded signal.
-    ///
-    /// This does not take into account minimum/maximum capping - that is, this
-    /// gives the type for the entire _representable_ decoded range, not just
-    /// what's within the minimum/maximum additional bounds.
+    fn sig_ty_raw(&self, sig: &CANSignal) -> CSignalTy {
+        if sig.twos_complement {
+            match sig.width {
+                1 => panic!(
+                    "Signal `{}` has width 1 but also twos_complement=true",
+                    sig.name
+                ),
+                2..=8 => CSignalTy::I8,
+                9..=16 => CSignalTy::I16,
+                17..=32 => CSignalTy::I32,
+                33..=64 => CSignalTy::I64,
+                w => panic!(
+                    "Unexpectedly wide signal: `{}` is `{}` bits wide",
+                    sig.name, w
+                ),
+            }
+        } else {
+            match sig.width {
+                1 => CSignalTy::Bool,
+                2..=8 => CSignalTy::U8,
+                9..=16 => CSignalTy::U16,
+                17..=32 => CSignalTy::U32,
+                33..=64 => CSignalTy::U64,
+                w => panic!(
+                    "Unexpectedly wide signal: `{}` is `{}` bits wide",
+                    sig.name, w
+                ),
+            }
+        }
+    }
+
+    fn sig_needs_sign_extension(&self, sig: &CANSignal) -> bool {
+        matches!(
+            self.sig_ty_raw(sig),
+            CSignalTy::I8 | CSignalTy::I16 | CSignalTy::I32 | CSignalTy::I64
+        ) && !sig.width.is_power_of_two()
+    }
+
     fn sig_ty_decoded(&self, sig: &CANSignal) -> CSignalTy {
         // todo: support for both enumerated and continuous decoded getters
         if !sig.enumerated_values.is_empty() {
             // CSignalTy::Enum(format!("enum CAN_{}", sig.name))
             let name = match self.kind() {
+                CANMessageKind::Raw => panic!("Raw message should not have signals"),
                 CANMessageKind::Independent => format!("enum CAN_{}", sig.name),
                 CANMessageKind::Template => format!("enum CAN_T_{}_{}", self.name, sig.name),
                 CANMessageKind::FromTemplate(t) => format!(
@@ -115,6 +168,7 @@ impl SignalCodegen for CANMessage {
 
         // choose prefix
         let prefix = match self.kind() {
+            CANMessageKind::Raw => panic!("Raw message should not have enums"),
             CANMessageKind::Independent => "CAN".into(),
             CANMessageKind::Template => format!("CAN_T_{}", self.name.to_uppercase()),
             CANMessageKind::FromTemplate(t) => format!("CAN_T_{}", t.to_uppercase()),
@@ -156,8 +210,8 @@ impl SignalCodegen for CANMessage {
         // do at all in this function.
 
         if matches!(self.sig_ty_decoded(sig), CSignalTy::Float) {
-            let scale = sig.scale.map_or("".into(), |s| format!(" * {s}f"));
-            let offset = sig.offset.map_or("".into(), |o| format!(" + {o}f"));
+            let scale = sig.scale.map_or("".into(), |s| format!(" * {s:?}f"));
+            let offset = sig.offset.map_or("".into(), |o| format!(" + {o:?}f"));
 
             format!(
                 "(({float_ty})({raw_rvalue}){scale}){offset}",
@@ -166,7 +220,7 @@ impl SignalCodegen for CANMessage {
         } else {
             // Just copy the raw signal.
 
-            // For now,, these should be None according to the logic in .c_ty_decoded()
+            // For now, these should be None according to the logic in .c_ty_decoded()
             assert!(sig.offset.is_none());
             assert!(sig.scale.is_none());
 
@@ -177,8 +231,8 @@ impl SignalCodegen for CANMessage {
     // Similar logic and notes as above
     fn encoding_expression(&self, sig: &CANSignal, dec_rvalue: &str) -> String {
         if matches!(self.sig_ty_decoded(sig), CSignalTy::Float) {
-            let scale = sig.scale.map_or("".into(), |s| format!(" / {s}f"));
-            let offset = sig.offset.map_or("".into(), |o| format!(" - {o}f"));
+            let scale = sig.scale.map_or("".into(), |s| format!(" / {s:?}f"));
+            let offset = sig.offset.map_or("".into(), |o| format!(" - {o:?}f"));
 
             format!(
                 "({raw_ty})((({dec_rvalue}){scale}){offset})",

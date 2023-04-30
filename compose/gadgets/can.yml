@@ -1,14 +1,6 @@
 ---
 
-# templategroups:
-#   dbwnodes:
-#     - BLINK
-#     - THROTTLE
-#     - BRAKE
-#     - ENCF
-#     - ENCR
-#     - PB
-#     - STEER
+bitrate: 500000
 
 message_templates:
 - DBWNodeInfo:
@@ -73,10 +65,16 @@ nodes:
         from_template: DBWNodeStatus
         id: 0xE0
 
+    - FatSignal: # test 64 bit wide signal
+        id: 0xF0
+        signals:
+          - fatSignal:
+              width: 64
 - THROTTLE:
     rx:
     - DBW_Active
     - DBW_VelCmd
+    - TEST_FatSignal
     messages:
     - NodeInfo:
         from_template: DBWNodeInfo
@@ -123,7 +121,8 @@ nodes:
 
     - BrakeData:
           id: 0x11
-          cycletime: 100
+        #   disabled cycletime to get some coverage for RX user callbacks
+        #   cycletime: 100
 
           signals:
             - frequency:
@@ -221,7 +220,8 @@ nodes:
               # minimum: -0.610865238
               # maximum: 0.610865238
               scale: 0.000000001
-              # is_signed: true
+              offset: 0.02
+              twos_complement: true
               width: 32
 
           - encoderTimeoutSet:
