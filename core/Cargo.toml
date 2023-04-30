@@ -5,13 +5,13 @@ license = "MPL-2.0"
 edition = "2021"
 
 [dependencies]
-bimap = { version = "0.6.2", features = ["serde"] }
+bimap = { version = "0.6.3", features = ["serde"] }
 derive_builder = { version = "0.12.0", features = ["clippy"] }
-indoc = "1.0.8"
-serde = { version = "1.0.151", features = ["derive"] }
-serde_json = "1.0.91"
+indoc = "1.0.9"
+serde = { version = "1.0.160", features = ["derive"] }
+serde_json = "1.0.96"
 textwrap = { version = "0.16.0", default-features = false }
-thiserror = "1.0.38"
+thiserror = "1.0.40"
 
 [lib]
 path = "src/lib.rs"
