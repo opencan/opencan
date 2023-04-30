@@ -1,6 +1,6 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{collections::BTreeMap, sync::mpsc};
+use std::{collections::BTreeMap, sync::mpsc, process::exit};
 
 use anyhow::Result;
 use eframe::egui::{self};
@@ -17,6 +17,11 @@ struct Gui {
 fn main() -> Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
+
+    ctrlc::set_handler(|| {
+        eprintln!("Caught ctrl-c. Bye!");
+        exit(0);
+    })?;
 
     let (tx, rx) = mpsc::channel();
 
