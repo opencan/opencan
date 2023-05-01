@@ -42,7 +42,7 @@ impl Gui {
 
     pub fn decode_signal(&self, signal: &CANSignal, raw: u64) -> String {
         if let Some(n) = signal.enumerated_values.get_by_right(&raw) {
-            n.clone()
+            n.to_owned()
         } else if signal.scale.is_some() || signal.offset.is_some() {
             let expanded = (raw as f64 * signal.scale.unwrap_or(1.)) + signal.offset.unwrap_or(0.);
             format!("{expanded:.1}") // todo make this format precision right

@@ -17,14 +17,13 @@ struct Gui {
     messages: mpsc::Receiver<PyCanMessage>,
 
     /// Message ID -> last data
-    message_history: BTreeMap<u32, RecievedMessage>,
+    message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
 
     network: CANNetwork,
 }
 
 struct RecievedMessage {
     pymsg: PyCanMessage,
-    opencan_msg: CANMessage,
     count: u32,
     last_timestamp: f64,
     cur_timestamp: f64,
@@ -80,24 +79,28 @@ impl eframe::App for Gui {
         // drain messages from channel
         // todo: performance pinch point. we should probably not do this in the egui update loop.
         while let Ok(msg) = self.messages.try_recv() {
-            let (count, last_time, last_opencan) =
-                // todo use get_mut rather than remove and insert; this is a mess
-                if let Some(prev) = self.message_history.remove(&msg.arbitration_id) {
-                    (prev.count, prev.cur_timestamp, prev.opencan_msg)
-                } else {
-                    (0, msg.timestamp.unwrap(), self.message_id_to_opencan(msg.arbitration_id))
-                };
-
-            self.message_history.insert(
-                msg.arbitration_id,
-                RecievedMessage {
-                    count: count + 1,
-                    last_timestamp: last_time,
+            // try to update existing message in history, else insert new one
+            if let Some((_, prev)) = self.message_history.get_mut(&msg.arbitration_id) {
+                *prev = RecievedMessage {
+                    count: prev.count + 1,
+                    last_timestamp: prev.cur_timestamp,
                     cur_timestamp: msg.timestamp.unwrap(),
-                    opencan_msg: last_opencan,
                     pymsg: msg,
-                },
-            );
+                };
+            } else {
+                self.message_history.insert(
+                    msg.arbitration_id,
+                    (
+                        self.message_id_to_opencan(msg.arbitration_id),
+                        RecievedMessage {
+                            count: 1,
+                            last_timestamp: msg.timestamp.unwrap(),
+                            cur_timestamp: msg.timestamp.unwrap(),
+                            pymsg: msg,
+                        },
+                    ),
+                );
+            }
         }
 
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -135,21 +138,24 @@ impl eframe::App for Gui {
                         let row_height = 100.0;
                         let num_rows = self.message_history.len();
 
+                        ctx.request_repaint();
+
                         body.rows(row_height, num_rows, |row_index, mut row| {
-                            let (id, msg) = self.message_history.iter().nth(row_index).unwrap();
+                            let (id, (opencan_msg, rx)) =
+                                self.message_history.iter().nth(row_index).unwrap();
 
                             row.col(|ui| {
                                 ui.label(format!("0x{id:X}"));
                             });
                             row.col(|ui| {
-                                ui.label(&msg.opencan_msg.name);
+                                ui.label(&opencan_msg.name);
                             });
                             row.col(|ui| {
                                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    ui.label(if let Some(data) = &msg.pymsg.data {
+                                    ui.label(if let Some(data) = &rx.pymsg.data {
                                         format!(
                                             "{data:02X?}\n{}",
-                                            self.decode_message(&msg.opencan_msg, data)
+                                            self.decode_message(opencan_msg, data)
                                         )
                                     } else {
                                         "(empty message)".into()
@@ -157,19 +163,17 @@ impl eframe::App for Gui {
                                 });
                             });
                             row.col(|ui| {
-                                ui.label(format!("{}", msg.count));
+                                ui.label(format!("{}", rx.count));
                             });
                             row.col(|ui| {
                                 ui.label(format!(
-                                    "{:.0}",
-                                    1000. * (msg.cur_timestamp - msg.last_timestamp)
+                                    "{:.0}", // todo moving average
+                                    1000. * (rx.cur_timestamp - rx.last_timestamp)
                                 ));
                             });
                         })
                     });
             });
         });
-
-        ctx.request_repaint();
     }
 }
