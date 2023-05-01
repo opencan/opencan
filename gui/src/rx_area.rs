@@ -17,15 +17,19 @@ impl Gui {
                 .cell_layout(Layout::centered_and_justified(Direction::LeftToRight))
                 .column(Column::auto().at_least(75.0).clip(false).resizable(false))
                 .column(Column::auto().at_least(100.0).clip(false).resizable(false))
-                .column(Column::auto().at_least(275.0).clip(false).resizable(true))
-                .column(Column::auto().at_least(100.0).clip(true).resizable(true))
-                .column(Column::auto().at_least(150.0).clip(true).resizable(true))
+                .column(Column::auto().at_least(100.0).clip(false).resizable(false))
+                .column(Column::auto().at_least(200.0).clip(false).resizable(false))
+                .column(Column::auto().at_least(100.0).clip(false).resizable(false))
+                .column(Column::auto().at_least(150.0).clip(false).resizable(false))
                 .header(25.0, |mut header| {
                     header.col(|ui| {
                         ui.heading("ID");
                     });
                     header.col(|ui| {
                         ui.heading("Name");
+                    });
+                    header.col(|ui| {
+                        ui.heading("Raw");
                     });
                     header.col(|ui| {
                         ui.heading("Message");
@@ -53,15 +57,19 @@ impl Gui {
                                 ui.label(&opencan_msg.name);
                             });
                             row.col(|ui| {
+                                // bodge add spaces around text for column spacing
+                                ui.label(if let Some(data) = &rx.pymsg.data {
+                                    format!(" {data:02X?} ")
+                                } else {
+                                    " (empty message) ".into()
+                                });
+                            });
+                            row.col(|ui| {
                                 ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    ui.separator();
                                     ui.label(if let Some(data) = &rx.pymsg.data {
-                                        format!(
-                                            "{data:02X?}\n{}",
-                                            self.decode_message(opencan_msg, data)
-                                        )
+                                        self.decode_message(opencan_msg, data)
                                     } else {
-                                        "(empty message)".into()
+                                        "(empty message) ".into()
                                     });
                                 });
                             });
@@ -88,7 +96,7 @@ impl Gui {
         self.row_heights = self
             .message_history
             .iter()
-            .map(|(_id, (oc, _r))| 30. + 15. * (oc.signals.len() as f32))
+            .map(|(_id, (oc, _r))| 20. + 15. * (oc.signals.len() as f32))
             .collect();
     }
 }

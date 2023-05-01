@@ -88,6 +88,7 @@ fn main() -> Result<()> {
     let gui = Gui::new(rx, network, can);
 
     let options = eframe::NativeOptions {
+        resizable: false,
         ..Default::default()
     };
 
@@ -97,7 +98,7 @@ fn main() -> Result<()> {
 }
 
 impl eframe::App for Gui {
-    fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+    fn update(&mut self, ctx: &egui::Context, frame: &mut eframe::Frame) {
         // drain messages from channel
         // todo: performance pinch point. we should probably not do this in the egui update loop.
         while let Ok(msg) = self.rx_channel.try_recv() {
@@ -127,6 +128,7 @@ impl eframe::App for Gui {
         }
 
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            ui.add_space(1.);
             self.status_bar(ui);
         });
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -134,7 +136,7 @@ impl eframe::App for Gui {
 
             let history = &mut self.cpu_time_history;
 
-            if let Some(t) = _frame.info().cpu_usage {
+            if let Some(t) = frame.info().cpu_usage {
                 if history.len() >= CPU_HISTORY_WINDOW {
                     history.rotate_right(1);
                     history[0] = t;
@@ -145,11 +147,13 @@ impl eframe::App for Gui {
 
             let avg = 1000. * history.iter().sum::<f32>() / history.len() as f32;
 
-            ui.label(format!(
-                "Average CPU usage per frame (last {CPU_HISTORY_WINDOW} frames): {avg:.1} ms"
-            ));
+            ui.centered_and_justified(|ui| {
+                ui.label(format!(
+                    "Average CPU usage per frame (last {CPU_HISTORY_WINDOW} frames): {avg:.1} ms"
+                ));
+            });
         });
 
-        ctx.request_repaint();
+        frame.set_window_size(ctx.used_size());
     }
 }
