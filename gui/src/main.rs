@@ -1,21 +1,17 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{
-    collections::{BTreeMap, VecDeque},
-    process::exit,
-    sync::mpsc,
-};
+use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
-use eframe::egui;
+use eframe::egui::{self};
 use opencan_core::{CANMessage, CANNetwork};
+use perf_panel::PerfPanel;
 use pycanrs::{PyCanBusType, PyCanInterface, PyCanMessage};
 
 mod decode;
+mod perf_panel;
 mod rx_area;
 mod status_bar;
-
-const CPU_HISTORY_WINDOW: usize = 20;
 
 struct Gui {
     rx_channel: mpsc::Receiver<PyCanMessage>,
@@ -29,7 +25,7 @@ struct Gui {
 
     interface: PyCanInterface,
 
-    cpu_time_history: VecDeque<f32>,
+    perf_panel: PerfPanel,
 }
 
 impl Gui {
@@ -44,7 +40,7 @@ impl Gui {
             row_heights: Vec::new(),
             network,
             interface,
-            cpu_time_history: VecDeque::with_capacity(CPU_HISTORY_WINDOW),
+            perf_panel: Default::default(),
         }
     }
 }
@@ -127,31 +123,15 @@ impl eframe::App for Gui {
             }
         }
 
+        self.perf_panel.maybe_show(ctx, frame);
+
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             ui.add_space(1.);
             self.status_bar(ui);
         });
+
         egui::CentralPanel::default().show(ctx, |ui| {
             self.rx_area(ui);
-
-            let history = &mut self.cpu_time_history;
-
-            if let Some(t) = frame.info().cpu_usage {
-                if history.len() >= CPU_HISTORY_WINDOW {
-                    history.rotate_right(1);
-                    history[0] = t;
-                } else {
-                    history.push_front(t);
-                }
-            }
-
-            let avg = 1000. * history.iter().sum::<f32>() / history.len() as f32;
-
-            ui.centered_and_justified(|ui| {
-                ui.label(format!(
-                    "Average CPU usage per frame (last {CPU_HISTORY_WINDOW} frames): {avg:.1} ms"
-                ));
-            });
         });
 
         frame.set_window_size(ctx.used_size());
