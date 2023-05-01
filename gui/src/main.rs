@@ -3,6 +3,7 @@
 use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
+use clap::Parser;
 use eframe::egui::{self};
 use opencan_core::{CANMessage, CANNetwork};
 use perf_panel::PerfPanel;
@@ -12,6 +13,13 @@ mod decode;
 mod perf_panel;
 mod rx_area;
 mod status_bar;
+
+#[derive(Parser)]
+struct Args {
+    /// Path to .yml network definitions file.
+    #[clap(short)]
+    yml: String,
+}
 
 struct Gui {
     rx_channel: mpsc::Receiver<PyCanMessage>,
@@ -56,6 +64,8 @@ fn main() -> Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
     tracing_subscriber::fmt::init();
 
+    let args = Args::parse();
+
     ctrlc::set_handler(|| {
         eprintln!("Caught ctrl-c. Bye!");
         exit(0);
@@ -78,8 +88,12 @@ fn main() -> Result<()> {
     // let can = pycanrs::PyCanInterface::new(PyCanBusType::Slcan { bitrate: 500000, serial_port: "/dev/tty.usbmodem11201".into() } )?;
     can.register_rx_callback(message_cb, error_cb)?;
 
-    let network =
-        opencan_compose::compose_str(include_str!("../../../../motorsports/can/can.yml")).unwrap();
+    let network = opencan_compose::compose(opencan_compose::Args {
+        in_file: args.yml,
+        dump_json: false,
+        dump_python: false,
+    })
+    .unwrap();
 
     let gui = Gui::new(rx, network, can);
 
