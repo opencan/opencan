@@ -2019,8 +2019,6 @@ dependencies = [
 [[package]]
 name = "pycanrs"
 version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "81515944f7b5875d4bb6fcdb35fa4dff421fd24fd2b7d7e1a1cfd5b057125805"
 dependencies = [
  "pyo3",
  "thiserror",

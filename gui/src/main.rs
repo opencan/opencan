@@ -1,25 +1,49 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
-use std::{collections::BTreeMap, process::exit, sync::mpsc};
+use std::{
+    collections::{BTreeMap, VecDeque},
+    process::exit,
+    sync::mpsc,
+};
 
 use anyhow::Result;
-use eframe::{
-    egui::{self, Layout, TextStyle::Monospace},
-    emath::Align,
-};
-use egui_extras::{Column, TableBuilder};
+use eframe::egui;
 use opencan_core::{CANMessage, CANNetwork};
-use pycanrs::{PyCanBusType, PyCanMessage};
+use pycanrs::{PyCanBusType, PyCanInterface, PyCanMessage};
 
 mod decode;
+mod rx_area;
+mod status_bar;
+
+const CPU_HISTORY_WINDOW: usize = 20;
 
 struct Gui {
-    messages: mpsc::Receiver<PyCanMessage>,
+    rx_channel: mpsc::Receiver<PyCanMessage>,
 
     /// Message ID -> last data
     message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
 
     network: CANNetwork,
+
+    interface: PyCanInterface,
+
+    cpu_time_history: VecDeque<f32>,
+}
+
+impl Gui {
+    pub fn new(
+        rx_channel: mpsc::Receiver<PyCanMessage>,
+        network: CANNetwork,
+        interface: PyCanInterface,
+    ) -> Self {
+        Self {
+            rx_channel,
+            message_history: BTreeMap::new(),
+            network,
+            interface,
+            cpu_time_history: VecDeque::with_capacity(CPU_HISTORY_WINDOW),
+        }
+    }
 }
 
 struct RecievedMessage {
@@ -47,7 +71,7 @@ fn main() -> Result<()> {
         std::process::exit(-1);
     };
 
-    let can = pycanrs::PyCanInterface::new(PyCanBusType::Socketcand {
+    let can = PyCanInterface::new(PyCanBusType::Socketcand {
         host: "side".into(),
         channel: "vcan0".into(),
         port: 30001,
@@ -58,11 +82,7 @@ fn main() -> Result<()> {
     let network =
         opencan_compose::compose_str(include_str!("../../../../motorsports/can/can.yml")).unwrap();
 
-    let gui = Gui {
-        messages: rx,
-        message_history: BTreeMap::new(),
-        network,
-    };
+    let gui = Gui::new(rx, network, can);
 
     let options = eframe::NativeOptions {
         initial_window_size: Some(egui::vec2(1000.0, 1000.0)),
@@ -78,7 +98,7 @@ impl eframe::App for Gui {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         // drain messages from channel
         // todo: performance pinch point. we should probably not do this in the egui update loop.
-        while let Ok(msg) = self.messages.try_recv() {
+        while let Ok(msg) = self.rx_channel.try_recv() {
             // try to update existing message in history, else insert new one
             if let Some((_, prev)) = self.message_history.get_mut(&msg.arbitration_id) {
                 *prev = RecievedMessage {
@@ -103,77 +123,30 @@ impl eframe::App for Gui {
             }
         }
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            ui.style_mut().override_text_style = Some(Monospace);
-            ui.vertical(|ui| {
-                TableBuilder::new(ui)
-                    .striped(true)
-                    .resizable(true)
-                    .cell_layout(egui::Layout::centered_and_justified(
-                        egui::Direction::LeftToRight,
-                    ))
-                    .column(Column::auto().at_least(75.0).clip(false).resizable(false))
-                    .column(Column::auto().at_least(100.0).clip(false).resizable(false))
-                    .column(Column::auto().at_least(250.0).clip(false).resizable(false))
-                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
-                    .column(Column::auto().at_least(150.0).clip(true).resizable(true))
-                    .header(25.0, |mut header| {
-                        header.col(|ui| {
-                            ui.heading("ID");
-                        });
-                        header.col(|ui| {
-                            ui.heading("Name");
-                        });
-                        header.col(|ui| {
-                            ui.heading("Message");
-                        });
-                        header.col(|ui| {
-                            ui.heading("Count");
-                        });
-                        header.col(|ui| {
-                            ui.heading("Cycle time (ms)");
-                        });
-                    })
-                    .body(|body| {
-                        let row_height = 100.0;
-                        let num_rows = self.message_history.len();
-
-                        ctx.request_repaint();
-
-                        body.rows(row_height, num_rows, |row_index, mut row| {
-                            let (id, (opencan_msg, rx)) =
-                                self.message_history.iter().nth(row_index).unwrap();
-
-                            row.col(|ui| {
-                                ui.label(format!("0x{id:X}"));
-                            });
-                            row.col(|ui| {
-                                ui.label(&opencan_msg.name);
-                            });
-                            row.col(|ui| {
-                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
-                                    ui.label(if let Some(data) = &rx.pymsg.data {
-                                        format!(
-                                            "{data:02X?}\n{}",
-                                            self.decode_message(opencan_msg, data)
-                                        )
-                                    } else {
-                                        "(empty message)".into()
-                                    });
-                                });
-                            });
-                            row.col(|ui| {
-                                ui.label(format!("{}", rx.count));
-                            });
-                            row.col(|ui| {
-                                ui.label(format!(
-                                    "{:.0}", // todo moving average
-                                    1000. * (rx.cur_timestamp - rx.last_timestamp)
-                                ));
-                            });
-                        })
-                    });
-            });
+        egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
+            self.status_bar(ui);
         });
+        egui::CentralPanel::default().show(ctx, |ui| {
+            self.rx_area(ui);
+
+            let history = &mut self.cpu_time_history;
+
+            if let Some(t) = _frame.info().cpu_usage {
+                if history.len() >= CPU_HISTORY_WINDOW {
+                    history.rotate_right(1);
+                    history[0] = t;
+                } else {
+                    history.push_front(t);
+                }
+            }
+
+            let avg = 1000. * history.iter().sum::<f32>() / history.len() as f32;
+
+            ui.label(format!(
+                "Average CPU usage per frame (last {CPU_HISTORY_WINDOW} frames): {avg:.1} ms"
+            ));
+        });
+
+        ctx.request_repaint();
     }
 }
