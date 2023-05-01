@@ -25,11 +25,11 @@ pub struct CANSignal {
 
     /// Numerical offset for this signal.
     #[builder(default)]
-    pub offset: Option<f32>,
+    pub offset: Option<f64>,
 
     /// Numerical scale for this signal.
     #[builder(default)]
-    pub scale: Option<f32>,
+    pub scale: Option<f64>,
 
     /// Bijective (bidirectional) map of enumerated values for this signal.
     #[builder(setter(custom), field(type = "bimap::BiMap<String, u64>"))]
