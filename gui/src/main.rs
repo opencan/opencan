@@ -3,13 +3,15 @@
 use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
-use eframe::egui::{self, TextStyle::Monospace};
+use eframe::{
+    egui::{self, Layout, TextStyle::Monospace},
+    emath::Align,
+};
 use egui_extras::{Column, TableBuilder};
 use opencan_core::{CANMessage, CANNetwork};
 use pycanrs::{PyCanBusType, PyCanMessage};
 
 mod decode;
-mod interface_selection;
 
 struct Gui {
     messages: mpsc::Receiver<PyCanMessage>,
@@ -107,9 +109,9 @@ impl eframe::App for Gui {
                     .cell_layout(egui::Layout::centered_and_justified(
                         egui::Direction::LeftToRight,
                     ))
-                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
-                    .column(Column::auto().at_least(100.0).clip(true).resizable(true))
-                    .column(Column::auto().at_least(250.0).clip(true).resizable(true))
+                    .column(Column::auto().at_least(75.0).clip(false).resizable(false))
+                    .column(Column::auto().at_least(100.0).clip(false).resizable(false))
+                    .column(Column::auto().at_least(250.0).clip(false).resizable(false))
                     .column(Column::auto().at_least(100.0).clip(true).resizable(true))
                     .column(Column::auto().at_least(150.0).clip(true).resizable(true))
                     .header(25.0, |mut header| {
@@ -143,13 +145,15 @@ impl eframe::App for Gui {
                                 ui.label(&msg.opencan_msg.name);
                             });
                             row.col(|ui| {
-                                ui.label(if let Some(data) = &msg.pymsg.data {
-                                    format!(
-                                        "{data:02X?}, aka: {}",
-                                        self.decode_message(&msg.opencan_msg, data)
-                                    )
-                                } else {
-                                    "(empty message)".into()
+                                ui.with_layout(Layout::left_to_right(Align::Center), |ui| {
+                                    ui.label(if let Some(data) = &msg.pymsg.data {
+                                        format!(
+                                            "{data:02X?}\n{}",
+                                            self.decode_message(&msg.opencan_msg, data)
+                                        )
+                                    } else {
+                                        "(empty message)".into()
+                                    });
                                 });
                             });
                             row.col(|ui| {
