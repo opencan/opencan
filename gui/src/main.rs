@@ -23,6 +23,8 @@ struct Gui {
     /// Message ID -> last data
     message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
 
+    row_heights: Vec<f32>,
+
     network: CANNetwork,
 
     interface: PyCanInterface,
@@ -39,6 +41,7 @@ impl Gui {
         Self {
             rx_channel,
             message_history: BTreeMap::new(),
+            row_heights: Vec::new(),
             network,
             interface,
             cpu_time_history: VecDeque::with_capacity(CPU_HISTORY_WINDOW),
@@ -85,7 +88,6 @@ fn main() -> Result<()> {
     let gui = Gui::new(rx, network, can);
 
     let options = eframe::NativeOptions {
-        initial_window_size: Some(egui::vec2(1000.0, 1000.0)),
         ..Default::default()
     };
 
@@ -120,6 +122,7 @@ impl eframe::App for Gui {
                         },
                     ),
                 );
+                self.recalculate_row_heights();
             }
         }
 
