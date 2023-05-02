@@ -15,9 +15,7 @@ impl TranslationToOpencan for DbcImporter {
             dbc: can_dbc::DBC::try_from(input.as_str()).unwrap(),
         };
 
-        // wtf here
         // Add all the nodes to the network
-        dbg!(&import.dbc.nodes());
         for node in &import.dbc.nodes().iter().next().unwrap().0 {
             net.add_node(node).unwrap();
         }
@@ -84,7 +82,6 @@ impl TranslationToOpencan for DbcImporter {
             // insert message into network
             net.insert_msg(msg.build().unwrap()).unwrap();
         }
-        // dbg!(&net);
     }
 }
 
@@ -101,7 +98,7 @@ impl DbcImporter {
             .name(dbc_signal.name())
             .width(dbc_signal.signal_size as _);
 
-        // twos complement?
+        // twos complement
         if matches!(dbc_signal.value_type(), can_dbc::ValueType::Signed) {
             sig = sig.twos_complement(true);
         }
@@ -171,7 +168,7 @@ impl DbcImporter {
             // actually add the enumerated values
             for val in enumerated_values {
                 let name = if occurences[&val.0] > 1 {
-                    // making unique names if there was more than one occurrence
+                    // make unique names if there was more than one occurrence
                     format!("{}_{}", val.1, &val.0)
                 } else {
                     val.0

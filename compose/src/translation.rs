@@ -94,9 +94,7 @@ impl YDesc {
     fn process_includes(&self, net: &mut CANNetwork) -> Result<()> {
         for include in &self.include {
             if include.ends_with(".dbc") {
-                dbg!("Found dbc!");
                 let dbc = std::fs::read_to_string(include)?;
-                // return Ok(Some(DbcImporter::import_network(dbc)));
                 DbcImporter::import_network(dbc, net);
             }
         }
