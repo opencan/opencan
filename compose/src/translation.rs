@@ -14,10 +14,11 @@ use crate::ymlfmt::*;
 impl YDesc {
     /// Make a `CANNetwork` from a `YDesc` (top-level yml description).
     pub fn into_network(self) -> Result<CANNetwork> {
-        let mut net = CANNetwork::new();
-
-        // Includes
-        self.process_includes()?;
+        let mut net = if let Some(net) = self.process_includes()? {
+            net
+        } else {
+            CANNetwork::new()
+        };
 
         // Bitrate
         if let Some(b) = self.bitrate {
@@ -91,16 +92,16 @@ impl YDesc {
         Ok(())
     }
 
-    fn process_includes(&self) -> Result<()> {
+    fn process_includes(&self) -> Result<Option<CANNetwork>> {
         for include in &self.include {
             if include.ends_with(".dbc") {
                 dbg!("Found dbc!");
                 let dbc = std::fs::read_to_string(include)?;
-                DbcImporter::import_network(dbc);
+                return Ok(Some(DbcImporter::import_network(dbc)));
             }
         }
 
-        Ok(())
+        Ok(None)
     }
 }
 
