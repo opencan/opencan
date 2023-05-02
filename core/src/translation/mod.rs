@@ -16,5 +16,5 @@ pub trait TranslationFromOpencan {
 /// Translation from other formats (e.g. `dbc`) to OpenCAN.
 
 pub trait TranslationToOpencan {
-    fn import_network(input: String) -> CANNetwork;
+    fn import_network(input: String, net: &mut CANNetwork);
 }

@@ -10,12 +10,10 @@ pub struct DbcImporter {
 }
 
 impl TranslationToOpencan for DbcImporter {
-    fn import_network(input: String) -> crate::CANNetwork {
+    fn import_network(input: String, net: &mut CANNetwork) {
         let import = Self {
             dbc: can_dbc::DBC::try_from(input.as_str()).unwrap(),
         };
-
-        let mut net = CANNetwork::new();
 
         // wtf here
         // Add all the nodes to the network
@@ -86,10 +84,7 @@ impl TranslationToOpencan for DbcImporter {
             // insert message into network
             net.insert_msg(msg.build().unwrap()).unwrap();
         }
-
-        dbg!(&net);
-
-        net
+        // dbg!(&net);
     }
 }
 
