@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use can_dbc::AttributeValuedForObjectType::MessageDefinitionAttributeValue;
 use can_dbc::ByteOrder;
 
 use crate::{CANMessage, CANNetwork, CANSignal, TranslationToOpencan};
@@ -21,20 +22,24 @@ impl TranslationToOpencan for DbcImporter {
         // wtf here
         // Add all the nodes to the network
         for node in &import.dbc.nodes().iter().next().unwrap().0 {
-            net.add_node(&node).unwrap();
+            net.add_node(node).unwrap();
         }
 
         // Add all the messages in each node to the network
         for dbc_msg in import.dbc.messages() {
+            let message_id = *dbc_msg.message_id();
+
             let mut msg = CANMessage::builder()
                 .name(dbc_msg.message_name())
-                .id(dbc_msg.message_id().0);
+                .id(message_id.0);
 
+            // tx node
             match dbc_msg.transmitter() {
                 can_dbc::Transmitter::NodeName(node) => msg = msg.tx_node(node),
                 can_dbc::Transmitter::VectorXXX => todo!("support for anonymous tx node"),
             }
 
+            // signals
             let mut opencan_signals: Vec<_> = dbc_msg
                 .signals()
                 .iter()
@@ -47,9 +52,39 @@ impl TranslationToOpencan for DbcImporter {
                 .collect();
 
             opencan_signals.sort_by_key(|s| s.0);
-
             msg = msg.add_signals_fixed(opencan_signals).unwrap();
 
+            // cycletime
+            let cycletime = import.dbc.attribute_values().iter().find_map(|a| {
+                if a.attribute_name() != "GenMsgCycleTime" {
+                    return None;
+                }
+
+                if let MessageDefinitionAttributeValue(id, v) = a.attribute_value() {
+                    if *id != message_id {
+                        return None;
+                    }
+
+                    let t = match v.as_ref().unwrap() {
+                        can_dbc::AttributeValue::AttributeValueU64(t) => *t as u32,
+                        can_dbc::AttributeValue::AttributeValueI64(t) => *t as u32,
+                        can_dbc::AttributeValue::AttributeValueF64(t) => *t as u32,
+                        can_dbc::AttributeValue::AttributeValueCharString(t) => {
+                            panic!("Didn't expect GenMsgCycleTime to be AttributeValueCharString ('{t}').")
+                        }
+                    };
+
+                    if t != 0 {
+                        return Some(t);
+                    }
+                }
+
+                None
+            });
+
+            msg = msg.cycletime(cycletime);
+
+            // insert message into network
             net.insert_msg(msg.build().unwrap()).unwrap();
         }
 
