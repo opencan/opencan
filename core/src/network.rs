@@ -18,6 +18,7 @@ pub struct CANNetwork {
     messages: Vec<CANMessage>,
 
     /// Map of all template-kind CANMessage in this network.
+    #[serde(serialize_with = "crate::sorted_map")]
     template_messages: HashMap<String, CANMessage>,
 
     /// index into .messages

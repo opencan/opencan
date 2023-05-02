@@ -9,9 +9,11 @@ pub struct CANNode {
     pub name: String,
 
     /// index into parent CANNetwork messages vec
+    #[serde(serialize_with = "crate::sorted_map")]
     pub(crate) tx_messages: HashMap<String, usize>,
 
     /// index into parent CANNetwork messages vec
+    #[serde(serialize_with = "crate::sorted_map")]
     pub(crate) rx_messages: HashMap<String, usize>,
 }
 

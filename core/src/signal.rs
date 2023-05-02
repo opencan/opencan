@@ -33,6 +33,7 @@ pub struct CANSignal {
 
     /// Bijective (bidirectional) map of enumerated values for this signal.
     #[builder(setter(custom), field(type = "bimap::BiMap<String, u64>"))]
+    #[serde(serialize_with = "crate::sorted_bimap_by_second")]
     pub enumerated_values: bimap::BiMap<String, u64>,
 
     // annoying hack
