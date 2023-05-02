@@ -106,6 +106,7 @@ pub struct YNode {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+#[serde(deny_unknown_fields)]
 pub struct YDesc {
     pub nodes: Vec<HashMap<String, YNode>>,
 
@@ -114,4 +115,7 @@ pub struct YDesc {
 
     #[serde(default)]
     pub bitrate: Option<u32>,
+
+    #[serde(default)]
+    pub include: Vec<String>,
 }

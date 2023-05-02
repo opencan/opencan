@@ -4,7 +4,7 @@ use std::fs;
 
 use anyhow::{Context, Result};
 use clap::Parser;
-use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
+use opencan_core::{translation::CantoolsTranslator, CANNetwork, TranslationFromOpencan};
 
 mod ymlfmt;
 use ymlfmt::*;

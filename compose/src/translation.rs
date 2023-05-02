@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use anyhow::{anyhow, Context, Result};
-use opencan_core::*;
+use opencan_core::{translation::DbcImporter, *};
 
 use crate::ymlfmt::*;
 
@@ -15,6 +15,9 @@ impl YDesc {
     /// Make a `CANNetwork` from a `YDesc` (top-level yml description).
     pub fn into_network(self) -> Result<CANNetwork> {
         let mut net = CANNetwork::new();
+
+        // Includes
+        self.process_includes()?;
 
         // Bitrate
         if let Some(b) = self.bitrate {
@@ -83,6 +86,18 @@ impl YDesc {
 
         for msg in msgs {
             net.insert_msg(msg)?;
+        }
+
+        Ok(())
+    }
+
+    fn process_includes(&self) -> Result<()> {
+        for include in &self.include {
+            if include.ends_with(".dbc") {
+                dbg!("Found dbc!");
+                let dbc = std::fs::read_to_string(include)?;
+                DbcImporter::import_network(dbc);
+            }
         }
 
         Ok(())

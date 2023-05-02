@@ -17,4 +17,5 @@ mod error;
 pub use error::*;
 
 pub mod translation;
-pub use translation::TranslationLayer as Translation;
+pub use translation::TranslationFromOpencan;
+pub use translation::TranslationToOpencan;

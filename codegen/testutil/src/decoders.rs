@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context, Result};
 use float_cmp::approx_eq;
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
-use opencan_core::{translation::CantoolsTranslator, CANNetwork, Translation};
+use opencan_core::{translation::CantoolsTranslator, CANNetwork, TranslationFromOpencan};
 use pyo3::{prelude::*, types::IntoPyDict};
 
 use crate::util::*;

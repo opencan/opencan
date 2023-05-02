@@ -10,7 +10,7 @@ use crate::signal::*;
 const MAX_MESSAGE_BIT: u32 = 63;
 
 /// [`CANSignal`] with its position (start bit) in its message.
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CANSignalWithPosition {
     bit: u32,
     pub sig: CANSignal,
@@ -32,7 +32,7 @@ impl CANSignalWithPosition {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum CANMessageKind {
     /// A raw message.
     /// Raw messages do not have a fixed length and cannot contain signals.
@@ -55,7 +55,7 @@ impl Default for CANMessageKind {
 }
 
 /// A validated description of a CAN message.
-#[derive(Serialize, Deserialize, Clone, Builder)]
+#[derive(Debug, Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANMessage {

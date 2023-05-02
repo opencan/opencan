@@ -6,7 +6,7 @@ use crate::error::*;
 use crate::message::*;
 use crate::node::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct CANNetwork {
     /// Bitrate for this network
     bitrate: Option<u32>,

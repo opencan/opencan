@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::*;
 
 /// A validated description of a CAN signal.
-#[derive(Serialize, Deserialize, Clone, Builder)]
+#[derive(Debug, Serialize, Deserialize, Clone, Builder)]
 #[builder(build_fn(name = "__build", error = "CANConstructionError", private))]
 #[builder(pattern = "owned")]
 pub struct CANSignal {

@@ -3,7 +3,7 @@ use std::fmt::Display;
 use indoc::formatdoc;
 use textwrap::indent;
 
-use super::TranslationLayer;
+use super::TranslationFromOpencan;
 use crate::*;
 
 /// Translation to `cantools` Python code.
@@ -24,7 +24,7 @@ fn bool_to_py(b: bool) -> &'static str {
     }
 }
 
-impl TranslationLayer for CantoolsTranslator {
+impl TranslationFromOpencan for CantoolsTranslator {
     fn dump_network(net: &CANNetwork) -> String {
         let mut messages = Vec::new();
         for msg in net.iter_messages() {

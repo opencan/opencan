@@ -509,6 +509,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "can-dbc"
+version = "5.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "9c2d32f0a7f3754502f84cb68e493a6765ce0978348a59efcb1bccf2ee19c255"
+dependencies = [
+ "derive-getters",
+ "nom",
+]
+
+[[package]]
 name = "cc"
 version = "1.0.79"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -757,6 +767,17 @@ name = "derivative"
 version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "fcc3dd5e9e9c0b295d6e1e4d811fb6f157d5ffd784b8d202fc62eac8035a770b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
+name = "derive-getters"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0122f262bf9c9a367829da84f808d9fb128c10ef283bbe7b0922a77cf07b2747"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -1841,6 +1862,7 @@ name = "opencan-core"
 version = "0.1.1"
 dependencies = [
  "bimap",
+ "can-dbc",
  "derive_builder",
  "indoc 2.0.1",
  "serde",
