@@ -120,22 +120,20 @@ impl eframe::App for Gui {
                     cur_timestamp: msg.timestamp.unwrap(),
                     pymsg: msg,
                 };
-            } else {
-                if let Some(oc) = self.message_id_to_opencan(msg.arbitration_id) {
-                    self.message_history.insert(
-                        msg.arbitration_id,
-                        (
-                            oc,
-                            RecievedMessage {
-                                count: 1,
-                                last_timestamp: msg.timestamp.unwrap(),
-                                cur_timestamp: msg.timestamp.unwrap(),
-                                pymsg: msg,
-                            },
-                        ),
-                    );
-                    self.recalculate_row_heights();
-                }
+            } else if let Some(oc) = self.message_id_to_opencan(msg.arbitration_id) {
+                self.message_history.insert(
+                    msg.arbitration_id,
+                    (
+                        oc,
+                        RecievedMessage {
+                            count: 1,
+                            last_timestamp: msg.timestamp.unwrap(),
+                            cur_timestamp: msg.timestamp.unwrap(),
+                            pymsg: msg,
+                        },
+                    ),
+                );
+                self.recalculate_row_heights();
             }
         }
 
