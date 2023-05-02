@@ -32,6 +32,12 @@ impl TranslationFromOpencan for CantoolsTranslator {
         }
 
         let messages = indent(messages.join(",\n").trim(), &" ".repeat(4));
+        let nodes: String = indent(
+            &net.iter_nodes()
+                .map(|n| format!("cantools.database.can.Node(\'{}\'),\n", n.name))
+                .collect::<String>(),
+            &" ".repeat(4),
+        );
 
         formatdoc! {"
             import cantools
@@ -40,7 +46,11 @@ impl TranslationFromOpencan for CantoolsTranslator {
             {messages}
             ]
 
-            db = cantools.database.can.Database(messages)
+            nodes = [
+            {nodes}
+            ]
+
+            db = cantools.database.can.Database(messages=messages, nodes=nodes)
             cantools.database.dump_file(db, 'opencan.dbc')
         "}
     }

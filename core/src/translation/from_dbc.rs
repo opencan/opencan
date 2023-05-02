@@ -15,12 +15,11 @@ impl TranslationToOpencan for DbcImporter {
             dbc: can_dbc::DBC::try_from(input.as_str()).unwrap(),
         };
 
-        dbg!(&import.dbc);
-
         let mut net = CANNetwork::new();
 
         // wtf here
         // Add all the nodes to the network
+        dbg!(&import.dbc.nodes());
         for node in &import.dbc.nodes().iter().next().unwrap().0 {
             net.add_node(node).unwrap();
         }
