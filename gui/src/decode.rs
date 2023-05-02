@@ -4,8 +4,9 @@ use opencan_core::{self, CANMessage, CANSignal};
 use crate::Gui;
 
 impl Gui {
-    pub fn message_id_to_opencan(&self, id: u32) -> CANMessage {
-        self.network.message_by_id(&id).unwrap().to_owned()
+    pub fn message_id_to_opencan(&self, id: u32) -> Option<CANMessage> {
+        // dbg!(id);
+        self.network.message_by_id(&id).cloned()
     }
 
     pub fn decode_message(&self, msg: &CANMessage, data: &[u8]) -> String {
@@ -15,7 +16,7 @@ impl Gui {
         let mut longest_sig_name = 0;
 
         for sigbit in &msg.signals {
-            let sigraw: u64 = bits[sigbit.start() as _..=sigbit.end() as _].load();
+            let sigraw: i64 = bits[sigbit.start() as _..=sigbit.end() as _].load();
 
             let len = sigbit.sig.name.len();
             if len > longest_sig_name {
@@ -40,8 +41,8 @@ impl Gui {
         )
     }
 
-    pub fn decode_signal(&self, signal: &CANSignal, raw: u64) -> String {
-        if let Some(n) = signal.enumerated_values.get_by_right(&raw) {
+    pub fn decode_signal(&self, signal: &CANSignal, raw: i64) -> String {
+        if let Some(n) = signal.enumerated_values.get_by_right(&(raw as _)) {
             n.to_owned()
         } else if signal.scale.is_some() || signal.offset.is_some() {
             let expanded = (raw as f64 * signal.scale.unwrap_or(1.)) + signal.offset.unwrap_or(0.);

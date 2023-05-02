@@ -1,7 +1,6 @@
-use std::{
-    any::Any,
-    collections::{HashMap, HashSet},
-};
+use std::collections::HashMap;
+
+use can_dbc::ByteOrder;
 
 use crate::{CANMessage, CANNetwork, CANSignal, TranslationToOpencan};
 
@@ -66,6 +65,9 @@ impl DbcImporter {
         dbc_msg: &can_dbc::Message,
         dbc_signal: &can_dbc::Signal,
     ) -> CANSignal {
+        let &message_id = dbc_msg.message_id();
+        let signal_name = dbc_signal.name();
+
         let mut sig = CANSignal::builder()
             .name(dbc_signal.name())
             .width(dbc_signal.signal_size as _);
@@ -75,18 +77,35 @@ impl DbcImporter {
             sig = sig.twos_complement(true);
         }
 
+        // endianness
+        assert!(
+            matches!(dbc_signal.byte_order(), ByteOrder::LittleEndian),
+            "OpenCAN doesn't support big-endian signals yet."
+        );
+
+        // scale
+        if dbc_signal.factor != 1.0 {
+            sig = sig.scale(Some(dbc_signal.factor));
+        }
+
+        // offset
+        if dbc_signal.offset != 0.0 {
+            sig = sig.offset(Some(dbc_signal.offset));
+        }
+
+        // description
+        if let Some(comment) = self.dbc.signal_comment(message_id, signal_name) {
+            sig = sig.description(Some(comment.to_owned()));
+        }
+
         // emumerated values
         if let Some(d) = self
             .dbc
-            .value_descriptions_for_signal(*dbc_msg.message_id(), dbc_signal.name())
+            .value_descriptions_for_signal(message_id, signal_name)
         {
             let mut enumerated_values: Vec<(String, u64)> = Vec::new();
 
             for val_desc in d {
-                // sig = sig
-                //     .add_enumerated_value(val_desc.b(), val_desc.a().try_into().unwrap())
-                //     .unwrap();
-
                 // unfortunately some people do insane things with their value descriptions.
                 // we are going to normalize these names and prevent collisions.
                 let name = val_desc.b();
