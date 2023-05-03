@@ -82,6 +82,18 @@ impl TranslationToOpencan for DbcImporter {
             // insert message into network
             net.insert_msg(msg.build().unwrap()).unwrap();
         }
+
+        // Build RX mapping
+        for dbc_msg in import.dbc.messages() {
+            for signal in dbc_msg.signals() {
+                for reciever in signal.receivers() {
+                    if reciever != "Vector__XXX" {
+                        net.set_message_rx_by_node(dbc_msg.message_name(), reciever)
+                            .unwrap();
+                    }
+                }
+            }
+        }
     }
 }
 

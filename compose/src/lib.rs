@@ -40,7 +40,7 @@ pub fn compose(args: Args) -> Result<CANNetwork> {
     }
 
     if args.dump_python {
-        println!("{}", CantoolsTranslator::dump_network(&net));
+        println!("{}", CantoolsTranslator::translate(&net));
     }
 
     Ok(net)

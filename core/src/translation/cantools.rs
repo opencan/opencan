@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::HashSet, fmt::Display};
 
 use indoc::formatdoc;
 use textwrap::indent;
@@ -7,7 +7,9 @@ use super::TranslationFromOpencan;
 use crate::*;
 
 /// Translation to `cantools` Python code.
-pub struct CantoolsTranslator;
+pub struct CantoolsTranslator<'n> {
+    net: &'n CANNetwork,
+}
 
 fn option_to_py<T: Display>(opt: &Option<T>) -> String {
     match opt {
@@ -24,16 +26,28 @@ fn bool_to_py(b: bool) -> &'static str {
     }
 }
 
-impl TranslationFromOpencan for CantoolsTranslator {
-    fn dump_network(net: &CANNetwork) -> String {
+impl<'n> TranslationFromOpencan for CantoolsTranslator<'n> {
+    fn translate(net: &CANNetwork) -> String {
+        CantoolsTranslator { net }.dump_network()
+    }
+}
+
+impl<'n> CantoolsTranslator<'n> {
+    pub fn new(net: &'n CANNetwork) -> Self {
+        CantoolsTranslator { net }
+    }
+
+    fn dump_network(&self) -> String {
         let mut messages = Vec::new();
-        for msg in net.iter_messages() {
-            messages.push(Self::dump_message(msg));
+        for msg in self.net.iter_messages() {
+            messages.push(self.dump_message(msg));
         }
 
         let messages = indent(messages.join(",\n").trim(), &" ".repeat(4));
         let nodes: String = indent(
-            &net.iter_nodes()
+            &self
+                .net
+                .iter_nodes()
                 .map(|n| format!("cantools.database.can.Node(\'{}\'),\n", n.name))
                 .collect::<String>(),
             &" ".repeat(4),
@@ -55,11 +69,11 @@ impl TranslationFromOpencan for CantoolsTranslator {
         "}
     }
 
-    fn dump_message(msg: &CANMessage) -> String {
+    pub fn dump_message(&self, msg: &CANMessage) -> String {
         let mut signals = Vec::new();
 
         for sig in &msg.signals {
-            signals.push(Self::dump_signal(sig));
+            signals.push(self.dump_signal(sig, msg));
         }
 
         formatdoc!(
@@ -84,12 +98,33 @@ impl TranslationFromOpencan for CantoolsTranslator {
         )
     }
 
-    fn dump_signal(s: &CANSignalWithPosition) -> String {
+    fn dump_signal(&self, s: &CANSignalWithPosition, msg: &CANMessage) -> String {
+        // DBC files indicate rx nodes by signal, not by message. Build a list
+        // of nodes that recieve this message.
+
+        let mut rx_nodes = HashSet::new();
+        for node in self.net.iter_nodes() {
+            if let Some(messages) = self.net.rx_messages_by_node(&node.name) {
+                if messages.iter().any(|m| m.name == msg.name) {
+                    rx_nodes.insert(node.name.clone());
+                }
+            }
+        }
+
+        let mut rx_nodes = rx_nodes
+            .into_iter()
+            .map(|s| format!("'{s}'"))
+            .collect::<Vec<String>>();
+        rx_nodes.sort();
+
         formatdoc!(
             "
             cantools.database.can.Signal(
                 name = {:?},
                 start = {},
+                receivers = [
+            {}
+                ],
                 length = {},
                 comment = {:?},
                 scale = {},
@@ -102,6 +137,7 @@ impl TranslationFromOpencan for CantoolsTranslator {
             ",
             s.sig.name,
             s.start(),
+            indent(&rx_nodes.join(",\n"), &" ".repeat(8)),
             s.sig.width,
             option_to_py(&s.sig.description),
             s.sig.scale.unwrap_or(1.0),
@@ -112,7 +148,7 @@ impl TranslationFromOpencan for CantoolsTranslator {
     }
 }
 
-impl CantoolsTranslator {
+impl CantoolsTranslator<'_> {
     fn signal_py_choices(s: &CANSignal) -> String {
         let mut ch: Vec<(&String, &u64)> = s.enumerated_values.iter().collect();
 

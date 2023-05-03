@@ -4,7 +4,7 @@ use anyhow::{anyhow, Context, Result};
 use float_cmp::approx_eq;
 use libloading::{Library, Symbol};
 use opencan_codegen::signal::{CSignalTy as CodegenCSignalTy, SignalCodegen};
-use opencan_core::{translation::CantoolsTranslator, CANNetwork, TranslationFromOpencan};
+use opencan_core::{translation::CantoolsTranslator, CANNetwork};
 use pyo3::{prelude::*, types::IntoPyDict};
 
 use crate::util::*;
@@ -181,7 +181,7 @@ impl Decoder for CantoolsDecoder<'_> {
                 .message_by_name(msg)
                 .context(format!("Message `{msg}` doesn't exist"))?;
 
-            let py_msg_code = CantoolsTranslator::dump_message(net_msg);
+            let py_msg_code = CantoolsTranslator::new(self.net).dump_message(net_msg);
             let py_msg = py.eval(&py_msg_code, None, Some(locals))?;
 
             // decode signals

@@ -30,16 +30,12 @@ impl CANNode {
     /// Add tx message to this node. Meant to be called by a CANNetwork impl only,
     /// and must ensure that this message name is unique across the network.
     pub(crate) fn add_tx_message(&mut self, name: &str, idx: usize) {
-        assert!(!self.tx_messages.contains_key(name));
-
         self.tx_messages.insert(name.into(), idx);
     }
 
     /// Add rx message to this node. Meant to be called by a CANNetwork impl only,
     /// and must ensure that this message name is unique across the network.
     pub(crate) fn add_rx_message(&mut self, name: &str, idx: usize) {
-        assert!(!self.rx_messages.contains_key(name));
-
         self.rx_messages.insert(name.into(), idx);
     }
 }
