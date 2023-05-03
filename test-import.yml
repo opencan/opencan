@@ -1,9 +1,0 @@
----
-include:
-  # - "/Users/dmezh/Downloads/20210505\ RMS\ PM\ and\ RM\ CAN\ DB.dbc"
-  # - "/Users/dmezh/selfdrive/build/can/igvc_can.dbc"
-  - "opencan.dbc"
-
-nodes:
-  - TEST2:
-      rx: "*"
