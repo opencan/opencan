@@ -1,6 +1,8 @@
 use indoc::formatdoc;
 use opencan_core::CANMessageKind;
 
+use crate::message_ok::MessageStatusCodegen;
+use crate::node_ok::NodeStatusCodegen;
 use crate::Codegen;
 use crate::CodegenOutput;
 use crate::Indent;
@@ -111,6 +113,12 @@ impl<'n> Codegen<'n> {
 
             {node_checks}
 
+            /*********************************************************/
+            /* Message Health Checks */
+            /*********************************************************/
+
+            {message_checks}
+
             #endif
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_H_NAME),
@@ -119,7 +127,8 @@ impl<'n> Codegen<'n> {
             rx_handler = Self::RX_HANDLER_FN_NAME,
             rx_fn_ptr = Self::RX_FN_PTR_TYPEDEF,
             rx_fn_name = Self::ID_TO_RX_FN_NAME,
-            node_checks = self.node_ok_fn_decls(),
+            node_checks = self.all_rx_nodes_ok_fn_decls(),
+            message_checks = self.all_rx_messages_ok_fn_decls(),
         }
     }
 
@@ -235,6 +244,12 @@ impl<'n> Codegen<'n> {
             /*********************************************************/
 
             {node_checks}
+
+            /*********************************************************/
+            /* Message Health Checks */
+            /*********************************************************/
+
+            {message_checks}
             ",
             greet = self.internal_prelude_greeting(CodegenOutput::RX_C_NAME),
             callbacks_h = CodegenOutput::CALLBACKS_H_NAME,
@@ -244,7 +259,8 @@ impl<'n> Codegen<'n> {
             rx_h = CodegenOutput::RX_H_NAME,
             std_incl = Self::common_std_includes(),
             id_to_rx_def = self.rx_id_to_decode_fn(),
-            node_checks = self.node_ok_fn_defs(),
+            node_checks = self.all_rx_nodes_ok_fn_defs(),
+            message_checks = self.all_rx_messages_ok_fn_defs(),
         }
     }
 
