@@ -29,7 +29,13 @@ impl TranslationToOpencan for DbcImporter {
                 let mux = import.dbc.message_multiplexor_switch(*m.message_id());
                 match mux {
                     Ok(None) => true,
-                    Ok(_) | Err(_) => false,
+                    Ok(_) | Err(_) => {
+                        eprintln!(
+                            "WARNING: ignoring multiplexed message `{}` during DBC import!",
+                            m.message_name()
+                        );
+                        false
+                    }
                 }
             })
             .collect();
