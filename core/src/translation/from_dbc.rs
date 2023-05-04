@@ -20,8 +20,22 @@ impl TranslationToOpencan for DbcImporter {
             net.add_node(node).unwrap();
         }
 
+        // Build list of messages, excluding multiplexed ones
+        let messages: Vec<_> = import
+            .dbc
+            .messages()
+            .iter()
+            .filter(|m| {
+                let mux = import.dbc.message_multiplexor_switch(*m.message_id());
+                match mux {
+                    Ok(None) => true,
+                    Ok(_) | Err(_) => false,
+                }
+            })
+            .collect();
+
         // Add all the messages in each node to the network
-        for dbc_msg in import.dbc.messages() {
+        for dbc_msg in &messages {
             let message_id = *dbc_msg.message_id();
 
             let mut msg = CANMessage::builder()
@@ -84,7 +98,7 @@ impl TranslationToOpencan for DbcImporter {
         }
 
         // Build RX mapping
-        for dbc_msg in import.dbc.messages() {
+        for dbc_msg in &messages {
             for signal in dbc_msg.signals() {
                 for reciever in signal.receivers() {
                     if reciever != "Vector__XXX" {
