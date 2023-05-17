@@ -22,12 +22,15 @@ impl MessageStatusCodegen for Codegen<'_> {
     }
 
     fn message_ok_fn_decl(&self, message: &CANMessage) -> String {
+        let Some(_) = message.cycletime else {
+            return "".into();
+        };
         format!("bool {}(void)", self.message_ok_fn_name(message))
     }
 
     fn message_ok_fn_def(&self, message: &CANMessage) -> String {
         let Some(cycletime) = message.cycletime else {
-            return "// No message_ok() for this message without cycletime".into();
+            return "".into();
         };
 
         const TIME_TY: &str = "uint64_t";
