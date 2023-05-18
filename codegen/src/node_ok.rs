@@ -4,7 +4,20 @@ use indoc::formatdoc;
 
 use crate::{message::MessageCodegen, Codegen, Indent};
 
-impl<'n> Codegen<'n> {
+pub trait NodeStatusCodegen {
+    /// Name of the `node_ok` function for the given node.
+    fn node_ok_fn_name(&self, node: &str) -> String;
+    /// Declaration of the `node_ok` function for the given node.
+    fn node_ok_fn_decl(&self, node: &str) -> String;
+    /// Definition of the `node_ok` function for the given node.
+    fn node_ok_fn_def(&self, node: &str) -> String;
+    /// Declarations of the `node_ok` functions for all nodes we RX messages from.
+    fn all_rx_nodes_ok_fn_decls(&self) -> String;
+    /// Definitions of the `node_ok` functions for all nodes we RX messages from.
+    fn all_rx_nodes_ok_fn_defs(&self) -> String;
+}
+
+impl NodeStatusCodegen for Codegen<'_> {
     fn node_ok_fn_name(&self, node: &str) -> String {
         format!("CANRX_is_node_{node}_ok")
     }
@@ -78,7 +91,7 @@ impl<'n> Codegen<'n> {
         }
     }
 
-    pub fn node_ok_fn_decls(&self) -> String {
+    fn all_rx_nodes_ok_fn_decls(&self) -> String {
         let mut checks: HashMap<String, String> = HashMap::new();
 
         for msg in &self.sorted_rx_messages {
@@ -105,7 +118,7 @@ impl<'n> Codegen<'n> {
             .into()
     }
 
-    pub fn node_ok_fn_defs(&self) -> String {
+    fn all_rx_nodes_ok_fn_defs(&self) -> String {
         let mut checks: HashMap<String, String> = HashMap::new();
 
         for msg in &self.sorted_rx_messages {
