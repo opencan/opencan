@@ -150,14 +150,17 @@ impl<'n> Codegen<'n> {
     fn tx_scheduler(&self) -> String {
         let mut messages = String::new();
 
-        for msg in &self.sorted_tx_messages {
+        // We use the index for decongestion: adding the index to the current
+        // time introduces a phase shift for each message.
+        // This is not a perfect way of doing it, but it helps a lot.
+        for (idx, msg) in self.sorted_tx_messages.iter().enumerate() {
             // skip messages with no cycletime
             let Some(cycletime) = msg.cycletime else {
                 continue;
             };
 
             messages += &formatdoc! {"
-                    if ((ms % {cycletime}U) == 0U) {{
+                    if (((ms + {idx}U) % {cycletime}U) == 0U) {{
                         {tx_fn}();
                     }}
 
