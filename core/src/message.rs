@@ -259,7 +259,7 @@ impl CANMessage {
             name: name.into(),
             id,
             cycletime,
-            length: 8, // todo: maybe make it an Option?
+            length: 0, // todo: maybe make it an Option?
             tx_node: tx_node.map(|t| t.into()),
             signals: Default::default(),
             sig_map: Default::default(),
