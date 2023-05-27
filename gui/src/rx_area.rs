@@ -92,11 +92,10 @@ impl Gui {
         }
     }
 
-    pub fn recalculate_row_heights(&mut self) {
-        self.row_heights = self
-            .message_history
+    pub fn recalculate_row_heights(&self) -> Vec<f32> {
+        self.message_history
             .iter()
             .map(|(_id, (oc, _r))| 20. + 15. * (oc.signals.len() as f32))
-            .collect();
+            .collect()
     }
 }

@@ -40,7 +40,7 @@ impl RawSignalValue for i64 {
 impl Gui {
     pub fn message_id_to_opencan(&self, id: u32) -> Option<CANMessage> {
         // dbg!(id);
-        self.network.message_by_id(&id).cloned()
+        self.network.as_ref().unwrap().message_by_id(&id).cloned()
     }
 
     pub fn decode_message(&self, msg: &CANMessage, data: &[u8]) -> String {
