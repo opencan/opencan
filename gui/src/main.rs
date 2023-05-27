@@ -4,6 +4,7 @@ use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
 use eframe::egui::{self};
+use interface_picker::InterfacePicker;
 use opencan_core::{CANMessage, CANNetwork};
 use perf_panel::PerfPanel;
 use pycanrs::{PyCanInterface, PyCanMessage};
@@ -12,6 +13,7 @@ mod decode;
 mod perf_panel;
 mod rx_area;
 mod status_bar;
+mod interface_picker;
 
 struct Interface {
     rx_channel: mpsc::Receiver<PyCanMessage>,
@@ -20,6 +22,8 @@ struct Interface {
 
 struct Gui {
     interface: Option<Interface>,
+
+    interface_picker: InterfacePicker,
 
     /// Message ID -> last data
     message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
@@ -35,6 +39,7 @@ impl Gui {
     pub fn new() -> Self {
         Self {
             interface: None,
+            interface_picker: Default::default(),
             message_history: BTreeMap::new(),
             row_heights: Vec::new(),
             network: None,
@@ -105,6 +110,7 @@ impl eframe::App for Gui {
         egui::CentralPanel::default().show(ctx, |ui| {
             if self.interface.is_none() {
                 ui.label("No interface connected");
+                self.interface_picker(ui);
             } else {
                 self.rx_area(ui);
             }
