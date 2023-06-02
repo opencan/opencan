@@ -17,8 +17,13 @@ impl<'n> Codegen<'n> {
                 /*********************************************************/
                 /* RX Message: {} */
                 /*********************************************************/
+
+                /*** Message ID ***/
+                #define CAN_MSG_{}_ID 0x{:X}U
                 ",
-                msg.name
+                msg.name,
+                msg.name,
+                msg.id,
             };
 
             // Is this a raw message?
