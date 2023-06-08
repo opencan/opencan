@@ -41,7 +41,13 @@ impl YDesc {
 
         // Add all the nodes to the network
         for (name, _) in nodes {
-            net.add_node(name)?;
+            // todo: for now, allow specifying nodes multiple times.
+            // if we don't have this, you can't yet have nodes defined partially in a DBC
+            // and partially in the yml.
+            match net.add_node(name) {
+                Ok(_) | Err(CANConstructionError::NodeAlreadyExists(_)) => Ok(()),
+                e => e
+            }?;
         }
 
         // Add all the messages in each node to the network
