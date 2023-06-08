@@ -30,7 +30,7 @@ pub struct Args {
 pub fn compose(args: Args) -> Result<CANNetwork> {
     let input = fs::read_to_string(&args.in_file).context("Failed to read input file")?;
 
-    let net = compose_str(&input).context(format!(
+    let net = compose_str(&input, &args.in_file).context(format!(
         "Failed to ingest specifications file {}",
         args.in_file
     ))?;
@@ -47,9 +47,11 @@ pub fn compose(args: Args) -> Result<CANNetwork> {
 }
 
 /// Compose YAML definitions from a `&str` directly.
-pub fn compose_str(input: &str) -> Result<CANNetwork> {
-    let de: YDesc =
+pub fn compose_str(input: &str, path: &str) -> Result<CANNetwork> {
+    let mut de: YDesc =
         serde_yaml::from_str(input).context("Failed to parse specifications.".to_string())?;
+
+    de.lookup_path = path.into();
 
     // We manually print out the error causes so we can use our own formatting rather than anyhow's.
     let net = match de.into_network() {

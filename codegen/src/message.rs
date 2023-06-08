@@ -585,7 +585,10 @@ impl MessageCodegen for CANMessage {
                 } else {
                     !(!0 << num_bits_from_this_byte)
                 };
-                let mask = format!("(({})0x{mask:02x}U)", self.sig_ty_raw_before_sign_extension(sig));
+                let mask = format!(
+                    "(({})0x{mask:02x}U)",
+                    self.sig_ty_raw_before_sign_extension(sig)
+                );
 
                 pack += &formatdoc! {"
                     data[{byte}U] |= ((raw.{name} & ({mask} << {sig_pos}U)) >> {sig_pos}U) << {mask_shift}U;\n",

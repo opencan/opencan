@@ -4,7 +4,7 @@
 //! We build signals/messages/nodes and ultimately hand back a [`CANNetwork`].
 //! Errors originating inside `opencan_core` are bubbled up.
 
-use std::collections::HashMap;
+use std::{collections::HashMap, path::Path};
 
 use anyhow::{anyhow, Context, Result};
 use opencan_core::{translation::DbcImporter, *};
@@ -94,8 +94,15 @@ impl YDesc {
     fn process_includes(&self, net: &mut CANNetwork) -> Result<()> {
         for include in &self.include {
             if include.ends_with(".dbc") {
-                let dbc = std::fs::read_to_string(include)?;
+                let path = Path::new(&self.lookup_path)
+                    .parent()
+                    .expect("path to .yml should have a parent")
+                    .join(include);
+                let dbc = std::fs::read_to_string(&path)
+                    .context(format!("Failed to import \'{}\'", &path.display()))?;
                 DbcImporter::import_network(dbc, net);
+            } else {
+                return Err(anyhow!("Unsupported file type for import \'{}\'", include));
             }
         }
 
