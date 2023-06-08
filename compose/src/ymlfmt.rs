@@ -118,4 +118,7 @@ pub struct YDesc {
 
     #[serde(default)]
     pub include: Vec<String>,
+
+    #[serde(default)]
+    pub lookup_path: String,
 }
