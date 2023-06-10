@@ -96,7 +96,7 @@ impl Gui {
         } else if signal.scale.is_some() || signal.offset.is_some() {
             let expanded =
                 (raw.to_f64() * signal.scale.unwrap_or(1.)) + signal.offset.unwrap_or(0.);
-            format!("{expanded:.1}") // todo make this format precision right
+            format!("{expanded:.3}") // todo make this format precision right
         } else {
             raw.to_string()
         }
