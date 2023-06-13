@@ -1,11 +1,11 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-use std::{collections::BTreeMap, process::exit, sync::mpsc};
+use std::{process::exit, sync::mpsc};
 
 use anyhow::Result;
 use eframe::egui::{self};
 use interface_picker::InterfacePicker;
 use motorsports::Motorsports;
-use opencan_core::{CANMessage, CANNetwork};
+use opencan_core::{CANNetwork};
 use perf_panel::PerfPanel;
 use pycanrs::{PyCanInterface, PyCanMessage};
 
@@ -13,7 +13,7 @@ mod decode;
 mod interface_picker;
 mod motorsports;
 mod perf_panel;
-mod rx_area;
+// mod rx_area;
 mod status_bar;
 
 struct Interface {
@@ -27,9 +27,9 @@ struct Gui {
     interface_picker: InterfacePicker,
 
     /// Message ID -> last data
-    message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
+    // message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
 
-    row_heights: Vec<f32>,
+    // row_heights: Vec<f32>,
 
     network: Option<CANNetwork>,
 
@@ -43,8 +43,8 @@ impl Gui {
         Self {
             interface: None,
             interface_picker: Default::default(),
-            message_history: BTreeMap::new(),
-            row_heights: Vec::new(),
+            // message_history: BTreeMap::new(),
+            // row_heights: Vec::new(),
             network: None,
             perf_panel: Default::default(),
             motorsports: Default::default(),
@@ -72,12 +72,12 @@ impl Gui {
     }
 }
 
-struct RecievedMessage {
-    pymsg: PyCanMessage,
-    count: u32,
-    last_timestamp: f64,
-    cur_timestamp: f64,
-}
+// struct RecievedMessage {
+//     pymsg: PyCanMessage,
+//     count: u32,
+//     last_timestamp: f64,
+//     cur_timestamp: f64,
+// }
 
 fn main() -> Result<()> {
     // Log to stdout (if you run with `RUST_LOG=debug`).
