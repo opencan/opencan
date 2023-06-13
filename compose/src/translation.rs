@@ -46,7 +46,7 @@ impl YDesc {
             // and partially in the yml.
             match net.add_node(name) {
                 Ok(_) | Err(CANConstructionError::NodeAlreadyExists(_)) => Ok(()),
-                e => e
+                e => e,
             }?;
         }
 

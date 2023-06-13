@@ -37,37 +37,44 @@ impl Gui {
             ComboBox::from_label("Select interface type")
                 .selected_text(label)
                 .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut self.interface_picker.interface, Some(SupportedInterface::Socketcand), "Socketcand");
+                    ui.selectable_value(
+                        &mut self.interface_picker.interface,
+                        Some(SupportedInterface::Socketcand),
+                        "Socketcand",
+                    );
                 });
 
-                let Some(iface) = self.interface_picker.interface.as_ref() else {
+            let Some(iface) = self.interface_picker.interface.as_ref() else {
                     return;
                 };
 
+            match iface {
+                SupportedInterface::Socketcand => {
+                    ui.add(TextEdit::singleline(&mut self.interface_picker.host).hint_text("Host"));
+                    ui.add(TextEdit::singleline(&mut self.interface_picker.port).hint_text("Port"));
+                    ui.add(
+                        TextEdit::singleline(&mut self.interface_picker.channel)
+                            .hint_text("Channel"),
+                    );
+                }
+            }
+
+            if ui.button("Connect").clicked() {
+                print!("{iface:?}");
+
                 match iface {
                     SupportedInterface::Socketcand => {
-                        ui.add(TextEdit::singleline(&mut self.interface_picker.host).hint_text("Host"));
-                        ui.add(TextEdit::singleline(&mut self.interface_picker.port).hint_text("Port"));
-                        ui.add(TextEdit::singleline(&mut self.interface_picker.channel).hint_text("Channel"));
+                        let bus = pycanrs::PyCanBusType::Socketcand {
+                            host: self.interface_picker.host.clone(),
+                            port: self.interface_picker.port.parse().unwrap(), // todo: handle error
+                            channel: self.interface_picker.channel.clone(),
+                        };
+
+                        let pycan_iface = pycanrs::PyCanInterface::new(bus).unwrap();
+                        self.assign_interface(pycan_iface).unwrap();
                     }
                 }
-
-                if ui.button("Connect").clicked() {
-                    print!("{iface:?}");
-
-                    match iface {
-                        SupportedInterface::Socketcand => {
-                            let bus = pycanrs::PyCanBusType::Socketcand {
-                                host: self.interface_picker.host.clone(),
-                                port: self.interface_picker.port.parse().unwrap(), // todo: handle error
-                                channel: self.interface_picker.channel.clone(),
-                            };
-
-                            let pycan_iface = pycanrs::PyCanInterface::new(bus).unwrap();
-                            self.assign_interface(pycan_iface).unwrap();
-                        }
-                    }
-                }
+            }
         });
         // for socketcand, we need to know the host, port, and channel
     }

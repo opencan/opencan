@@ -1,19 +1,20 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
-
 use std::{collections::BTreeMap, process::exit, sync::mpsc};
 
 use anyhow::Result;
 use eframe::egui::{self};
 use interface_picker::InterfacePicker;
+use motorsports::Motorsports;
 use opencan_core::{CANMessage, CANNetwork};
 use perf_panel::PerfPanel;
 use pycanrs::{PyCanInterface, PyCanMessage};
 
 mod decode;
+mod interface_picker;
+mod motorsports;
 mod perf_panel;
 mod rx_area;
 mod status_bar;
-mod interface_picker;
 
 struct Interface {
     rx_channel: mpsc::Receiver<PyCanMessage>,
@@ -33,6 +34,8 @@ struct Gui {
     network: Option<CANNetwork>,
 
     perf_panel: PerfPanel,
+
+    motorsports: Motorsports,
 }
 
 impl Gui {
@@ -44,6 +47,7 @@ impl Gui {
             row_heights: Vec::new(),
             network: None,
             perf_panel: Default::default(),
+            motorsports: Default::default(),
         }
     }
 
@@ -84,12 +88,30 @@ fn main() -> Result<()> {
         exit(0);
     })?;
 
-    let gui = Gui::new();
+    let mut gui = Gui::new();
+    gui.network = Some(
+        opencan_compose::compose(opencan_compose::Args {
+            in_file: "/Users/dmezh/motorsports/can/can.yml".into(),
+            dump_json: false,
+            dump_python: false,
+        })
+        .unwrap(),
+    );
 
     let options = eframe::NativeOptions {
         resizable: false,
         ..Default::default()
     };
+
+    let bus = pycanrs::PyCanBusType::Socketcand {
+        host: "side".into(),
+        port: 30001,
+        channel: "vcan0".into(),
+    };
+
+    let pycan_iface = pycanrs::PyCanInterface::new(bus).unwrap();
+
+    gui.assign_interface(pycan_iface).unwrap();
 
     eframe::run_native("Juice", options, Box::new(|_cc| Box::new(gui))).unwrap();
 
@@ -112,7 +134,7 @@ impl eframe::App for Gui {
                 ui.label("No interface connected");
                 self.interface_picker(ui);
             } else {
-                self.rx_area(ui);
+                self.motorsports.motorsports_gooey(ui);
             }
         });
 
@@ -130,27 +152,32 @@ impl Gui {
         // todo: performance pinch point. we should probably not do this in the egui update loop.
         while let Ok(msg) = iface.rx_channel.try_recv() {
             // try to update existing message in history, else insert new one
-            if let Some((_, prev)) = self.message_history.get_mut(&msg.arbitration_id) {
-                *prev = RecievedMessage {
-                    count: prev.count + 1,
-                    last_timestamp: prev.cur_timestamp,
-                    cur_timestamp: msg.timestamp.unwrap(),
-                    pymsg: msg,
-                };
-            } else if let Some(oc) = self.message_id_to_opencan(msg.arbitration_id) {
-                self.message_history.insert(
-                    msg.arbitration_id,
-                    (
-                        oc,
-                        RecievedMessage {
-                            count: 1,
-                            last_timestamp: msg.timestamp.unwrap(),
-                            cur_timestamp: msg.timestamp.unwrap(),
-                            pymsg: msg,
-                        },
-                    ),
-                );
-                self.row_heights = self.recalculate_row_heights();
+            // if let Some((_, prev)) = self.message_history.get_mut(&msg.arbitration_id) {
+            //     *prev = RecievedMessage {
+            //         count: prev.count + 1,
+            //         last_timestamp: prev.cur_timestamp,
+            //         cur_timestamp: msg.timestamp.unwrap(),
+            //         pymsg: msg,
+            //     };
+            // } else if let Some(oc) = self.message_id_to_opencan(msg.arbitration_id) {
+            //     self.message_history.insert(
+            //         msg.arbitration_id,
+            //         (
+            //             oc,
+            //             RecievedMessage {
+            //                 count: 1,
+            //                 last_timestamp: msg.timestamp.unwrap(),
+            //                 cur_timestamp: msg.timestamp.unwrap(),
+            //                 pymsg: msg,
+            //             },
+            //         ),
+            //     );
+            //     self.row_heights = self.recalculate_row_heights();
+            // }
+
+            if let Some(oc) = self.message_id_to_opencan(msg.arbitration_id) {
+                // motorsport
+                self.motorsports.ingest(&oc, msg.data.unwrap().as_slice());
             }
         }
     }
