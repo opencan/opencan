@@ -1,15 +1,21 @@
 use bitvec::prelude::*;
 use eframe::egui::Ui;
+use egui_extras::{Column, Table, TableBuilder};
 use opencan_core::{CANMessage, CANSignalWithPosition};
 
 pub struct Motorsports {
     pub vehicle_speed: f64,
     pub inv_dc_voltage: f64,
+    pub inv_dc_current: f64,
 }
 
 impl Default for Motorsports {
     fn default() -> Self {
-        Self { vehicle_speed: -999.0, inv_dc_voltage: -999.0 }
+        Self {
+            vehicle_speed: -999.0,
+            inv_dc_voltage: -99.0,
+            inv_dc_current: -99.0,
+        }
     }
 }
 
@@ -20,8 +26,42 @@ impl Motorsports {
         ui.vertical_centered(|ui| {
             ui.label(RichText::new("-- SLIM JIM --").font(FontId::proportional(40.0)));
             ui.label(
-                RichText::new(format!("{:.1}", self.vehicle_speed)).font(FontId::proportional(100.0)),
+                RichText::new(format!("{:.1}", self.vehicle_speed))
+                    .font(FontId::proportional(100.0)),
             );
+        });
+
+        TopBottomPanel::bottom("bottom_bar").show(ui.ctx(), |ui| {
+            ui.vertical(|ui| {
+                TableBuilder::new(ui)
+                    .column(Column::exact(180.).resizable(false))
+                    .column(Column::exact(180.).resizable(false))
+                    .cell_layout(Layout::centered_and_justified(Direction::LeftToRight))
+                    .header(30., |mut header| {
+                        header.col(|ui| {
+                            ui.heading("VDC (inv)");
+                        });
+                        header.col(|ui| {
+                            ui.heading("IDC (inv)");
+                        });
+                    })
+                    .body(|mut body| {
+                        body.row(60.0, |mut row| {
+                            row.col(|ui| {
+                                ui.label(
+                                    RichText::new(format!("{:.1} V", self.inv_dc_voltage))
+                                        .font(FontId::proportional(40.0)),
+                                );
+                            });
+                            row.col(|ui| {
+                                ui.label(
+                                    RichText::new(format!("{:.1} A", self.inv_dc_current))
+                                        .font(FontId::proportional(40.0)),
+                                );
+                            });
+                        });
+                    });
+            });
         });
 
         ui.ctx().request_repaint();
@@ -30,6 +70,7 @@ impl Motorsports {
     pub fn ingest(&mut self, msg: &CANMessage, data: &[u8]) {
         match msg.name.as_str() {
             "M165_Motor_Position_Info" => self.ingest_m165(msg, data),
+            "M166_Current_Info" => self.ingest_m166(msg, data),
             "M167_Voltage_Info" => self.ingest_m167(msg, data),
             _ => (),
         }
@@ -41,6 +82,17 @@ impl Motorsports {
             match sigbit.sig.name.as_str() {
                 "D2_Motor_Speed" => {
                     self.vehicle_speed = MOTOR_SPEED_TO_VEH_SPEED * decode_signal_f64(sigbit, data);
+                }
+                _ => (),
+            }
+        }
+    }
+
+    fn ingest_m166(&mut self, msg: &CANMessage, data: &[u8]) {
+        for sigbit in &msg.signals {
+            match sigbit.sig.name.as_str() {
+                "D4_DC_Bus_Current" => {
+                    self.inv_dc_current = decode_signal_f64(sigbit, data);
                 }
                 _ => (),
             }

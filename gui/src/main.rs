@@ -2,10 +2,13 @@
 use std::{process::exit, sync::mpsc};
 
 use anyhow::Result;
-use eframe::egui::{self};
+use eframe::{
+    egui::{self},
+    Theme,
+};
 use interface_picker::InterfacePicker;
 use motorsports::Motorsports;
-use opencan_core::{CANNetwork};
+use opencan_core::CANNetwork;
 use perf_panel::PerfPanel;
 use pycanrs::{PyCanInterface, PyCanMessage};
 
@@ -30,7 +33,6 @@ struct Gui {
     // message_history: BTreeMap<u32, (CANMessage, RecievedMessage)>,
 
     // row_heights: Vec<f32>,
-
     network: Option<CANNetwork>,
 
     perf_panel: PerfPanel,
@@ -100,6 +102,8 @@ fn main() -> Result<()> {
 
     let options = eframe::NativeOptions {
         resizable: false,
+        follow_system_theme: false,
+        default_theme: Theme::Light,
         ..Default::default()
     };
 
